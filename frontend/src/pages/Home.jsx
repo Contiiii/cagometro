@@ -3,10 +3,17 @@ import Streak from "../components/Streak.jsx";
 import PoopButton from "../components/PoopButton.jsx";
 import UndoBotton from "../components/UndoBotton.jsx";
 import BottomNav from "../components/BottomNav.jsx";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function App() {
-  const [count, setCount] = useState(5);
+  const [count, setCount] = useState(() => {
+    const savedCount = localStorage.getItem("count");
+    return savedCount ? Number(savedCount) : 0;
+  });
+
+  useEffect(() => {
+                localStorage.setItem("count", count);
+              }, [count]);
 
   return (
     <div
@@ -16,7 +23,6 @@ function App() {
                   text-white 
                   flex 
                   flex-col 
-                  min-h-screen 
                   bg-gradient-to-b 
                   bg-black
                   min-h-screen"
