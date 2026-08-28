@@ -1,10 +1,11 @@
 import poop from "../assets/poop.png";
 
-export default function PoopButton() {
+export default function PoopButton({ onClick }) {
   return (
     <div className="relative my-4">
     <div className="absolute inset-0 scale-110 rounded-full bg-pink-400/5 blur-xl "></div>
       <button
+      onClick={onClick}
         className="
   relative
     p-2
@@ -31,7 +32,7 @@ hover:to-pink-600
 
   "
       >
-        <img src={poop} alt="Poop" className="w-28 h-28 object-contain" />
+        <img src={poop} alt="Poop" className="w-28 h-28 object-contain pb-3" />
       </button>
     </div>
   );

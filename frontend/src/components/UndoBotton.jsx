@@ -1,8 +1,9 @@
 
 
-export default function UndoBotton() {
+export default function UndoBotton({onClick}) {
   return (
     <button
+    onClick={onClick}
       className="bg-zinc-800/30
                 border
                 border-zinc-700/30
