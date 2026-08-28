@@ -6,14 +6,35 @@ import BottomNav from "../components/BottomNav.jsx";
 import { useState, useEffect } from "react";
 
 function App() {
-  const [count, setCount] = useState(() => {
-    const savedCount = localStorage.getItem("count");
-    return savedCount ? Number(savedCount) : 0;
+  const today = new Date().toISOString().split("T")[0];
+  const [entries, setEntries] = useState(() => {
+    const savedEntries = localStorage.getItem("entries");
+    return savedEntries ? JSON.parse(savedEntries) : {};
   });
 
   useEffect(() => {
-                localStorage.setItem("count", count);
-              }, [count]);
+    localStorage.setItem("entries", JSON.stringify(entries));
+  }, [entries]);
+
+  const todayCount = entries[today] || 0;
+
+
+  function calculateStreak(){
+    let streak = 0;
+    const currentDate = new Date();
+
+    while(true){
+        const dateString = currentDate.toISOString().split("T")[0];
+        if ((entries[dateString] || 0 ) > 0){
+            ++streak;
+            currentDate.setDate(currentDate.getDate() - 1);
+        }else{
+            break;
+        }
+    }
+    return streak;
+  }
+  const streak = calculateStreak();
 
   return (
     <div
@@ -39,21 +60,31 @@ function App() {
                     justify-center
                     gap-4"
       >
-        <Streak />
+        <Streak streak = {streak}/>
 
         <div className="flex items-center flex-col text-lg text-gray-300">
           Oggi hai fatto la cacca:
         </div>
         <div className="text-7xl md:text-8xl text-pink-400 font-bold tracking-tight">
-          {count}
+          {todayCount}
         </div>
 
-        <PoopButton onClick={() => setCount(count + 1)} />
+        <PoopButton
+          onClick={() =>
+            setEntries({
+              ...entries,
+              [today]: todayCount + 1,
+            })
+          }
+        />
 
         <UndoBotton
           onClick={() => {
-            if (count > 0) {
-              setCount(count - 1);
+            if (todayCount > 0) {
+              setEntries({
+                ...entries,
+                [today]: todayCount - 1,
+              });
             }
           }}
         />
