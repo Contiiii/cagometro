@@ -1,4 +1,4 @@
-import Header from "../components/header.jsx";
+import Header from "../components/Header.jsx";
 import Streak from "../components/Streak.jsx";
 import PoopButton from "../components/PoopButton.jsx";
 import UndoBotton from "../components/UndoBotton.jsx";
