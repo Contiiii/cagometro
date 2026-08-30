@@ -4,33 +4,14 @@ import BottomNav from "../components/BottomNav";
 import toast from "react-hot-toast";
 import { useEffect } from "react";
 
+import { calculateStreak, getTotalHistorical } from "../utils/stats";
+
 export default function Achievements() {
   const entries = JSON.parse(localStorage.getItem("entries")) || {};
 
-  const totalHistorical = Object.values(entries).reduce(
-    (sum, value) => sum + value,
-    0,
-  );
+  const totalHistorical = getTotalHistorical(entries);
 
-  function calculateStreak() {
-    let streak = 0;
-    const currentDate = new Date();
-
-    while (true) {
-      const dateString = currentDate.toISOString().split("T")[0];
-
-      if ((entries[dateString] || 0) > 0) {
-        streak++;
-        currentDate.setDate(currentDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-
-    return streak;
-  }
-
-  const streak = calculateStreak();
+  const streak = calculateStreak(entries);
 
   const achievements = [
     {
@@ -75,9 +56,9 @@ export default function Achievements() {
     },
   ];
 
-  useEffect(() => {
+useEffect(() => {
   const shownAchievements = JSON.parse(
-    localStorage.getItem("shownAchievements") || "[]"
+    localStorage.getItem("shownAchievements") || "[]",
   );
 
   let updated = [...shownAchievements];

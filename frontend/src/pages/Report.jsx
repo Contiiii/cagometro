@@ -1,6 +1,12 @@
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 
+import {
+  getLastNDaysTotal,
+  getRecordHistorical,
+  getTotalHistorical,
+} from "../utils/stats";
+
 export default function Report() {
   const entries = JSON.parse(localStorage.getItem("entries")) || {};
   const today = new Date().toISOString().split("T")[0];
@@ -10,35 +16,8 @@ export default function Report() {
     return todayCount;
   }
 
-  function calculateTotalCount() {
-    const totalCount = Object.values(entries).reduce(
-      (sum, value) => sum + value,
-      0,
-    );
-    return totalCount;
-  }
-
-  function calculateRecordCount() {
-   const TotalCount =Object.values(entries).length > 0
-    ? Math.max(...Object.values(entries))
-    : 0;
-    return TotalCount;
-  }
-
-  function getLastNDaysTotal(days) {
-  let total = 0;
-
-  for (let i = 0; i < days; i++) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-
-    const dateString = date.toISOString().split("T")[0];
-
-    total += entries[dateString] || 0;
-  }
-
-  return total;
-}
+  const totalHistorical = getTotalHistorical(entries);
+  const recordHistorical = getRecordHistorical(entries);
 
   return (
     <div
@@ -69,34 +48,48 @@ export default function Report() {
         <div className="bg-zinc-900/60 border border-pink-500/10 rounded-3xl p-5">
           <p className="text-zinc-400 text-sm">Oggi</p>
 
-          <p className="text-5xl font-bold text-pink-400">{calculateTodayCount()}</p>
+          <p className="text-5xl font-bold text-pink-400">
+            {calculateTodayCount()}
+          </p>
         </div>
 
         {/* ULTIMI 7 GIORNI */}
         <div className="bg-zinc-900/60 border border-pink-500/10 rounded-3xl p-5">
           <p className="text-zinc-400 text-sm">Ultimi 7 giorni</p>
 
-          <p className="text-5xl font-bold text-pink-400">{getLastNDaysTotal(7)}</p>
+          <p className="text-5xl font-bold text-pink-400">
+            {getLastNDaysTotal(entries, 7)}
+          </p>
 
-          <p className="text-zinc-500 text-sm mt-2">Media: {(getLastNDaysTotal(7) / 7).toFixed(1)}</p>
+          <p className="text-zinc-500 text-sm mt-2">
+            Media: {(getLastNDaysTotal(entries, 7) / 7).toFixed(1)}
+          </p>
         </div>
 
         {/* ULTIMI 30 GIORNI */}
         <div className="bg-zinc-900/60 border border-pink-500/10 rounded-3xl p-5">
           <p className="text-zinc-400 text-sm">Ultimi 30 giorni</p>
 
-          <p className="text-5xl font-bold text-pink-400">{getLastNDaysTotal(30)}</p>
+          <p className="text-5xl font-bold text-pink-400">
+            {getLastNDaysTotal(entries, 30)}
+          </p>
 
-          <p className="text-zinc-500 text-sm mt-2">Media: {(getLastNDaysTotal(30) / 30).toFixed(1)}</p>
+          <p className="text-zinc-500 text-sm mt-2">
+            Media: {(getLastNDaysTotal(entries, 30) / 30).toFixed(1)}
+          </p>
         </div>
 
         {/* ULTIMO ANNO */}
         <div className="bg-zinc-900/60 border border-pink-500/10 rounded-3xl p-5">
           <p className="text-zinc-400 text-sm">Ultimo anno</p>
 
-          <p className="text-5xl font-bold text-pink-400">{getLastNDaysTotal(365)}</p>
+          <p className="text-5xl font-bold text-pink-400">
+            {getLastNDaysTotal(entries,365)}
+          </p>
 
-          <p className="text-zinc-500 text-sm mt-2">Media: {(getLastNDaysTotal(365) / 365).toFixed(1)}</p>
+          <p className="text-zinc-500 text-sm mt-2">
+            Media: {(getLastNDaysTotal(entries,365) / 365).toFixed(1)}
+          </p>
         </div>
 
         {/* RECORD E TOTALE */}
@@ -104,13 +97,15 @@ export default function Report() {
           <div className="bg-zinc-900/60 border border-pink-500/10 rounded-3xl p-5">
             <p className="text-zinc-400 text-sm">🏆 Record storico</p>
 
-            <p className="text-4xl font-bold">{calculateRecordCount()}</p>
+            <p className="text-4xl font-bold">{recordHistorical}</p>
           </div>
 
           <div className="bg-zinc-900/60 border border-pink-500/10 rounded-3xl p-5">
             <p className="text-zinc-400 text-sm">💩 Totale storico</p>
 
-            <p className="text-4xl font-bold text-pink-400">{calculateTotalCount()}</p>
+            <p className="text-4xl font-bold text-pink-400">
+              {totalHistorical}
+            </p>
           </div>
         </div>
       </main>

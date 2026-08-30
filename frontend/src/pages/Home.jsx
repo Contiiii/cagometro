@@ -6,43 +6,32 @@ import BottomNav from "../components/BottomNav.jsx";
 
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import { motion } from "framer-motion";
+
+import { calculateStreak } from "../utils/stats";
+
+import {
+  loadEntries,
+  saveEntries,
+  getBestStreak,
+  saveBestStreak,
+  getShownAchievements,
+  saveShownAchievements,
+} from "../utils/storage";
 
 function App() {
   const today = new Date().toISOString().split("T")[0];
 
-  const [entries, setEntries] = useState(() => {
-    const savedEntries = localStorage.getItem("entries");
-    return savedEntries ? JSON.parse(savedEntries) : {};
-  });
+  const [entries, setEntries] = useState(loadEntries);
 
   useEffect(() => {
-    localStorage.setItem("entries", JSON.stringify(entries));
+    saveEntries(entries);
   }, [entries]);
 
   const todayCount = entries[today] || 0;
 
-  function calculateStreak() {
-    let streak = 0;
-    const currentDate = new Date();
-
-    while (true) {
-      const dateString = currentDate.toISOString().split("T")[0];
-
-      if ((entries[dateString] || 0) > 0) {
-        streak++;
-        currentDate.setDate(currentDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-
-    return streak;
-  }
-
   function checkAchievements(total, currentStreak) {
-    const shownAchievements = JSON.parse(
-      localStorage.getItem("shownAchievements") || "[]",
-    );
+    const shownAchievements = getShownAchievements();
 
     const achievements = [
       {
@@ -89,31 +78,19 @@ function App() {
       }
     });
 
-    localStorage.setItem("shownAchievements", JSON.stringify(updated));
+    saveShownAchievements(updated);
   }
 
-  const bestStreak = Number(localStorage.getItem("bestStreak") || 0);
-  const streak = calculateStreak();
+  const bestStreak = getBestStreak();
+  const streak = calculateStreak(entries);
 
   useEffect(() => {
-    const savedBestStreak = Number(localStorage.getItem("bestStreak") || 0);
+    const savedBestStreak = getBestStreak();
 
     if (streak > savedBestStreak) {
-      localStorage.setItem("bestStreak", streak);
+      saveBestStreak(streak);
     }
   }, [streak]);
-
-  const [animateCount, setAnimateCount] = useState(false);
-
-  useEffect(() => {
-    setAnimateCount(true);
-
-    const timeout = setTimeout(() => {
-      setAnimateCount(false);
-    }, 250);
-
-    return () => clearTimeout(timeout);
-  }, [todayCount]);
 
   return (
     <div
@@ -145,21 +122,31 @@ function App() {
           Oggi hai fatto la cacca:
         </div>
 
-        <div
-          className={`
-    text-7xl
-    md:text-8xl
-    text-pink-400
-    font-bold
-    tracking-tight
-    drop-shadow-[0_0_30px_rgba(244,114,182,0.45)]
-    transition-all
-    duration-200
-    ${animateCount ? "scale-110" : "scale-100"}
-`}
+        <motion.div
+          key={todayCount}
+          initial={{
+            scale: 1,
+            rotate: 0,
+          }}
+          animate={{
+            scale: [1, 1.25, 1],
+            rotate: [0, 5, 0],
+          }}
+          transition={{
+            duration: 0.3,
+            ease: "easeOut",
+          }}
+          className="
+                      text-7xl
+                      md:text-8xl
+                      text-pink-400
+                      font-bold
+                      tracking-tight
+                      drop-shadow-[0_0_30px_rgba(244,114,182,0.45)]
+                    "
         >
           {todayCount}
-        </div>
+        </motion.div>
 
         <PoopButton
           onClick={() => {
@@ -179,7 +166,7 @@ function App() {
               0,
             );
 
-            const tomorrowStreak = calculateStreak();
+            const tomorrowStreak = calculateStreak(newEntries);
 
             checkAchievements(total, tomorrowStreak);
           }}
