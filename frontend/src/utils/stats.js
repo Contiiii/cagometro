@@ -46,3 +46,24 @@ export function getLastNDaysTotal(entries, days) {
 
   return total;
 }
+
+export function getMonthTotal(entries, date) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+
+  return Object.entries(entries).reduce(
+    (sum, [day, count]) => {
+      const current = new Date(day);
+
+      if (
+        current.getFullYear() === year &&
+        current.getMonth() === month
+      ) {
+        return sum + count;
+      }
+
+      return sum;
+    },
+    0,
+  );
+}
