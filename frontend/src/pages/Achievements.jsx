@@ -1,6 +1,9 @@
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 
+import toast from "react-hot-toast";
+import { useEffect } from "react";
+
 export default function Achievements() {
   const entries = JSON.parse(localStorage.getItem("entries")) || {};
 
@@ -71,6 +74,32 @@ export default function Achievements() {
       unlocked: streak >= 30,
     },
   ];
+
+  useEffect(() => {
+  const shownAchievements = JSON.parse(
+    localStorage.getItem("shownAchievements") || "[]"
+  );
+
+  let updated = [...shownAchievements];
+
+  achievements.forEach((achievement) => {
+    if (
+      achievement.unlocked &&
+      !shownAchievements.includes(achievement.title)
+    ) {
+      toast.success(
+        `🏆 Achievement sbloccato: ${achievement.title}`
+      );
+
+      updated.push(achievement.title);
+    }
+  });
+
+  localStorage.setItem(
+    "shownAchievements",
+    JSON.stringify(updated)
+  );
+}, []);
 
   return (
     <div

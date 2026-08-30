@@ -3,7 +3,9 @@ import Streak from "../components/Streak.jsx";
 import PoopButton from "../components/PoopButton.jsx";
 import UndoBotton from "../components/UndoBotton.jsx";
 import BottomNav from "../components/BottomNav.jsx";
+
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
 function App() {
   const today = new Date().toISOString().split("T")[0];
@@ -35,6 +37,50 @@ function App() {
     }
 
     return streak;
+  }
+
+  function checkAchievements(total, currentStreak) {
+    const shownAchievements = JSON.parse(
+      localStorage.getItem("shownAchievements") || "[]",
+    );
+
+    const achievements = [
+      {
+        title: "Prima Cacca",
+        unlocked: total >= 1,
+      },
+      {
+        title: "Abitudinario",
+        unlocked: total >= 10,
+      },
+      {
+        title: "Veterano",
+        unlocked: total >= 100,
+      },
+      {
+        title: "Costante",
+        unlocked: currentStreak >= 7,
+      },
+      {
+        title: "Leggenda",
+        unlocked: currentStreak >= 30,
+      },
+    ];
+
+    let updated = [...shownAchievements];
+
+    achievements.forEach((achievement) => {
+      if (
+        achievement.unlocked &&
+        !shownAchievements.includes(achievement.title)
+      ) {
+        toast.success(`🏆 Achievement sbloccato!\n${achievement.title}`);
+
+        updated.push(achievement.title);
+      }
+    });
+
+    localStorage.setItem("shownAchievements", JSON.stringify(updated));
   }
 
   const bestStreak = Number(localStorage.getItem("bestStreak") || 0);
@@ -92,12 +138,21 @@ function App() {
         </div>
 
         <PoopButton
-          onClick={() =>
-            setEntries({
+          onClick={() => {
+            const newEntries = {
               ...entries,
               [today]: todayCount + 1,
-            })
-          }
+            };
+
+            setEntries(newEntries);
+
+            const total = Object.values(newEntries).reduce(
+              (sum, value) => sum + value,
+              0,
+            );
+
+            checkAchievements(total, streak);
+          }}
         />
 
         <UndoBotton
