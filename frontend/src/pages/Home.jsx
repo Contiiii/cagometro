@@ -7,6 +7,7 @@ import BottomNav from "../components/BottomNav.jsx";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
+import Confetti from "react-confetti";
 
 import { calculateStreak } from "../utils/stats";
 
@@ -23,12 +24,31 @@ function App() {
   const today = new Date().toISOString().split("T")[0];
 
   const [entries, setEntries] = useState(loadEntries);
-
   const [unlockedAchievement, setUnlockedAchievement] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
 
   useEffect(() => {
     saveEntries(entries);
   }, [entries]);
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   const todayCount = entries[today] || 0;
 
@@ -66,6 +86,12 @@ function App() {
         !shownAchievements.includes(achievement.title)
       ) {
         setUnlockedAchievement(achievement);
+
+        setShowConfetti(true);
+
+        setTimeout(() => {
+          setShowConfetti(false);
+        }, 3000);
 
         setTimeout(() => {
           setUnlockedAchievement(null);
@@ -190,6 +216,22 @@ function App() {
           }}
         />
       </main>
+      {showConfetti && (
+        <Confetti
+          width={windowSize.width}
+          height={windowSize.height}
+          recycle={false}
+          numberOfPieces={500}
+          gravity={0.15}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            zIndex: 900,
+          }}
+        />
+      )}
+
       {unlockedAchievement && (
         <div
           onClick={() => setUnlockedAchievement(null)}
