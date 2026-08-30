@@ -67,3 +67,60 @@ export function getMonthTotal(entries, date) {
     0,
   );
 }
+
+export function getWeeklyChartData(entries) {
+  const today = new Date();
+
+  const dayNames = [
+    "Dom",
+    "Lun",
+    "Mar",
+    "Mer",
+    "Gio",
+    "Ven",
+    "Sab",
+  ];
+
+  const data = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+
+    const isoDate = date.toISOString().split("T")[0];
+
+    data.push({
+      day: dayNames[date.getDay()],
+      count: entries[isoDate] || 0,
+    });
+  }
+
+  return data;
+}
+
+export function getMonthChartData(entries, date) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+
+  const daysInMonth = new Date(
+    year,
+    month + 1,
+    0,
+  ).getDate();
+
+  const data = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const isoDate = `${year}-${String(month + 1).padStart(
+      2,
+      "0",
+    )}-${String(day).padStart(2, "0")}`;
+
+    data.push({
+      day,
+      count: entries[isoDate] || 0,
+    });
+  }
+
+  return data;
+}

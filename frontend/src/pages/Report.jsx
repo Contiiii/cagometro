@@ -8,7 +8,20 @@ import {
   getRecordHistorical,
   getTotalHistorical,
   getMonthTotal,
+  getWeeklyChartData,
+  getMonthChartData,
 } from "../utils/stats";
+
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 
 export default function Report() {
   const entries = JSON.parse(localStorage.getItem("entries")) || {};
@@ -45,6 +58,14 @@ export default function Report() {
 
   const totalHistorical = getTotalHistorical(entries);
   const recordHistorical = getRecordHistorical(entries);
+
+  {
+    /*dati per grafici */
+  }
+
+  const weeklyChartData = getWeeklyChartData(entries);
+
+  const monthlyChartData = getMonthChartData(entries, selectedMonth);
 
   return (
     <div
@@ -201,6 +222,36 @@ export default function Report() {
             </p>
           </div>
         </div>
+        <div
+  className="
+    rounded-3xl
+    border
+    border-pink-500/10
+    bg-zinc-900/60
+    p-5
+  "
+>
+  <p className="mb-4 text-sm text-zinc-400">
+    📅 Ultimi 7 giorni
+  </p>
+
+  <div className="h-64">
+    <ResponsiveContainer>
+      <BarChart data={weeklyChartData}>
+        <XAxis dataKey="day" />
+        <YAxis />
+
+        <Tooltip />
+
+        <Bar
+          dataKey="count"
+          fill="#f472b6"
+          radius={[8, 8, 0, 0]}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+</div>
 
         {/* MESE SELEZIONABILE */}
         <div
@@ -369,6 +420,39 @@ export default function Report() {
             <span className="text-sm text-zinc-400">Media giornaliera</span>
 
             <span className="font-bold text-pink-300">{monthAverage}</span>
+          </div>
+        </div>
+
+        <div
+          className="
+    rounded-3xl
+    border
+    border-pink-500/10
+    bg-zinc-900/60
+    p-5
+  "
+        >
+          <p className="mb-4 text-sm text-zinc-400">📈 Andamento mensile</p>
+
+          <div className="h-64">
+            <ResponsiveContainer>
+              <LineChart data={monthlyChartData}>
+                <XAxis dataKey="day" />
+                <YAxis />
+
+                <Tooltip />
+
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#f472b6"
+                  strokeWidth={3}
+                  dot={{
+                    fill: "#f472b6",
+                  }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
