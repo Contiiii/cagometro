@@ -1,104 +1,80 @@
 import { NavLink } from "react-router-dom";
 
 export default function BottomNav() {
+  const navItemClass = ({ isActive }) => `
+    flex
+    h-14
+    w-24
+    flex-col
+    items-center
+    justify-center
+    gap-0.5
+    rounded-2xl
+    text-xs
+    transition-all
+    duration-200
+    md:text-sm
+    ${
+      isActive
+        ? `
+          scale-105
+          border
+          border-pink-500/20
+          bg-pink-500/15
+          font-bold
+          text-pink-400
+          shadow-lg
+          shadow-pink-500/10
+        `
+        : `
+          border
+          border-transparent
+          text-zinc-400
+          hover:-translate-y-0.5
+          hover:bg-white/5
+          hover:text-pink-300
+        `
+    }
+  `;
+
   return (
-    <div
-      className="   fixed
-                    bottom-4
-                    left-4
-                    right-4
-                    w-auto
-                    bg-zinc-900/80
-                    backdrop-blur-lg
-                    border-t
-                    border-pink-500/20
-                    flex
-                    justify-around
-                    items-center
-                    py-2
-                    shadow-[0_-5px_20px_rgba(0,0,0,0.3)]
-                    rounded-[2rem]
-                    "
+    <nav
+      aria-label="Navigazione principale"
+      className="
+        fixed
+        bottom-4
+        left-1/2
+        z-40
+        flex
+        w-[calc(100%-2rem)]
+        max-w-md
+        -translate-x-1/2
+        items-center
+        justify-around
+        rounded-[2rem]
+        border
+        border-pink-500/15
+        bg-zinc-950/80
+        px-2
+        py-2
+        shadow-[0_8px_30px_rgba(0,0,0,0.45)]
+        backdrop-blur-xl
+      "
     >
-      <NavLink
-        to="/report"
-        className={({ isActive }) =>
-          `
-        w-20
-      flex
-      flex-col
-      items-center
-      transition-colors
-      duration-200
-      cursor-pointer
-      gap-1
-      text-xs
-      md:text-sm
-      ${
-        isActive
-          ? "text-pink-400 font-bold scale-105 bg-pink-500/15 rounded-2xl px-2 py-1"
-          : "text-zinc-400 hover:text-pink-300"
-      }
-    `
-        }
-      >
-        <span className="text-lg">📊</span>
+      <NavLink to="/report" className={navItemClass}>
+        <span className="text-lg leading-none">📊</span>
         <span>Report</span>
       </NavLink>
 
-      <NavLink
-        to="/"
-        className={({ isActive }) =>
-          `
-        w-20
-      flex
-      flex-col
-      items-center
-      transition-colors
-      duration-200
-      cursor-pointer
-      gap-1
-      text-xs
-      md:text-sm
-
-
-      ${
-        isActive
-          ? "text-pink-400 font-bold scale-105 bg-pink-500/15 rounded-2xl px-2 py-1"
-          : "text-zinc-400 hover:text-pink-300"
-      }
-    `
-        }
-      >
-        <span className="text-lg">🏠 </span>
+      <NavLink to="/" className={navItemClass}>
+        <span className="text-lg leading-none">🏠</span>
         <span>Home</span>
       </NavLink>
 
-      <NavLink
-        to="/Achievements"
-        className={({ isActive }) =>
-          `
-        w-20
-      flex
-      flex-col
-      items-center
-      transition-colors
-      duration-200
-      cursor-pointer
-      gap-1
-      text-xs
-      md:text-sm
-      ${
-        isActive
-          ? "text-pink-400 font-bold scale-105 bg-pink-500/15 rounded-2xl px-2 py-1"
-          : "text-zinc-400 hover:text-pink-300"
-      }
-    `
-        }
-      >
-        <span className="text-lg">🏆</span>
-        <span>Achievements</span>
+      <NavLink to="/achievements" className={navItemClass}>
+        <span className="text-lg leading-none">🏆</span>
+        <span>Traguardi</span>
       </NavLink>
-    </div>
+    </nav>
   );
 }
