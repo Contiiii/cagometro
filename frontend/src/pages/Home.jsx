@@ -24,6 +24,8 @@ function App() {
 
   const [entries, setEntries] = useState(loadEntries);
 
+  const [unlockedAchievement, setUnlockedAchievement] = useState(null);
+
   useEffect(() => {
     saveEntries(entries);
   }, [entries]);
@@ -63,6 +65,12 @@ function App() {
         achievement.unlocked &&
         !shownAchievements.includes(achievement.title)
       ) {
+        setUnlockedAchievement(achievement);
+
+        setTimeout(() => {
+          setUnlockedAchievement(null);
+        }, 3000);
+
         toast.success(`🏆 ${achievement.title}`, {
           duration: 4000,
           style: {
@@ -109,7 +117,6 @@ function App() {
       <main
         className="
                     flex-1
-                    
                     flex
                     flex-col
                     items-center
@@ -183,6 +190,46 @@ function App() {
           }}
         />
       </main>
+      {unlockedAchievement && (
+        <div
+          onClick={() => setUnlockedAchievement(null)}
+          className="
+                      fixed
+                      inset-0
+                      bg-black/70
+                      backdrop-blur-sm
+                      flex
+                      items-center
+                      justify-center
+                      z-50
+                    "
+        >
+          <motion.div
+            onClick={(e) => e.stopPropagation()}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.25 }}
+            className="
+                        bg-zinc-900
+                        border
+                        border-pink-500/30
+                        rounded-3xl
+                        p-8
+                        text-center
+                        shadow-2xl
+                        shadow-pink-500/20
+                      "
+          >
+            <div className="text-6xl mb-4">🏆</div>
+
+            <h2 className="text-2xl font-bold text-pink-400">
+              Achievement Sbloccato!
+            </h2>
+
+            <p className="text-xl mt-4">{unlockedAchievement.title}</p>
+          </motion.div>
+        </div>
+      )}
 
       <BottomNav />
     </div>
