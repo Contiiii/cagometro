@@ -74,7 +74,16 @@ function App() {
         achievement.unlocked &&
         !shownAchievements.includes(achievement.title)
       ) {
-        toast.success(`🏆 Achievement sbloccato!\n${achievement.title}`);
+        toast.success(`🏆 ${achievement.title}`, {
+          duration: 4000,
+          style: {
+            background: "#18181b",
+            color: "#fff",
+            border: "1px solid rgba(244,114,182,.3)",
+            borderRadius: "16px",
+            padding: "12px 16px",
+          },
+        });
 
         updated.push(achievement.title);
       }
@@ -93,6 +102,18 @@ function App() {
       localStorage.setItem("bestStreak", streak);
     }
   }, [streak]);
+
+  const [animateCount, setAnimateCount] = useState(false);
+
+  useEffect(() => {
+    setAnimateCount(true);
+
+    const timeout = setTimeout(() => {
+      setAnimateCount(false);
+    }, 250);
+
+    return () => clearTimeout(timeout);
+  }, [todayCount]);
 
   return (
     <div
@@ -125,14 +146,17 @@ function App() {
         </div>
 
         <div
-          className="
-                      text-7xl
-                      md:text-8xl
-                      text-pink-400
-                      font-bold
-                      tracking-tight
-                      drop-shadow-[0_0_20px_rgba(244,114,182,0.35)]
-                    "
+          className={`
+    text-7xl
+    md:text-8xl
+    text-pink-400
+    font-bold
+    tracking-tight
+    drop-shadow-[0_0_30px_rgba(244,114,182,0.45)]
+    transition-all
+    duration-200
+    ${animateCount ? "scale-110" : "scale-100"}
+`}
         >
           {todayCount}
         </div>
@@ -146,12 +170,18 @@ function App() {
 
             setEntries(newEntries);
 
+            if ("vibrate" in navigator) {
+              navigator.vibrate(50);
+            }
+
             const total = Object.values(newEntries).reduce(
               (sum, value) => sum + value,
               0,
             );
 
-            checkAchievements(total, streak);
+            const tomorrowStreak = calculateStreak();
+
+            checkAchievements(total, tomorrowStreak);
           }}
         />
 
