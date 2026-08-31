@@ -1,46 +1,14 @@
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
-
+import { useContext } from "react";
+import { AuthContext } from "../context/auth-context";
 
 export function useAuth() {
-  const [user, setUser] = useState(null);
+  const context = useContext(AuthContext);
 
-  useEffect(() => {
-    async function loadUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      setUser(user);
-    }
-
-    loadUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  async function login() {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
+  if (!context) {
+    throw new Error(
+      "useAuth deve essere utilizzato dentro AuthProvider",
+    );
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
-  }
-
-  return {
-    user,
-    login,
-    logout,
-  };
+  return context;
 }

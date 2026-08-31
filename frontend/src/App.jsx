@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import Report from "./pages/Report";
 import Achievements from "./pages/Achievements";
 
+
 export default function App() {
   
   return (

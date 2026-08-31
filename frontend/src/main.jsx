@@ -4,13 +4,18 @@ import { registerSW } from "virtual:pwa-register";
 
 import "./index.css";
 import App from "./App.jsx";
+import { AuthProvider } from "./context/AuthProvider.jsx";
 
 registerSW({
   immediate: true,
 });
 
-createRoot(document.getElementById("root")).render(
+createRoot(
+  document.getElementById("root"),
+).render(
   <StrictMode>
-    <App />
-  </StrictMode>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </StrictMode>,
 );

@@ -3,17 +3,10 @@ import { useEffect, useState } from "react";
 import { loadEntries, saveEntries } from "../utils/storage";
 
 import { useAuth } from "./useAuth";
-import {
-  getEntries,
-  saveEntry,
-} from "../services/entriesService";
-
+import { getEntries, saveEntry } from "../services/entriesService";
 
 export function useEntries() {
-
-  const { user } = useAuth();
-
-  console.log("USEENTRIES USER", user);
+  const { user, loading: authLoading } = useAuth();
 
   const [entries, setEntries] = useState(loadEntries);
 
@@ -24,34 +17,26 @@ export function useEntries() {
     .split("T")[0];
 
   useEffect(() => {
-  async function loadCloudEntries() {
-    if (!user) return;
+    async function loadCloudEntries() {
+      if (authLoading || !user) return;
 
-    console.log("LOAD CLOUD START");
+      try {
+        const data = await getEntries(user.id);
 
+        const formattedEntries = {};
 
-  console.log("USER", user);
+        data.forEach((entry) => {
+          formattedEntries[entry.date] = entry.count;
+        });
 
-    
+        setEntries(formattedEntries);
+      } catch (error) {
+        console.error("Errore caricamento entries:", error);
+      }
+    }
 
-
-    const data = await getEntries(user.id);
-
-    console.log("SUPABASE DATA", data);
-
-    const formattedEntries = {};
-
-    data.forEach((entry) => {
-      formattedEntries[entry.date] = entry.count;
-    });
-
-    setEntries(formattedEntries);
-  }
-
-  loadCloudEntries();
-}, [user]);
-
-
+    loadCloudEntries();
+  }, [user, authLoading]);
 
   useEffect(() => {
     saveEntries(entries);
@@ -59,45 +44,45 @@ export function useEntries() {
 
   const todayCount = entries[today] || 0;
 
-async function incrementToday() {
-  const newEntries = {
-    ...entries,
-    [today]: todayCount + 1,
-  };
+  async function incrementToday() {
+    const newEntries = {
+      ...entries,
+      [today]: todayCount + 1,
+    };
 
-  setEntries(newEntries);
+    setEntries(newEntries);
 
-  if (user) {
-    await saveEntry({
-      userId: user.id,
-      date: today,
-      count: newEntries[today],
-    });
+    if (user) {
+      await saveEntry({
+        userId: user.id,
+        date: today,
+        count: newEntries[today],
+      });
+    }
+
+    return newEntries;
   }
-
-  return newEntries;
-}
 
   async function decrementToday() {
-  if (todayCount <= 0) return entries;
+    if (todayCount <= 0) return entries;
 
-  const newEntries = {
-    ...entries,
-    [today]: todayCount - 1,
-  };
+    const newEntries = {
+      ...entries,
+      [today]: todayCount - 1,
+    };
 
-  setEntries(newEntries);
+    setEntries(newEntries);
 
-  if (user) {
-    await saveEntry({
-      userId: user.id,
-      date: today,
-      count: newEntries[today],
-    });
+    if (user) {
+      await saveEntry({
+        userId: user.id,
+        date: today,
+        count: newEntries[today],
+      });
+    }
+
+    return newEntries;
   }
-
-  return newEntries;
-}
 
   return {
     entries,
