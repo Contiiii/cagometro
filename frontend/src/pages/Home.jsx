@@ -5,35 +5,30 @@ import UndoBotton from "../components/UndoBotton.jsx";
 import BottomNav from "../components/BottomNav.jsx";
 
 import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
 import Confetti from "react-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { useEntries } from "../hooks/useEntries";
+import { useStats } from "../hooks/useStats";
+import { useAchievements } from "../hooks/useAchievements";
+
 import { calculateStreak } from "../utils/stats";
 
-import {
-  loadEntries,
-  saveEntries,
-  getBestStreak,
-  saveBestStreak,
-  getShownAchievements,
-  saveShownAchievements,
-} from "../utils/storage";
 
 function App() {
-  const today = new Date().toISOString().split("T")[0];
+  const {
+    unlockedAchievement,
+    showConfetti,
+    setUnlockedAchievement,
+    checkAchievements,
+  } = useAchievements();
 
-  const [entries, setEntries] = useState(loadEntries);
-  const [unlockedAchievement, setUnlockedAchievement] = useState(null);
-  const [showConfetti, setShowConfetti] = useState(false);
+  const { entries, todayCount, incrementToday, decrementToday } = useEntries();
+
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
   });
-
-  useEffect(() => {
-    saveEntries(entries);
-  }, [entries]);
 
   useEffect(() => {
     function handleResize() {
@@ -50,84 +45,7 @@ function App() {
     };
   }, []);
 
-  const todayCount = entries[today] || 0;
-
-  function checkAchievements(total, currentStreak) {
-    const shownAchievements = getShownAchievements();
-
-    const achievements = [
-      {
-        title: "Prima Cacca",
-        unlocked: total >= 1,
-      },
-      {
-        title: "Abitudinario",
-        unlocked: total >= 10,
-      },
-      {
-        title: "Veterano",
-        unlocked: total >= 100,
-      },
-      {
-        title: "Costante",
-        unlocked: currentStreak >= 7,
-      },
-      {
-        title: "Leggenda",
-        unlocked: currentStreak >= 30,
-      },
-    ];
-
-    let updated = [...shownAchievements];
-
-    achievements.forEach((achievement) => {
-      if (
-        achievement.unlocked &&
-        !shownAchievements.includes(achievement.title)
-      ) {
-        setUnlockedAchievement(achievement);
-
-        setShowConfetti(true);
-
-        setTimeout(() => {
-          setShowConfetti(false);
-        }, 3000);
-
-        setTimeout(() => {
-          setUnlockedAchievement(null);
-        }, 3000);
-
-        toast.success(`🏆 ${achievement.title}`, {
-          duration: 4000,
-          style: {
-            background: "#18181b",
-            color: "#fff",
-            border: "1px solid rgba(244,114,182,.3)",
-            borderRadius: "16px",
-            padding: "12px 16px",
-          },
-        });
-
-        updated.push(achievement.title);
-      }
-    });
-
-    saveShownAchievements(updated);
-  }
-
-  const bestStreak = getBestStreak();
-  const streak = calculateStreak(entries);
-
-  useEffect(() => {
-    const savedBestStreak = getBestStreak();
-
-    if (streak > savedBestStreak) {
-      saveBestStreak(streak);
-    }
-  }, [streak]);
-
-  console.log("todayCount", todayCount);
-console.log("streak", streak);
+  const { streak, bestStreak } = useStats(entries);
 
   return (
     <div
@@ -140,8 +58,6 @@ console.log("streak", streak);
   text-white
 "
     >
-      
-
       <div className="relative z-10 flex h-full flex-col">
         <Header />
 
@@ -221,12 +137,7 @@ console.log("streak", streak);
           {/* Pulsante principale */}
           <PoopButton
             onClick={() => {
-              const newEntries = {
-                ...entries,
-                [today]: todayCount + 1,
-              };
-
-              setEntries(newEntries);
+              const newEntries = incrementToday();
 
               if ("vibrate" in navigator) {
                 navigator.vibrate(50);
@@ -245,18 +156,7 @@ console.log("streak", streak);
 
           {/* Annulla */}
           <div className="mt-1">
-            <UndoBotton
-              onClick={() => {
-                if (todayCount > 0) {
-                  const newEntries = {
-                    ...entries,
-                    [today]: todayCount - 1,
-                  };
-
-                  setEntries(newEntries);
-                }
-              }}
-            />
+            <UndoBotton onClick={decrementToday} />
           </div>
         </main>
 
