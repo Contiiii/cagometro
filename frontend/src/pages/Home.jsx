@@ -218,14 +218,6 @@ console.log("streak", streak);
             {todayCount}
           </motion.div>
 
-          <p className="mb-4 text-sm text-zinc-500">
-            {todayCount === 0
-              ? "Il trono attende la prima missione"
-              : todayCount === 1
-                ? "missione completata oggi"
-                : `missioni completate oggi`}
-          </p>
-
           {/* Pulsante principale */}
           <PoopButton
             onClick={() => {
