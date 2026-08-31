@@ -17,6 +17,8 @@ export default function Streak({ streak, bestStreak }) {
       <div className="flex items-center gap-2">
         <span className="text-2xl">🔥</span>
 
+        <p className="text-zinc-300">Streak</p>
+
         <p className="text-2xl font-bold text-pink-400">{streak}</p>
 
         <p className="text-zinc-300">{streak === 1 ? "giorno" : "giorni"}</p>

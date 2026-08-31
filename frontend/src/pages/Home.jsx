@@ -126,6 +126,9 @@ function App() {
     }
   }, [streak]);
 
+  console.log("todayCount", todayCount);
+console.log("streak", streak);
+
   return (
     <div
       className="
