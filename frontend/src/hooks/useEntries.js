@@ -10,7 +10,10 @@ import {
 
 
 export function useEntries() {
+
   const { user } = useAuth();
+
+  console.log("USEENTRIES USER", user);
 
   const [entries, setEntries] = useState(loadEntries);
 
@@ -24,8 +27,17 @@ export function useEntries() {
   async function loadCloudEntries() {
     if (!user) return;
 
+    console.log("LOAD CLOUD START");
+
+
+  console.log("USER", user);
+
+    
+
 
     const data = await getEntries(user.id);
+
+    console.log("SUPABASE DATA", data);
 
     const formattedEntries = {};
 
@@ -38,6 +50,8 @@ export function useEntries() {
 
   loadCloudEntries();
 }, [user]);
+
+
 
   useEffect(() => {
     saveEntries(entries);

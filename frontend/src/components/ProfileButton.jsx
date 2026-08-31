@@ -28,16 +28,16 @@ export default function ProfileButton({ user, login, logout }) {
     );
   }
 
-  const avatarUrl = user.user_metadata?.avatar_url;
+  const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
   const userName = user.user_metadata?.name || user.email || "Profilo";
 
   return (
-  <button
-    type="button"
-    onClick={logout}
-    aria-label={`Esci dall'account ${userName}`}
-    title={`Esci da ${userName}`}
-    className="
+    <button
+      type="button"
+      onClick={logout}
+      aria-label={`Esci dall'account ${userName}`}
+      title={`Esci da ${userName}`}
+      className="
       group
       relative
       h-10
@@ -62,12 +62,12 @@ export default function ProfileButton({ user, login, logout }) {
       focus:ring-offset-zinc-950
       active:scale-95
     "
-  >
-    {avatarUrl ? (
-      <img
-        src={avatarUrl}
-        alt=""
-        className="
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          className="
           absolute
           inset-0
           h-full
@@ -78,11 +78,11 @@ export default function ProfileButton({ user, login, logout }) {
           duration-200
           group-hover:scale-110
         "
-      />
-    ) : (
-      <span
-        aria-hidden="true"
-        className="
+        />
+      ) : (
+        <span
+          aria-hidden="true"
+          className="
           absolute
           inset-0
           flex
@@ -95,10 +95,10 @@ export default function ProfileButton({ user, login, logout }) {
           font-bold
           text-white
         "
-      >
-        {userName.charAt(0).toUpperCase()}
-      </span>
-    )}
-  </button>
-);
+        >
+          {userName.charAt(0).toUpperCase()}
+        </span>
+      )}
+    </button>
+  );
 }
