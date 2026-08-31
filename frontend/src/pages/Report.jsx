@@ -2,6 +2,7 @@ import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { getLocalDateKey } from "../utils/date";
 
 import {
   getLastNDaysTotal,
@@ -25,7 +26,7 @@ import {
 
 export default function Report() {
   const entries = JSON.parse(localStorage.getItem("entries")) || {};
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateKey();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   const currentMonth = new Date();

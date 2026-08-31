@@ -14,6 +14,7 @@ import { useStats } from "../hooks/useStats";
 import { useAchievements } from "../hooks/useAchievements";
 
 import { calculateStreak } from "../utils/stats";
+import { getLocalDateKey } from "../utils/date";
 
 /* database */
 import { useAuth } from "../hooks/useAuth";
@@ -147,7 +148,7 @@ function App() {
 
               if (user) {
 
-                const today = new Date().toISOString().split("T")[0];
+                const today = getLocalDateKey();
 
                 await saveEntry({
                   userId: user.id,

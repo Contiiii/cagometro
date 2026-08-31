@@ -11,19 +11,6 @@ export function saveEntries(entries) {
   );
 }
 
-export function getBestStreak() {
-  return Number(
-    localStorage.getItem("bestStreak") || 0
-  );
-}
-
-export function saveBestStreak(streak) {
-  localStorage.setItem(
-    "bestStreak",
-    streak
-  );
-}
-
 export function getShownAchievements() {
   return JSON.parse(
     localStorage.getItem("shownAchievements") || "[]"

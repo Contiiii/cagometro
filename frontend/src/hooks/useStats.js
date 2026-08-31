@@ -1,22 +1,13 @@
-import { calculateStreak } from "../utils/stats";
 import {
-  getBestStreak,
-  saveBestStreak,
-} from "../utils/storage";
+  calculateStreak,
+  calculateBestStreak,
+} from "../utils/stats";
 
 export function useStats(entries) {
   const streak = calculateStreak(entries);
 
-  const storedBestStreak = getBestStreak();
-
   const bestStreak =
-    streak > storedBestStreak
-      ? streak
-      : storedBestStreak;
-
-  if (bestStreak > storedBestStreak) {
-    saveBestStreak(bestStreak);
-  }
+    calculateBestStreak(entries);
 
   return {
     streak,

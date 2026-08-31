@@ -1,9 +1,13 @@
+import { getLocalDateKey, parseLocalDateKey } from "./date";
+
 export function calculateStreak(entries) {
   let streak = 0;
+
   const currentDate = new Date();
+  currentDate.setHours(12, 0, 0, 0);
 
   while (true) {
-    const dateString = currentDate.toISOString().split("T")[0];
+    const dateString = getLocalDateKey(currentDate);
 
     if ((entries[dateString] || 0) > 0) {
       streak++;
@@ -16,11 +20,47 @@ export function calculateStreak(entries) {
   return streak;
 }
 
+export function calculateBestStreak(entries) {
+  const dates = Object.keys(entries)
+    .filter((date) => entries[date] > 0)
+    .sort();
+
+  if (dates.length === 0) {
+    return 0;
+  }
+
+  let bestStreak = 1;
+  let currentStreak = 1;
+
+  for (let index = 1; index < dates.length; index++) {
+    const previousDate = parseLocalDateKey(
+      dates[index - 1],
+    );
+
+    const currentDate = parseLocalDateKey(
+      dates[index],
+    );
+
+    const differenceInDays =
+      (currentDate - previousDate) /
+      (1000 * 60 * 60 * 24);
+
+    if (differenceInDays === 1) {
+      currentStreak++;
+      bestStreak = Math.max(
+        bestStreak,
+        currentStreak,
+      );
+    } else {
+      currentStreak = 1;
+    }
+  }
+
+  return bestStreak;
+}
+
 export function getTotalHistorical(entries) {
-  return Object.values(entries).reduce(
-    (sum, value) => sum + value,
-    0
-  );
+  return Object.values(entries).reduce((sum, value) => sum + value, 0);
 }
 
 export function getRecordHistorical(entries) {
@@ -32,14 +72,13 @@ export function getRecordHistorical(entries) {
 export function getLastNDaysTotal(entries, days) {
   let total = 0;
 
-  for (let i = 0; i < days; i++) {
+  for (let index = 0; index < days; index++) {
     const date = new Date();
 
-    date.setDate(date.getDate() - i);
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() - index);
 
-    const dateString = date
-      .toISOString()
-      .split("T")[0];
+    const dateString = getLocalDateKey(date);
 
     total += entries[dateString] || 0;
   }
@@ -48,21 +87,20 @@ export function getLastNDaysTotal(entries, days) {
 }
 
 export function getMonthTotal(entries, date) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
+  const selectedYear = date.getFullYear();
+  const selectedMonth = date.getMonth();
 
   return Object.entries(entries).reduce(
-    (sum, [day, count]) => {
-      const current = new Date(day);
+    (total, [dateKey, count]) => {
+      const currentDate = parseLocalDateKey(dateKey);
 
-      if (
-        current.getFullYear() === year &&
-        current.getMonth() === month
-      ) {
-        return sum + count;
-      }
+      const isSelectedMonth =
+        currentDate.getFullYear() === selectedYear &&
+        currentDate.getMonth() === selectedMonth;
 
-      return sum;
+      return isSelectedMonth
+        ? total + Number(count)
+        : total;
     },
     0,
   );
@@ -70,6 +108,7 @@ export function getMonthTotal(entries, date) {
 
 export function getWeeklyChartData(entries) {
   const today = new Date();
+  today.setHours(12, 0, 0, 0);
 
   const dayNames = [
     "Dom",
@@ -83,15 +122,17 @@ export function getWeeklyChartData(entries) {
 
   const data = [];
 
-  for (let i = 6; i >= 0; i--) {
+  for (let index = 6; index >= 0; index--) {
     const date = new Date(today);
-    date.setDate(today.getDate() - i);
 
-    const isoDate = date.toISOString().split("T")[0];
+    date.setDate(today.getDate() - index);
+
+    const dateString = getLocalDateKey(date);
 
     data.push({
       day: dayNames[date.getDay()],
-      count: entries[isoDate] || 0,
+      date: dateString,
+      count: entries[dateString] || 0,
     });
   }
 
@@ -111,14 +152,15 @@ export function getMonthChartData(entries, date) {
   const data = [];
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const isoDate = `${year}-${String(month + 1).padStart(
+    const dateKey = `${year}-${String(month + 1).padStart(
       2,
       "0",
     )}-${String(day).padStart(2, "0")}`;
 
     data.push({
       day,
-      count: entries[isoDate] || 0,
+      date: dateKey,
+      count: entries[dateKey] || 0,
     });
   }
 
