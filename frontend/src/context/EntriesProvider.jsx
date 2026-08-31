@@ -4,28 +4,25 @@ import { EntriesContext } from "./entries-context";
 
 import { useAuth } from "../hooks/useAuth";
 
-import {
-  getEntries,
-  saveEntry,
-} from "../services/entriesService";
+import { getEntries, saveEntry } from "../services/entriesService";
 
 import {
-  loadEntries,
-  saveEntries,
+  loadAnonymousEntries,
+  saveAnonymousEntries,
+  saveUserEntries,
 } from "../utils/storage";
 
 import { getLocalDateKey } from "../utils/date";
 
-export function EntriesProvider({
-  children,
-}) {
-  const { user, loading: authLoading } =
-    useAuth();
+export function EntriesProvider({ children }) {
+  const { user, loading: authLoading } = useAuth();
 
   const [entries, setEntries] =
-    useState(loadEntries);
+  useState(loadAnonymousEntries);
+
 
   const today = getLocalDateKey();
+
 
   useEffect(() => {
     async function loadCloudEntries() {
@@ -37,16 +34,12 @@ export function EntriesProvider({
         const formattedEntries = {};
 
         data.forEach((entry) => {
-          formattedEntries[entry.date] =
-            entry.count;
+          formattedEntries[entry.date] = entry.count;
         });
 
         setEntries(formattedEntries);
       } catch (error) {
-        console.error(
-          "Errore caricamento entries:",
-          error,
-        );
+        console.error("Errore caricamento entries:", error);
       }
     }
 
@@ -54,11 +47,23 @@ export function EntriesProvider({
   }, [user, authLoading]);
 
   useEffect(() => {
-    saveEntries(entries);
-  }, [entries]);
+  if (authLoading) return;
 
-  const todayCount =
-    entries[today] || 0;
+  if (user) {
+    saveUserEntries(
+      user.id,
+      entries,
+    );
+  } else {
+    saveAnonymousEntries(entries);
+  }
+}, [
+  entries,
+  user,
+  authLoading,
+]);
+
+  const todayCount = entries[today] || 0;
 
   async function incrementToday() {
     const newEntries = {
@@ -86,7 +91,7 @@ export function EntriesProvider({
 
     const newEntries = {
       ...entries,
-      [today]: todayCount- 1,
+      [today]: todayCount - 1,
     };
 
     setEntries(newEntries);

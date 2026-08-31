@@ -34,3 +34,31 @@ export async function saveEntry({
 
   return data;
 }
+
+export async function importEntries(
+  userId,
+  entries,
+) {
+  const rows = Object.entries(entries).map(
+    ([date, count]) => ({
+      user_id: userId,
+      date,
+      count,
+    }),
+  );
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("entries")
+    .upsert(rows, {
+      onConflict: "user_id,date",
+    })
+    .select();
+
+  if (error) throw error;
+
+  return data;
+}
