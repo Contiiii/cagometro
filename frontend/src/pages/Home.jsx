@@ -15,7 +15,13 @@ import { useAchievements } from "../hooks/useAchievements";
 
 import { calculateStreak } from "../utils/stats";
 
+/* database */
+import { useAuth } from "../hooks/useAuth";
+import { saveEntry } from "../services/entriesService";
+
 function App() {
+  const { user } = useAuth();
+
   const {
     unlockedAchievement,
     showConfetti,
@@ -136,8 +142,19 @@ function App() {
 
           {/* Pulsante principale */}
           <PoopButton
-            onClick={() => {
-              const newEntries = incrementToday();
+            onClick={async () => {
+              const newEntries = await incrementToday();
+
+              if (user) {
+
+                const today = new Date().toISOString().split("T")[0];
+
+                await saveEntry({
+                  userId: user.id,
+                  date: today,
+                  count: newEntries[today],
+                });
+              }
 
               if ("vibrate" in navigator) {
                 navigator.vibrate(50);
