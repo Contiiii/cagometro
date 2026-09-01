@@ -1,4 +1,6 @@
-export default function ProfileButton({ user, login, logout }) {
+import { Link } from "react-router-dom";
+
+export default function ProfileButton({ user, login }) {
   if (!user) {
     return (
       <button
@@ -28,13 +30,13 @@ export default function ProfileButton({ user, login, logout }) {
     );
   }
 
-  const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+  const avatarUrl =
+    user.user_metadata?.avatar_url || user.user_metadata?.picture;
   const userName = user.user_metadata?.name || user.email || "Profilo";
 
   return (
-    <button
-      type="button"
-      onClick={logout}
+    <Link
+      to="/Settings"
       aria-label={`Esci dall'account ${userName}`}
       title={`Esci da ${userName}`}
       className="
@@ -63,11 +65,11 @@ export default function ProfileButton({ user, login, logout }) {
       active:scale-95
     "
     >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt=""
-          className="
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            className="
           absolute
           inset-0
           h-full
@@ -78,11 +80,11 @@ export default function ProfileButton({ user, login, logout }) {
           duration-200
           group-hover:scale-110
         "
-        />
-      ) : (
-        <span
-          aria-hidden="true"
-          className="
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="
           absolute
           inset-0
           flex
@@ -95,10 +97,10 @@ export default function ProfileButton({ user, login, logout }) {
           font-bold
           text-white
         "
-        >
-          {userName.charAt(0).toUpperCase()}
-        </span>
-      )}
-    </button>
+          >
+            {userName.charAt(0).toUpperCase()}
+          </span>
+        )}
+    </Link>
   );
 }

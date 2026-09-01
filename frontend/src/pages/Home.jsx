@@ -15,14 +15,9 @@ import { useStats } from "../hooks/useStats";
 import { useAchievements } from "../hooks/useAchievements";
 
 import { calculateStreak } from "../utils/stats";
-import { getLocalDateKey } from "../utils/date";
 
-/* database */
-import { useAuth } from "../hooks/useAuth";
-import { saveEntry } from "../services/entriesService";
 
 function App() {
-  const { user } = useAuth();
 
   const {
     unlockedAchievement,

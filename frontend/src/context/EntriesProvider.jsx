@@ -86,96 +86,78 @@ export function EntriesProvider({ children }) {
     if (authLoading) return;
 
     async function bootstrapEntries() {
-  if (!user) {
-    setEntries(loadAnonymousEntries());
-    return;
-  }
+      if (!user) {
+        setEntries(loadAnonymousEntries());
+        return;
+      }
 
-  // 1. Mostra subito la cache locale
-  const cachedEntries = loadUserEntries(user.id);
+      // 1. Mostra subito la cache locale
+      const cachedEntries = loadUserEntries(user.id);
 
-  if (Object.keys(cachedEntries).length > 0) {
-    setEntries(cachedEntries);
-  }
+      if (Object.keys(cachedEntries).length > 0) {
+        setEntries(cachedEntries);
+      }
 
-  // 2. Recupera eventuali pending
-  const savedPending = loadPendingSync(user.id);
-  setPendingChanges(savedPending);
+      // 2. Recupera eventuali pending
+      const savedPending = loadPendingSync(user.id);
+      setPendingChanges(savedPending);
 
-  // 3. Se online prova a sincronizzarli
-  if (navigator.onLine && savedPending.length > 0) {
-    try {
-      await Promise.all(
-        savedPending.map((change) =>
-          saveEntry({
-            userId: user.id,
-            date: change.date,
-            count: change.count,
-          }),
-        ),
-      );
+      // 3. Se online prova a sincronizzarli
+      if (navigator.onLine && savedPending.length > 0) {
+        try {
+          await Promise.all(
+            savedPending.map((change) =>
+              saveEntry({
+                userId: user.id,
+                date: change.date,
+                count: change.count,
+              }),
+            ),
+          );
 
-      clearPendingSync(user.id);
-setPendingChanges([]);
-    } catch (error) {
-      console.error(
-        "Errore sync pending:",
-        error,
-      );
+          clearPendingSync(user.id);
+          setPendingChanges([]);
+        } catch (error) {
+          console.error("Errore sync pending:", error);
+        }
+      }
+
+      try {
+        const data = await getEntries(user.id);
+
+        if (data.length === 0 && hasAnonymousEntries()) {
+          const anonymousEntries = loadAnonymousEntries();
+
+          await importEntries(user.id, anonymousEntries);
+
+          localStorage.removeItem("entries_anonymous");
+
+          const migratedData = await getEntries(user.id);
+
+          const formattedEntries = {};
+
+          migratedData.forEach((entry) => {
+            formattedEntries[entry.date] = entry.count;
+          });
+
+          setEntries(formattedEntries);
+
+          return;
+        }
+
+        const formattedEntries = {};
+
+        data.forEach((entry) => {
+          formattedEntries[entry.date] = entry.count;
+        });
+
+        setEntries(formattedEntries);
+      } catch (error) {
+        console.error("Errore caricamento entries:", error);
+
+        // Se siamo offline resta la cache locale
+      }
     }
-  }
-
-  try {
-    const data = await getEntries(user.id);
-
-    if (
-      data.length === 0 &&
-      hasAnonymousEntries()
-    ) {
-      const anonymousEntries =
-        loadAnonymousEntries();
-
-      await importEntries(
-        user.id,
-        anonymousEntries,
-      );
-
-      localStorage.removeItem(
-        "entries_anonymous",
-      );
-
-      const migratedData =
-        await getEntries(user.id);
-
-      const formattedEntries = {};
-
-      migratedData.forEach((entry) => {
-        formattedEntries[entry.date] =
-          entry.count;
-      });
-
-      setEntries(formattedEntries);
-
-      return;
-    }
-
-    const formattedEntries = {};
-
-    data.forEach((entry) => {
-      formattedEntries[entry.date] =
-        entry.count;
-    });
-
-    setEntries(formattedEntries);
-  } catch (error) {
-    console.error(
-      "Errore caricamento entries:",
-      error,
-    );
-
-    // Se siamo offline resta la cache locale
-  }
-}
 
     bootstrapEntries();
   }, [user, authLoading]);
@@ -210,6 +192,28 @@ setPendingChanges([]);
     return nextPendingChanges;
   }
 
+  async function syncEntry(date, count) {
+    try {
+      await saveEntry({
+        userId: user.id,
+        date,
+        count,
+      });
+
+      if (pendingChanges.length > 0) {
+        await flushPendingChanges();
+      }
+
+      setSyncStatus("synced");
+    } catch (error) {
+      console.error(error);
+
+      createPendingChanges(date, count);
+
+      setSyncStatus("pending");
+    }
+  }
+
   async function incrementToday() {
     const newEntries = {
       ...entries,
@@ -219,32 +223,9 @@ setPendingChanges([]);
     setEntries(newEntries);
 
     if (user) {
-  saveUserEntries(
-    user.id,
-    newEntries,
-  );
-}
+      saveUserEntries(user.id, newEntries);
 
-    if (user) {
-      try {
-        await saveEntry({
-          userId: user.id,
-          date: today,
-          count: newEntries[today],
-        });
-
-        if (pendingChanges.length > 0) {
-          await flushPendingChanges();
-        }
-
-        setSyncStatus("synced");
-      } catch (error) {
-        console.error(error);
-
-        createPendingChanges(today, newEntries[today]);
-
-        setSyncStatus("error");
-      }
+      await syncEntry(today, newEntries[today]);
     }
 
     return newEntries;
@@ -263,32 +244,9 @@ setPendingChanges([]);
     setEntries(newEntries);
 
     if (user) {
-  saveUserEntries(
-    user.id,
-    newEntries,
-  );
-}
+      saveUserEntries(user.id, newEntries);
 
-    if (user) {
-      try {
-        await saveEntry({
-          userId: user.id,
-          date: today,
-          count: newEntries[today],
-        });
-
-        if (pendingChanges.length > 0) {
-          await flushPendingChanges();
-        }
-
-        setSyncStatus("synced");
-      } catch (error) {
-        console.error(error);
-
-        createPendingChanges(today, newEntries[today]);
-
-        setSyncStatus("error");
-      }
+      await syncEntry(today, newEntries[today]);
     }
 
     return newEntries;

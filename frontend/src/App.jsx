@@ -6,10 +6,9 @@ import { Toaster } from "react-hot-toast";
 import Home from "./pages/Home";
 import Report from "./pages/Report";
 import Achievements from "./pages/Achievements";
-
+import Settings from "./pages/Settings";
 
 export default function App() {
-  
   return (
     <BrowserRouter>
       <Toaster
@@ -26,6 +25,7 @@ export default function App() {
 
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/Achievements" element={<Achievements />} />
         <Route path="/report" element={<Report />} />
       </Routes>
