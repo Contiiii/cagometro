@@ -24,65 +24,54 @@ export function EntriesProvider({ children }) {
 
   const [entries, setEntries] = useState({});
 
+  const [syncStatus, setSyncStatus] = useState("synced");
+
   const today = getLocalDateKey();
 
   useEffect(() => {
-  if (authLoading) return;
+    if (authLoading) return;
 
-  async function bootstrapEntries() {
-    if (!user) {
-      setEntries(loadAnonymousEntries());
-      return;
-    }
-
-    try {
-      const data = await getEntries(user.id);
-
-      if (
-        data.length === 0 &&
-        hasAnonymousEntries()
-      ) {
-        const anonymousEntries =
-          loadAnonymousEntries();
-
-        await importEntries(
-          user.id,
-          anonymousEntries,
-        );
-
-        const migratedData =
-          await getEntries(user.id);
-
-        const formattedEntries = {};
-
-        migratedData.forEach((entry) => {
-          formattedEntries[entry.date] =
-            entry.count;
-        });
-
-        setEntries(formattedEntries);
-
+    async function bootstrapEntries() {
+      if (!user) {
+        setEntries(loadAnonymousEntries());
         return;
       }
 
-      const formattedEntries = {};
+      try {
+        const data = await getEntries(user.id);
 
-      data.forEach((entry) => {
-        formattedEntries[entry.date] =
-          entry.count;
-      });
+        if (data.length === 0 && hasAnonymousEntries()) {
+          const anonymousEntries = loadAnonymousEntries();
 
-      setEntries(formattedEntries);
-    } catch (error) {
-      console.error(
-        "Errore caricamento entries:",
-        error,
-      );
+          await importEntries(user.id, anonymousEntries);
+
+          const migratedData = await getEntries(user.id);
+
+          const formattedEntries = {};
+
+          migratedData.forEach((entry) => {
+            formattedEntries[entry.date] = entry.count;
+          });
+
+          setEntries(formattedEntries);
+
+          return;
+        }
+
+        const formattedEntries = {};
+
+        data.forEach((entry) => {
+          formattedEntries[entry.date] = entry.count;
+        });
+
+        setEntries(formattedEntries);
+      } catch (error) {
+        console.error("Errore caricamento entries:", error);
+      }
     }
-  }
 
-  bootstrapEntries();
-}, [user, authLoading]);
+    bootstrapEntries();
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -105,11 +94,20 @@ export function EntriesProvider({ children }) {
     setEntries(newEntries);
 
     if (user) {
-      await saveEntry({
-        userId: user.id,
-        date: today,
-        count: newEntries[today],
-      });
+      try {
+
+        await saveEntry({
+          userId: user.id,
+          date: today,
+          count: newEntries[today],
+        });
+
+        setSyncStatus("synced");
+      } catch (error) {
+        console.error(error);
+
+        setSyncStatus("error");
+      }
     }
 
     return newEntries;
@@ -128,11 +126,20 @@ export function EntriesProvider({ children }) {
     setEntries(newEntries);
 
     if (user) {
-      await saveEntry({
-        userId: user.id,
-        date: today,
-        count: newEntries[today],
-      });
+      try {
+
+        await saveEntry({
+          userId: user.id,
+          date: today,
+          count: newEntries[today],
+        });
+
+        setSyncStatus("synced");
+      } catch (error) {
+        console.error(error);
+
+        setSyncStatus("error");
+      }
     }
 
     return newEntries;
@@ -143,6 +150,7 @@ export function EntriesProvider({ children }) {
       value={{
         entries,
         setEntries,
+        syncStatus,
         today,
         todayCount,
         incrementToday,

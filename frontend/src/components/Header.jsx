@@ -1,6 +1,7 @@
 import poop from "../assets/poop.png";
 import { useAuth } from "../hooks/useAuth";
 import ProfileButton from "./ProfileButton";
+import SyncStatus from "./SyncStatus";
 
 export default function Header() {
   const { user, login, logout } = useAuth();
@@ -89,7 +90,15 @@ pb-16
         </div>
 
         <div className="ml-auto shrink-0">
-          <ProfileButton user={user} login={login} logout={logout} />
+          <div className="ml-auto shrink-0 flex flex-col items-center">
+  <ProfileButton
+    user={user}
+    login={login}
+    logout={logout}
+  />
+
+  <SyncStatus />
+</div>
         </div>
       </div>
     </header>
