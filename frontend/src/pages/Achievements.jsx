@@ -1,14 +1,14 @@
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
+import { useEntries } from "../hooks/useEntries";
 
 import { motion } from "framer-motion";
 
 import { calculateStreak, getTotalHistorical } from "../utils/stats";
 
-import { loadEntries } from "../utils/storage";
 
 export default function Achievements() {
-  const entries = loadEntries();
+  const { entries } = useEntries();
 
   const totalHistorical = getTotalHistorical(entries);
   const streak = calculateStreak(entries);

@@ -17,7 +17,7 @@ import { useAchievements } from "../hooks/useAchievements";
 import { calculateStreak } from "../utils/stats";
 
 
-function App() {
+function Home() {
 
   const {
     unlockedAchievement,
@@ -194,4 +194,4 @@ function App() {
   );
 }
 
-export default App;
+export default Home;

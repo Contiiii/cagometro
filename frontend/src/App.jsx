@@ -1,5 +1,3 @@
-import "./App.css";
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
@@ -26,7 +24,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/Achievements" element={<Achievements />} />
+        <Route path="/achievements" element={<Achievements />} />
         <Route path="/report" element={<Report />} />
       </Routes>
     </BrowserRouter>

@@ -33,14 +33,6 @@ export function saveAnonymousEntries(
   );
 }
 
-export function loadEntries() {
-  return loadAnonymousEntries();
-}
-
-export function saveEntries(entries) {
-  saveAnonymousEntries(entries);
-}
-
 function getUserEntriesKey(userId) {
   return `entries_user_${userId}`;
 }
