@@ -4,6 +4,7 @@ import PoopButton from "../components/PoopButton.jsx";
 import UndoBotton from "../components/UndoBotton.jsx";
 import BottomNav from "../components/BottomNav.jsx";
 import AchievementModal from "../components/AchievementModal";
+import CloudBackupWarning from "../components/CloudBackupWarning.jsx";
 
 import { useState, useEffect } from "react";
 import Confetti from "react-confetti";
@@ -67,6 +68,7 @@ function App() {
     >
       <div className="relative z-10 flex h-full flex-col">
         <Header />
+        <CloudBackupWarning />
 
         <main
           className="

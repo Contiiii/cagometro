@@ -4,12 +4,17 @@ import { EntriesContext } from "./entries-context";
 
 import { useAuth } from "../hooks/useAuth";
 
-import { getEntries, saveEntry } from "../services/entriesService";
+import {
+  getEntries,
+  saveEntry,
+  importEntries,
+} from "../services/entriesService";
 
 import {
   loadAnonymousEntries,
   saveAnonymousEntries,
   saveUserEntries,
+  hasAnonymousEntries,
 } from "../utils/storage";
 
 import { getLocalDateKey } from "../utils/date";
@@ -17,51 +22,77 @@ import { getLocalDateKey } from "../utils/date";
 export function EntriesProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
 
-  const [entries, setEntries] =
-  useState(loadAnonymousEntries);
-
+  const [entries, setEntries] = useState({});
 
   const today = getLocalDateKey();
-
-
-  useEffect(() => {
-    async function loadCloudEntries() {
-      if (authLoading || !user) return;
-
-      try {
-        const data = await getEntries(user.id);
-
-        const formattedEntries = {};
-
-        data.forEach((entry) => {
-          formattedEntries[entry.date] = entry.count;
-        });
-
-        setEntries(formattedEntries);
-      } catch (error) {
-        console.error("Errore caricamento entries:", error);
-      }
-    }
-
-    loadCloudEntries();
-  }, [user, authLoading]);
 
   useEffect(() => {
   if (authLoading) return;
 
-  if (user) {
-    saveUserEntries(
-      user.id,
-      entries,
-    );
-  } else {
-    saveAnonymousEntries(entries);
+  async function bootstrapEntries() {
+    if (!user) {
+      setEntries(loadAnonymousEntries());
+      return;
+    }
+
+    try {
+      const data = await getEntries(user.id);
+
+      if (
+        data.length === 0 &&
+        hasAnonymousEntries()
+      ) {
+        const anonymousEntries =
+          loadAnonymousEntries();
+
+        await importEntries(
+          user.id,
+          anonymousEntries,
+        );
+
+        const migratedData =
+          await getEntries(user.id);
+
+        const formattedEntries = {};
+
+        migratedData.forEach((entry) => {
+          formattedEntries[entry.date] =
+            entry.count;
+        });
+
+        setEntries(formattedEntries);
+
+        return;
+      }
+
+      const formattedEntries = {};
+
+      data.forEach((entry) => {
+        formattedEntries[entry.date] =
+          entry.count;
+      });
+
+      setEntries(formattedEntries);
+    } catch (error) {
+      console.error(
+        "Errore caricamento entries:",
+        error,
+      );
+    }
   }
-}, [
-  entries,
-  user,
-  authLoading,
-]);
+
+  bootstrapEntries();
+}, [user, authLoading]);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (user) {
+      saveUserEntries(user.id, entries);
+    } else {
+      saveAnonymousEntries(entries);
+    }
+  }, [entries, user, authLoading]);
 
   const todayCount = entries[today] || 0;
 

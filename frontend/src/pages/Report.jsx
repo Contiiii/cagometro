@@ -3,6 +3,7 @@ import BottomNav from "../components/BottomNav";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { getLocalDateKey } from "../utils/date";
+import { useEntries } from "../hooks/useEntries";
 
 import {
   getLastNDaysTotal,
@@ -25,7 +26,7 @@ import {
 } from "recharts";
 
 export default function Report() {
-  const entries = JSON.parse(localStorage.getItem("entries")) || {};
+  const { entries } = useEntries();
   const today = getLocalDateKey();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
