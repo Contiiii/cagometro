@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import { EntriesContext } from "./entries-context";
 
@@ -15,6 +15,8 @@ import {
   saveAnonymousEntries,
   saveUserEntries,
   hasAnonymousEntries,
+  savePendingSync,
+  clearPendingSync,
 } from "../utils/storage";
 
 import { getLocalDateKey } from "../utils/date";
@@ -26,7 +28,57 @@ export function EntriesProvider({ children }) {
 
   const [syncStatus, setSyncStatus] = useState("synced");
 
+  const [pendingChanges, setPendingChanges] = useState([]);
+
   const today = getLocalDateKey();
+
+  useEffect(() => {
+    console.log("Pending:", pendingChanges);
+  }, [pendingChanges]);
+
+  const flushPendingChanges = useCallback(async () => {
+    if (!user || pendingChanges.length === 0) {
+      return;
+    }
+
+    try {
+      await Promise.all(
+        pendingChanges.map((change) =>
+          saveEntry({
+            userId: user.id,
+            date: change.date,
+            count: change.count,
+          }),
+        ),
+      );
+
+      setPendingChanges([]);
+      clearPendingSync(user.id);
+      setSyncStatus("synced");
+    } catch {
+      setSyncStatus("error");
+    }
+  }, [user, pendingChanges]);
+
+  useEffect(() => {
+    function handleOnline() {
+      if (pendingChanges.length > 0) {
+        flushPendingChanges();
+      }
+    }
+
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+    };
+  }, [flushPendingChanges, pendingChanges]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    savePendingSync(user.id, pendingChanges);
+  }, [user, pendingChanges]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -85,6 +137,20 @@ export function EntriesProvider({ children }) {
 
   const todayCount = entries[today] || 0;
 
+  function addPendingChange(date, count) {
+    setPendingChanges((current) => {
+      const filtered = current.filter((change) => change.date !== date);
+
+      return [
+        ...filtered,
+        {
+          date,
+          count,
+        },
+      ];
+    });
+  }
+
   async function incrementToday() {
     const newEntries = {
       ...entries,
@@ -95,16 +161,21 @@ export function EntriesProvider({ children }) {
 
     if (user) {
       try {
-
         await saveEntry({
           userId: user.id,
           date: today,
           count: newEntries[today],
         });
 
+        if (pendingChanges.length > 0) {
+          await flushPendingChanges();
+        }
+
         setSyncStatus("synced");
       } catch (error) {
         console.error(error);
+
+        addPendingChange(today, newEntries[today]);
 
         setSyncStatus("error");
       }
@@ -127,16 +198,21 @@ export function EntriesProvider({ children }) {
 
     if (user) {
       try {
-
         await saveEntry({
           userId: user.id,
           date: today,
           count: newEntries[today],
         });
 
+        if (pendingChanges.length > 0) {
+          await flushPendingChanges();
+        }
+
         setSyncStatus("synced");
       } catch (error) {
         console.error(error);
+
+        addPendingChange(today, newEntries[today]);
 
         setSyncStatus("error");
       }

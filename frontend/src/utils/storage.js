@@ -76,3 +76,31 @@ export function clearAnonymousEntries() {
     ANONYMOUS_ENTRIES_KEY,
   );
 }
+
+function getPendingSyncKey(userId) {
+  return `pending_sync_${userId}`;
+}
+
+export function loadPendingSync(userId) {
+  return JSON.parse(
+    localStorage.getItem(
+      getPendingSyncKey(userId),
+    ) || "[]",
+  );
+}
+
+export function savePendingSync(
+  userId,
+  changes,
+) {
+  localStorage.setItem(
+    getPendingSyncKey(userId),
+    JSON.stringify(changes),
+  );
+}
+
+export function clearPendingSync(userId) {
+  localStorage.removeItem(
+    getPendingSyncKey(userId),
+  );
+}

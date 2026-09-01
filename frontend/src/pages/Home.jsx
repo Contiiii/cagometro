@@ -148,17 +148,6 @@ function App() {
             onClick={async () => {
               const newEntries = await incrementToday();
 
-              if (user) {
-
-                const today = getLocalDateKey();
-
-                await saveEntry({
-                  userId: user.id,
-                  date: today,
-                  count: newEntries[today],
-                });
-              }
-
               if ("vibrate" in navigator) {
                 navigator.vibrate(50);
               }
