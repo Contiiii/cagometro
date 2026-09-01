@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import toast from "react-hot-toast";
 
 import {
@@ -7,12 +6,22 @@ import {
   saveShownAchievements,
 } from "../utils/storage";
 
+import {
+  ACHIEVEMENTS,
+  getAchievementProgress,
+} from "../config/achievements";
+
 export function useAchievements() {
-  const [unlockedAchievement, setUnlockedAchievement] =
-    useState(null);
+  const [
+    achievementQueue,
+    setAchievementQueue,
+  ] = useState([]);
 
   const [showConfetti, setShowConfetti] =
     useState(false);
+
+  const unlockedAchievement =
+    achievementQueue[0] ?? null;
 
   function checkAchievements(
     total,
@@ -21,52 +30,57 @@ export function useAchievements() {
     const shownAchievements =
       getShownAchievements();
 
-    const achievements = [
-      {
-        title: "Prima Cacca",
-        unlocked: total >= 1,
-      },
-      {
-        title: "Abitudinario",
-        unlocked: total >= 10,
-      },
-      {
-        title: "Veterano",
-        unlocked: total >= 100,
-      },
-      {
-        title: "Costante",
-        unlocked: currentStreak >= 7,
-      },
-      {
-        title: "Leggenda",
-        unlocked: currentStreak >= 30,
-      },
+    const newAchievements =
+      ACHIEVEMENTS.filter(
+        (achievement) => {
+          const progress =
+            getAchievementProgress(
+              achievement,
+              {
+                total,
+                streak: currentStreak,
+              },
+            );
+
+          return (
+            progress >= achievement.target &&
+            !shownAchievements.includes(
+              achievement.id,
+            )
+          );
+        },
+      );
+
+    if (newAchievements.length === 0) {
+      return;
+    }
+
+    const updatedShownAchievements = [
+      ...new Set([
+        ...shownAchievements,
+        ...newAchievements.map(
+          (achievement) => achievement.id,
+        ),
+      ]),
     ];
 
-    let updated = [...shownAchievements];
+    saveShownAchievements(
+      updatedShownAchievements,
+    );
 
-    achievements.forEach((achievement) => {
-      if (
-        achievement.unlocked &&
-        !shownAchievements.includes(
-          achievement.title,
-        )
-      ) {
-        setUnlockedAchievement(
-          achievement,
-        );
+    setAchievementQueue((currentQueue) => [
+      ...currentQueue,
+      ...newAchievements,
+    ]);
 
-        setShowConfetti(true);
+    setShowConfetti(true);
 
-        setTimeout(() => {
-          setShowConfetti(false);
-        }, 3000);
+    window.setTimeout(() => {
+      setShowConfetti(false);
+    }, 3000);
 
-        setTimeout(() => {
-          setUnlockedAchievement(null);
-        }, 3000);
-
+    newAchievements.forEach(
+      (achievement) => {
         toast.success(
           `🏆 ${achievement.title}`,
           {
@@ -81,20 +95,21 @@ export function useAchievements() {
             },
           },
         );
+      },
+    );
+  }
 
-        updated.push(
-          achievement.title,
-        );
-      }
-    });
-
-    saveShownAchievements(updated);
+  function closeAchievement() {
+    setAchievementQueue(
+      (currentQueue) =>
+        currentQueue.slice(1),
+    );
   }
 
   return {
     unlockedAchievement,
     showConfetti,
-    setUnlockedAchievement,
+    closeAchievement,
     checkAchievements,
   };
 }

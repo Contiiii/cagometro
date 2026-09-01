@@ -6,6 +6,12 @@ import { motion } from "framer-motion";
 
 import { calculateStreak, getTotalHistorical } from "../utils/stats";
 
+import {
+  ACHIEVEMENTS,
+  getAchievementProgress,
+} from "../config/achievements";
+
+
 
 export default function Achievements() {
   const { entries } = useEntries();
@@ -13,48 +19,25 @@ export default function Achievements() {
   const totalHistorical = getTotalHistorical(entries);
   const streak = calculateStreak(entries);
 
-  const achievements = [
-    {
-      title: "Prima Cacca",
-      description: "Registra la tua prima missione",
-      icon: "💩",
-      target: 1,
-      progress: totalHistorical,
-      unlocked: totalHistorical >= 1,
-    },
-    {
-      title: "Abitudinario",
-      description: "Raggiungi 10 registrazioni totali",
-      icon: "🔥",
-      target: 10,
-      progress: totalHistorical,
-      unlocked: totalHistorical >= 10,
-    },
-    {
-      title: "Veterano",
-      description: "Raggiungi 100 registrazioni totali",
-      icon: "🏆",
-      target: 100,
-      progress: totalHistorical,
-      unlocked: totalHistorical >= 100,
-    },
-    {
-      title: "Costante",
-      description: "Ottieni una streak di 7 giorni",
-      icon: "📅",
-      target: 7,
-      progress: streak,
-      unlocked: streak >= 7,
-    },
-    {
-      title: "Leggenda",
-      description: "Ottieni una streak di 30 giorni",
-      icon: "👑",
-      target: 30,
-      progress: streak,
-      unlocked: streak >= 30,
-    },
-  ];
+  const achievements = ACHIEVEMENTS.map(
+  (achievement) => {
+    const progress = getAchievementProgress(
+      achievement,
+      {
+        total: totalHistorical,
+        streak,
+      },
+    );
+
+    return {
+      ...achievement,
+      progress,
+      unlocked:
+        progress >= achievement.target,
+    };
+  },
+);
+
 
   const completedAchievements = achievements.filter(
     (achievement) => achievement.unlocked,

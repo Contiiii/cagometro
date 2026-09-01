@@ -16,13 +16,11 @@ import { useAchievements } from "../hooks/useAchievements";
 
 import { calculateStreak } from "../utils/stats";
 
-
 function Home() {
-
   const {
     unlockedAchievement,
     showConfetti,
-    setUnlockedAchievement,
+    closeAchievement,
     checkAchievements,
   } = useAchievements();
 
@@ -185,7 +183,7 @@ function Home() {
         {/* Modale achievement */}
         <AchievementModal
           achievement={unlockedAchievement}
-          onClose={() => setUnlockedAchievement(null)}
+          onClose={closeAchievement}
         />
 
         <BottomNav />
