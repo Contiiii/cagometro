@@ -101,7 +101,7 @@ export default function Report() {
           <h1 className="text-3xl font-black text-pink-400">📊 Report</h1>
 
           <p className="mt-1 text-sm text-zinc-500">
-            Tutti i numeri del tuo glorioso trono
+            Il WC dimentica, CAGOMETRO no.
           </p>
         </div>
 

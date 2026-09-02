@@ -9,7 +9,7 @@ import {
 import {
   ACHIEVEMENTS,
   getAchievementProgress,
-} from "../config/achievements";
+} from "../config/achievements.js";
 
 export function useAchievements() {
   const [
@@ -68,11 +68,12 @@ export function useAchievements() {
       updatedShownAchievements,
     );
 
-    setAchievementQueue((currentQueue) => [
-      ...currentQueue,
-      ...newAchievements,
-    ]);
-
+setAchievementQueue(
+  (currentQueue) => [
+    ...currentQueue,
+    ...newAchievements,
+  ],
+);
     setShowConfetti(true);
 
     window.setTimeout(() => {
@@ -99,7 +100,46 @@ export function useAchievements() {
     );
   }
 
-  function closeAchievement() {
+  function resetLockedAchievements(
+    total,
+    currentStreak,
+  ) {
+    const shownAchievements =
+      getShownAchievements();
+
+    const stillUnlockedIds =
+      ACHIEVEMENTS.filter(
+        (achievement) => {
+          const progress =
+            getAchievementProgress(
+              achievement,
+              {
+                total,
+                streak: currentStreak,
+              },
+            );
+
+          return (
+            progress >= achievement.target
+          );
+        },
+      ).map(
+        (achievement) => achievement.id,
+      );
+
+    const updatedShownAchievements =
+      shownAchievements.filter(
+        (achievementId) =>
+          stillUnlockedIds.includes(
+            achievementId,
+          ),
+      );
+
+    saveShownAchievements(
+      updatedShownAchievements,
+    );
+  }
+function closeAchievement() {
     setAchievementQueue(
       (currentQueue) =>
         currentQueue.slice(1),
@@ -111,5 +151,6 @@ export function useAchievements() {
     showConfetti,
     closeAchievement,
     checkAchievements,
+    resetLockedAchievements,
   };
 }

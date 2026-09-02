@@ -256,7 +256,6 @@ export function EntriesProvider({ children }) {
     <EntriesContext.Provider
       value={{
         entries,
-        setEntries,
         syncStatus,
         today,
         todayCount,

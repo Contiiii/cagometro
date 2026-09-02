@@ -2,16 +2,14 @@ import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 import { useEntries } from "../hooks/useEntries";
 
-import { motion } from "framer-motion";
-
-import { calculateStreak, getTotalHistorical } from "../utils/stats";
-
 import {
   ACHIEVEMENTS,
   getAchievementProgress,
-} from "../config/achievements";
+} from "../config/achievements.js";
 
+import { motion } from "framer-motion";
 
+import { calculateStreak, getTotalHistorical } from "../utils/stats";
 
 export default function Achievements() {
   const { entries } = useEntries();
@@ -19,26 +17,17 @@ export default function Achievements() {
   const totalHistorical = getTotalHistorical(entries);
   const streak = calculateStreak(entries);
 
-  const achievements = ACHIEVEMENTS.map(
-  (achievement) => {
-    const progress = getAchievementProgress(
-      achievement,
-      {
-        total: totalHistorical,
-        streak,
-      },
-    );
-
+  const achievements = ACHIEVEMENTS.map((achievement) => {
+    const progress = getAchievementProgress(achievement, {
+      total: totalHistorical,
+      streak,
+    });
     return {
       ...achievement,
       progress,
-      unlocked:
-        progress >= achievement.target,
+      unlocked: progress >= achievement.target,
     };
-  },
-);
-
-
+  });
   const completedAchievements = achievements.filter(
     (achievement) => achievement.unlocked,
   ).length;
@@ -220,7 +209,7 @@ export default function Achievements() {
 
               return (
                 <motion.div
-                  key={achievement.title}
+                  key={achievement.id}
                   initial={{
                     opacity: 0,
                     y: 16,

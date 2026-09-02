@@ -22,6 +22,7 @@ function Home() {
     showConfetti,
     closeAchievement,
     checkAchievements,
+    resetLockedAchievements,
   } = useAchievements();
 
   const { entries, todayCount, incrementToday, decrementToday } = useEntries();
@@ -158,7 +159,20 @@ function Home() {
 
           {/* Annulla */}
           <div className="mt-1">
-            <UndoBotton onClick={decrementToday} />
+            <UndoBotton
+              onClick={async () => {
+                const newEntries = await decrementToday();
+
+                const total = Object.values(newEntries).reduce(
+                  (sum, value) => sum + value,
+                  0,
+                );
+
+                const updatedStreak = calculateStreak(newEntries);
+
+                resetLockedAchievements(total, updatedStreak);
+              }}
+            />
           </div>
         </main>
 
