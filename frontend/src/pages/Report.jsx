@@ -1,6 +1,6 @@
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { getLocalDateKey } from "../utils/date";
 import { useEntries } from "../hooks/useEntries";
@@ -44,9 +44,23 @@ export default function Report() {
 
   const elapsedDays = isCurrentMonth ? currentMonth.getDate() : daysInMonth;
 
-  const monthTotal = getMonthTotal(entries, selectedMonth);
+  const monthTotal = useMemo(
+    () => getMonthTotal(entries, selectedMonth),
+    [entries, selectedMonth],
+  );
 
   const monthAverage = (monthTotal / elapsedDays).toFixed(1);
+
+  const totalHistorical = useMemo(() => getTotalHistorical(entries), [entries]);
+
+  const weeklyTotal = useMemo(() => getLastNDaysTotal(entries, 7), [entries]);
+
+  const yearlyTotal = useMemo(() => getLastNDaysTotal(entries, 365), [entries]);
+
+  const recordHistorical = useMemo(
+    () => getRecordHistorical(entries),
+    [entries],
+  );
 
   const monthLabel = selectedMonth.toLocaleDateString("it-IT", {
     month: "long",
@@ -55,17 +69,9 @@ export default function Report() {
 
   const todayCount = entries[today] || 0;
 
-  const totalHistorical = getTotalHistorical(entries);
-  const weeklyTotal = getLastNDaysTotal(entries, 7);
-  const yearlyTotal = getLastNDaysTotal(entries, 365);
   const hasEntries = totalHistorical > 0;
-  const recordHistorical = getRecordHistorical(entries);
 
-  {
-    /*dati per grafici */
-  }
-
-  const weeklyChartData = getWeeklyChartData(entries);
+  const weeklyChartData = useMemo(() => getWeeklyChartData(entries), [entries]);
 
   const monthlyChartData = getMonthChartData(entries, selectedMonth);
 
@@ -271,7 +277,7 @@ text-center
                 </p>
 
                 <p className="mt-1 text-xs text-zinc-500">
-                  Media: {((weeklyTotal) / 7).toFixed(1)}
+                  Media: {(weeklyTotal / 7).toFixed(1)}
                 </p>
               </div>
             </div>
