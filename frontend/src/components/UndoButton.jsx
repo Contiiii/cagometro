@@ -1,4 +1,4 @@
-export default function UndoBotton({ onClick }) {
+export default function UndoButton({ onClick }) {
   return (
     <button
       type="button"

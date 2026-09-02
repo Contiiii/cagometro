@@ -1,7 +1,7 @@
 import Header from "../components/Header.jsx";
 import Streak from "../components/Streak.jsx";
 import PoopButton from "../components/PoopButton.jsx";
-import UndoBotton from "../components/UndoBotton.jsx";
+import UndoButton from "../components/UndoButton.jsx";
 import BottomNav from "../components/BottomNav.jsx";
 import AchievementModal from "../components/AchievementModal";
 import CloudBackupWarning from "../components/CloudBackupWarning.jsx";
@@ -159,7 +159,7 @@ function Home() {
 
           {/* Annulla */}
           <div className="mt-1">
-            <UndoBotton
+            <UndoButton
               onClick={async () => {
                 const newEntries = await decrementToday();
 
