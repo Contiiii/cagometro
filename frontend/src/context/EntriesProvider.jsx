@@ -23,6 +23,13 @@ import {
 
 import { getLocalDateKey } from "../utils/date";
 
+function formatEntries(entriesList) {
+  return entriesList.reduce((acc, entry) => {
+    acc[entry.date] = entry.count;
+    return acc;
+  }, {});
+}
+
 export function EntriesProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
 
@@ -32,7 +39,7 @@ export function EntriesProvider({ children }) {
 
   const [pendingChanges, setPendingChanges] = useState([]);
 
-  const today = getLocalDateKey();
+  const [today] = useState(() => getLocalDateKey());
 
   const flushPendingChanges = useCallback(
     async (changes = pendingChanges) => {
@@ -41,6 +48,7 @@ export function EntriesProvider({ children }) {
       }
 
       try {
+
         await Promise.all(
           changes.map((change) =>
             saveEntry({
@@ -128,30 +136,16 @@ export function EntriesProvider({ children }) {
         if (data.length === 0 && hasAnonymousEntries()) {
           const anonymousEntries = loadAnonymousEntries();
 
-          await importEntries(user.id, anonymousEntries);
+          const migratedData = await importEntries(user.id, anonymousEntries);
 
           localStorage.removeItem("entries_anonymous");
 
-          const migratedData = await getEntries(user.id);
-
-          const formattedEntries = {};
-
-          migratedData.forEach((entry) => {
-            formattedEntries[entry.date] = entry.count;
-          });
-
-          setEntries(formattedEntries);
+          setEntries(formatEntries(migratedData));
 
           return;
         }
 
-        const formattedEntries = {};
-
-        data.forEach((entry) => {
-          formattedEntries[entry.date] = entry.count;
-        });
-
-        setEntries(formattedEntries);
+        setEntries(formatEntries(data));
       } catch (error) {
         console.error("Errore caricamento entries:", error);
 
@@ -175,34 +169,33 @@ export function EntriesProvider({ children }) {
   const todayCount = entries[today] || 0;
 
   function createPendingChanges(date, count) {
-    const nextPendingChanges = [
-      ...pendingChanges.filter((change) => change.date !== date),
-      {
-        date,
-        count,
-      },
-    ];
+    setPendingChanges((prev) => {
+      const nextPendingChanges = [
+        ...prev.filter((change) => change.date !== date),
+        {
+          date,
+          count,
+        },
+      ];
 
-    setPendingChanges(nextPendingChanges);
+      if (user) {
+        savePendingSync(user.id, nextPendingChanges);
+      }
 
-    if (user) {
-      savePendingSync(user.id, nextPendingChanges);
-    }
-
-    return nextPendingChanges;
+      return nextPendingChanges;
+    });
   }
 
   async function syncEntry(date, count) {
     try {
+
       await saveEntry({
         userId: user.id,
         date,
         count,
       });
 
-      if (pendingChanges.length > 0) {
-        await flushPendingChanges();
-      }
+      await flushPendingChanges();
 
       setSyncStatus("synced");
     } catch (error) {
@@ -220,7 +213,10 @@ export function EntriesProvider({ children }) {
       [today]: todayCount + 1,
     };
 
-    setEntries(newEntries);
+    setEntries((prev) => ({
+      ...prev,
+      [today]: (prev[today] || 0) + 1,
+    }));
 
     if (user) {
       saveUserEntries(user.id, newEntries);
@@ -241,7 +237,10 @@ export function EntriesProvider({ children }) {
       [today]: todayCount - 1,
     };
 
-    setEntries(newEntries);
+    setEntries((prev) => ({
+      ...prev,
+      [today]: Math.max(0, (prev[today] || 0) - 1),
+    }));
 
     if (user) {
       saveUserEntries(user.id, newEntries);
@@ -256,7 +255,6 @@ export function EntriesProvider({ children }) {
     <EntriesContext.Provider
       value={{
         entries,
-        setEntries,
         syncStatus,
         today,
         todayCount,

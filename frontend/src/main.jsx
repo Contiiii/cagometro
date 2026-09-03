@@ -7,16 +7,20 @@ import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthProvider.jsx";
 import { EntriesProvider } from "./context/EntriesProvider";
 
+import ErrorBoundary from "./components/ErrorBoundary";
+
 registerSW({
   immediate: true,
 });
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <AuthProvider>
-      <EntriesProvider>
-        <App />
-      </EntriesProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <EntriesProvider>
+          <App />
+        </EntriesProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

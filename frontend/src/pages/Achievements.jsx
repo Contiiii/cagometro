@@ -1,5 +1,13 @@
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
+import { useEntries } from "../hooks/useEntries";
+
+import { useMemo } from "react";
+
+import {
+  ACHIEVEMENTS,
+  getAchievementProgress,
+} from "../config/achievements.js";
 
 import { useEntries } from "../hooks/useEntries";
 
@@ -10,59 +18,34 @@ import { calculateStreak, getTotalHistorical } from "../utils/stats";
 export default function Achievements() {
   const { entries } = useEntries();
 
-  const totalHistorical = getTotalHistorical(entries);
-  const streak = calculateStreak(entries);
+  const totalHistorical = useMemo(() => getTotalHistorical(entries), [entries]);
 
-  const achievements = [
-    {
-      title: "Prima Cacca",
-      description: "Registra la tua prima missione",
-      icon: "💩",
-      target: 1,
-      progress: totalHistorical,
-      unlocked: totalHistorical >= 1,
-    },
-    {
-      title: "Abitudinario",
-      description: "Raggiungi 10 registrazioni totali",
-      icon: "🔥",
-      target: 10,
-      progress: totalHistorical,
-      unlocked: totalHistorical >= 10,
-    },
-    {
-      title: "Veterano",
-      description: "Raggiungi 100 registrazioni totali",
-      icon: "🏆",
-      target: 100,
-      progress: totalHistorical,
-      unlocked: totalHistorical >= 100,
-    },
-    {
-      title: "Costante",
-      description: "Ottieni una streak di 7 giorni",
-      icon: "📅",
-      target: 7,
-      progress: streak,
-      unlocked: streak >= 7,
-    },
-    {
-      title: "Leggenda",
-      description: "Ottieni una streak di 30 giorni",
-      icon: "👑",
-      target: 30,
-      progress: streak,
-      unlocked: streak >= 30,
-    },
-  ];
+  const streak = useMemo(() => calculateStreak(entries), [entries]);
 
-  const completedAchievements = achievements.filter(
-    (achievement) => achievement.unlocked,
-  ).length;
+  const achievements = useMemo(() => {
+    return ACHIEVEMENTS.map((achievement) => {
+      const progress = getAchievementProgress(achievement, {
+        total: totalHistorical,
+        streak,
+      });
 
-  const completionPercentage = Math.round(
-    (completedAchievements / achievements.length) * 100,
+      return {
+        ...achievement,
+        progress,
+        unlocked: progress >= achievement.target,
+      };
+    });
+  }, [totalHistorical, streak]);
+
+  const completedAchievements = useMemo(
+    () => achievements.filter((achievement) => achievement.unlocked).length,
+    [achievements],
   );
+
+  const completionPercentage =
+    achievements.length > 0
+      ? Math.round((completedAchievements / achievements.length) * 100)
+      : 0;
 
   return (
     <div
@@ -237,7 +220,7 @@ export default function Achievements() {
 
               return (
                 <motion.div
-                  key={achievement.title}
+                  key={achievement.id}
                   initial={{
                     opacity: 0,
                     y: 16,
@@ -248,7 +231,6 @@ export default function Achievements() {
                   }}
                   transition={{
                     duration: 0.3,
-                    delay: index * 0.07,
                   }}
                   whileHover={{
                     y: -3,

@@ -1,44 +1,33 @@
 const ANONYMOUS_ENTRIES_KEY = "entries_anonymous";
 
+const LEGACY_ACHIEVEMENT_IDS = {
+  "Prima Cacca": "prima-cacca",
+  Abitudinario: "abitudinario",
+  Veterano: "veterano",
+  Costante: "costante",
+  Leggenda: "leggenda",
+};
 
 export function getShownAchievements() {
-  return JSON.parse(
-    localStorage.getItem("shownAchievements") || "[]"
+  const storedAchievements = JSON.parse(
+    localStorage.getItem("shownAchievements") || "[]",
+  );
+
+  return storedAchievements.map(
+    (achievement) => LEGACY_ACHIEVEMENT_IDS[achievement] ?? achievement,
   );
 }
 
-export function saveShownAchievements(
-  achievements
-) {
-  localStorage.setItem(
-    "shownAchievements",
-    JSON.stringify(achievements)
-  );
+export function saveShownAchievements(achievements) {
+  localStorage.setItem("shownAchievements", JSON.stringify(achievements));
 }
 
 export function loadAnonymousEntries() {
-  return JSON.parse(
-    localStorage.getItem(
-      ANONYMOUS_ENTRIES_KEY
-    ) || "{}"
-  );
+  return JSON.parse(localStorage.getItem(ANONYMOUS_ENTRIES_KEY) || "{}");
 }
 
-export function saveAnonymousEntries(
-  entries
-) {
-  localStorage.setItem(
-    ANONYMOUS_ENTRIES_KEY,
-    JSON.stringify(entries)
-  );
-}
-
-export function loadEntries() {
-  return loadAnonymousEntries();
-}
-
-export function saveEntries(entries) {
-  saveAnonymousEntries(entries);
+export function saveAnonymousEntries(entries) {
+  localStorage.setItem(ANONYMOUS_ENTRIES_KEY, JSON.stringify(entries));
 }
 
 function getUserEntriesKey(userId) {
@@ -46,35 +35,19 @@ function getUserEntriesKey(userId) {
 }
 
 export function loadUserEntries(userId) {
-  return JSON.parse(
-    localStorage.getItem(
-      getUserEntriesKey(userId)
-    ) || "{}"
-  );
+  return JSON.parse(localStorage.getItem(getUserEntriesKey(userId)) || "{}");
 }
 
-export function saveUserEntries(
-  userId,
-  entries
-) {
-  localStorage.setItem(
-    getUserEntriesKey(userId),
-    JSON.stringify(entries)
-  );
+export function saveUserEntries(userId, entries) {
+  localStorage.setItem(getUserEntriesKey(userId), JSON.stringify(entries));
 }
 
 export function hasAnonymousEntries() {
-  return (
-    Object.keys(
-      loadAnonymousEntries(),
-    ).length > 0
-  );
+  return Object.keys(loadAnonymousEntries()).length > 0;
 }
 
 export function clearAnonymousEntries() {
-  localStorage.removeItem(
-    ANONYMOUS_ENTRIES_KEY,
-  );
+  localStorage.removeItem(ANONYMOUS_ENTRIES_KEY);
 }
 
 function getPendingSyncKey(userId) {
@@ -82,25 +55,13 @@ function getPendingSyncKey(userId) {
 }
 
 export function loadPendingSync(userId) {
-  return JSON.parse(
-    localStorage.getItem(
-      getPendingSyncKey(userId),
-    ) || "[]",
-  );
+  return JSON.parse(localStorage.getItem(getPendingSyncKey(userId)) || "[]");
 }
 
-export function savePendingSync(
-  userId,
-  changes,
-) {
-  localStorage.setItem(
-    getPendingSyncKey(userId),
-    JSON.stringify(changes),
-  );
+export function savePendingSync(userId, changes) {
+  localStorage.setItem(getPendingSyncKey(userId), JSON.stringify(changes));
 }
 
 export function clearPendingSync(userId) {
-  localStorage.removeItem(
-    getPendingSyncKey(userId),
-  );
+  localStorage.removeItem(getPendingSyncKey(userId));
 }

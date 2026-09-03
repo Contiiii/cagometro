@@ -1,12 +1,15 @@
-import "./App.css";
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import { Suspense, lazy } from "react";
 import { Toaster } from "react-hot-toast";
 
-import Home from "./pages/Home";
-import Report from "./pages/Report";
-import Achievements from "./pages/Achievements";
-import Settings from "./pages/Settings";
+const Home = lazy(() => import("./pages/Home"));
+
+const Report = lazy(() => import("./pages/Report"));
+
+const Achievements = lazy(() => import("./pages/Achievements"));
+
+const Settings = lazy(() => import("./pages/Settings"));
 
 export default function App() {
   return (
@@ -23,12 +26,32 @@ export default function App() {
         }}
       />
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/Achievements" element={<Achievements />} />
-        <Route path="/report" element={<Report />} />
-      </Routes>
+      <Suspense
+        fallback={
+          <div
+            className="
+        flex
+        min-h-dvh
+        items-center
+        justify-center
+        bg-black
+        text-white
+      "
+          >
+            Caricamento...
+          </div>
+        }
+      >
+        <Routes>
+          <Route path="/" element={<Home />} />
+
+          <Route path="/settings" element={<Settings />} />
+
+          <Route path="/achievements" element={<Achievements />} />
+
+          <Route path="/report" element={<Report />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

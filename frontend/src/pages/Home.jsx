@@ -1,7 +1,7 @@
 import Header from "../components/Header.jsx";
 import Streak from "../components/Streak.jsx";
 import PoopButton from "../components/PoopButton.jsx";
-import UndoBotton from "../components/UndoBotton.jsx";
+import UndoButton from "../components/UndoButton.jsx";
 import BottomNav from "../components/BottomNav.jsx";
 import AchievementModal from "../components/AchievementModal";
 import CloudBackupWarning from "../components/CloudBackupWarning.jsx";
@@ -16,14 +16,13 @@ import { useAchievements } from "../hooks/useAchievements";
 
 import { calculateStreak } from "../utils/stats";
 
-
-function App() {
-
+function Home() {
   const {
     unlockedAchievement,
     showConfetti,
-    setUnlockedAchievement,
+    closeAchievement,
     checkAchievements,
+    resetLockedAchievements,
   } = useAchievements();
 
   const { entries, todayCount, incrementToday, decrementToday } = useEntries();
@@ -160,7 +159,20 @@ function App() {
 
           {/* Annulla */}
           <div className="mt-1">
-            <UndoBotton onClick={decrementToday} />
+            <UndoButton
+              onClick={async () => {
+                const newEntries = await decrementToday();
+
+                const total = Object.values(newEntries).reduce(
+                  (sum, value) => sum + value,
+                  0,
+                );
+
+                const updatedStreak = calculateStreak(newEntries);
+
+                resetLockedAchievements(total, updatedStreak);
+              }}
+            />
           </div>
         </main>
 
@@ -185,7 +197,7 @@ function App() {
         {/* Modale achievement */}
         <AchievementModal
           achievement={unlockedAchievement}
-          onClose={() => setUnlockedAchievement(null)}
+          onClose={closeAchievement}
         />
 
         <BottomNav />
@@ -194,4 +206,4 @@ function App() {
   );
 }
 
-export default App;
+export default Home;
