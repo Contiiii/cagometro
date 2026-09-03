@@ -32,7 +32,7 @@ export function EntriesProvider({ children }) {
 
   const [pendingChanges, setPendingChanges] = useState([]);
 
-  const today = getLocalDateKey();
+  const [today] = useState(() => getLocalDateKey());
 
   const flushPendingChanges = useCallback(
     async (changes = pendingChanges) => {
@@ -85,6 +85,13 @@ export function EntriesProvider({ children }) {
   useEffect(() => {
     if (authLoading) return;
 
+    function formatEntries(entriesList) {
+      return entriesList.reduce((acc, entry) => {
+        acc[entry.date] = entry.count;
+        return acc;
+      }, {});
+    }
+
     async function bootstrapEntries() {
       if (!user) {
         setEntries(loadAnonymousEntries());
@@ -132,24 +139,12 @@ export function EntriesProvider({ children }) {
 
           localStorage.removeItem("entries_anonymous");
 
-          const formattedEntries = {};
-
-          migratedData.forEach((entry) => {
-            formattedEntries[entry.date] = entry.count;
-          });
-
-          setEntries(formattedEntries);
+          setEntries(formatEntries(migratedData));
 
           return;
         }
 
-        const formattedEntries = {};
-
-        data.forEach((entry) => {
-          formattedEntries[entry.date] = entry.count;
-        });
-
-        setEntries(formattedEntries);
+        setEntries(formatEntries(data));
       } catch (error) {
         console.error("Errore caricamento entries:", error);
 
