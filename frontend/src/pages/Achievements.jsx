@@ -229,7 +229,6 @@ export default function Achievements() {
                   }}
                   transition={{
                     duration: 0.3,
-                    delay: index * 0.07,
                   }}
                   whileHover={{
                     y: -3,
