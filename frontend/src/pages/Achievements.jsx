@@ -9,8 +9,6 @@ import {
   getAchievementProgress,
 } from "../config/achievements.js";
 
-import { useEntries } from "../hooks/useEntries";
-
 import { motion } from "framer-motion";
 
 import { calculateStreak, getTotalHistorical } from "../utils/stats";
