@@ -16,8 +16,9 @@ import { calculateStreak, getTotalHistorical } from "../utils/stats";
 export default function Achievements() {
   const { entries } = useEntries();
 
-  const totalHistorical = getTotalHistorical(entries);
-  const streak = calculateStreak(entries);
+  const totalHistorical = useMemo(() => getTotalHistorical(entries), [entries]);
+
+  const streak = useMemo(() => calculateStreak(entries), [entries]);
 
   const achievements = useMemo(() => {
     return ACHIEVEMENTS.map((achievement) => {
