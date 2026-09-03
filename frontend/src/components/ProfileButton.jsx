@@ -37,8 +37,8 @@ export default function ProfileButton({ user, login }) {
   return (
     <Link
       to="/settings"
-      aria-label={`Esci dall'account ${userName}`}
-      title={`Esci da ${userName}`}
+      aria-label={`Apri le impostazioni ${userName}`}
+      title={`Apri le impostazioni di ${userName}`}
       className="
       group
       relative

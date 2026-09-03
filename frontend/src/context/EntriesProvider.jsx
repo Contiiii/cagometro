@@ -48,6 +48,7 @@ export function EntriesProvider({ children }) {
       }
 
       try {
+
         await Promise.all(
           changes.map((change) =>
             saveEntry({
@@ -187,6 +188,7 @@ export function EntriesProvider({ children }) {
 
   async function syncEntry(date, count) {
     try {
+
       await saveEntry({
         userId: user.id,
         date,
