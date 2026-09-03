@@ -128,11 +128,9 @@ export function EntriesProvider({ children }) {
         if (data.length === 0 && hasAnonymousEntries()) {
           const anonymousEntries = loadAnonymousEntries();
 
-          await importEntries(user.id, anonymousEntries);
+          const migratedData = await importEntries(user.id, anonymousEntries);
 
           localStorage.removeItem("entries_anonymous");
-
-          const migratedData = await getEntries(user.id);
 
           const formattedEntries = {};
 
