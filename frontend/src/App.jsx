@@ -9,7 +9,7 @@ const Report = lazy(() => import("./pages/Report"));
 
 const Achievements = lazy(() => import("./pages/Achievements"));
 
-const Settings = lazy(() => import("./pages/settings"));
+const Settings = lazy(() => import("./pages/Settings"));
 
 export default function App() {
   return (
