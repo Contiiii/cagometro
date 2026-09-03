@@ -175,21 +175,21 @@ export function EntriesProvider({ children }) {
   const todayCount = entries[today] || 0;
 
   function createPendingChanges(date, count) {
-    const nextPendingChanges = [
-      ...pendingChanges.filter((change) => change.date !== date),
-      {
-        date,
-        count,
-      },
-    ];
+    setPendingChanges((prev) => {
+      const nextPendingChanges = [
+        ...prev.filter((change) => change.date !== date),
+        {
+          date,
+          count,
+        },
+      ];
 
-    setPendingChanges(nextPendingChanges);
+      if (user) {
+        savePendingSync(user.id, nextPendingChanges);
+      }
 
-    if (user) {
-      savePendingSync(user.id, nextPendingChanges);
-    }
-
-    return nextPendingChanges;
+      return nextPendingChanges;
+    });
   }
 
   async function syncEntry(date, count) {
@@ -200,9 +200,7 @@ export function EntriesProvider({ children }) {
         count,
       });
 
-      if (pendingChanges.length > 0) {
-        await flushPendingChanges();
-      }
+      await flushPendingChanges();
 
       setSyncStatus("synced");
     } catch (error) {
@@ -220,7 +218,10 @@ export function EntriesProvider({ children }) {
       [today]: todayCount + 1,
     };
 
-    setEntries(newEntries);
+    setEntries((prev) => ({
+      ...prev,
+      [today]: (prev[today] || 0) + 1,
+    }));
 
     if (user) {
       saveUserEntries(user.id, newEntries);
@@ -241,7 +242,10 @@ export function EntriesProvider({ children }) {
       [today]: todayCount - 1,
     };
 
-    setEntries(newEntries);
+    setEntries((prev) => ({
+      ...prev,
+      [today]: Math.max(0, (prev[today] || 0) - 1),
+    }));
 
     if (user) {
       saveUserEntries(user.id, newEntries);

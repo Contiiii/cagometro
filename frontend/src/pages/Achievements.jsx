@@ -2,6 +2,8 @@ import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 import { useEntries } from "../hooks/useEntries";
 
+import { useMemo } from "react";
+
 import {
   ACHIEVEMENTS,
   getAchievementProgress,
@@ -17,24 +19,30 @@ export default function Achievements() {
   const totalHistorical = getTotalHistorical(entries);
   const streak = calculateStreak(entries);
 
-  const achievements = ACHIEVEMENTS.map((achievement) => {
-    const progress = getAchievementProgress(achievement, {
-      total: totalHistorical,
-      streak,
-    });
-    return {
-      ...achievement,
-      progress,
-      unlocked: progress >= achievement.target,
-    };
-  });
-  const completedAchievements = achievements.filter(
-    (achievement) => achievement.unlocked,
-  ).length;
+  const achievements = useMemo(() => {
+    return ACHIEVEMENTS.map((achievement) => {
+      const progress = getAchievementProgress(achievement, {
+        total: totalHistorical,
+        streak,
+      });
 
-  const completionPercentage = Math.round(
-    (completedAchievements / achievements.length) * 100,
+      return {
+        ...achievement,
+        progress,
+        unlocked: progress >= achievement.target,
+      };
+    });
+  }, [totalHistorical, streak]);
+
+  const completedAchievements = useMemo(
+    () => achievements.filter((achievement) => achievement.unlocked).length,
+    [achievements],
   );
+
+  const completionPercentage =
+    achievements.length > 0
+      ? Math.round((completedAchievements / achievements.length) * 100)
+      : 0;
 
   return (
     <div
