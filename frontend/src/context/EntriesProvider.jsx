@@ -23,6 +23,13 @@ import {
 
 import { getLocalDateKey } from "../utils/date";
 
+function formatEntries(entriesList) {
+  return entriesList.reduce((acc, entry) => {
+    acc[entry.date] = entry.count;
+    return acc;
+  }, {});
+}
+
 export function EntriesProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
 
@@ -84,13 +91,6 @@ export function EntriesProvider({ children }) {
 
   useEffect(() => {
     if (authLoading) return;
-
-    function formatEntries(entriesList) {
-      return entriesList.reduce((acc, entry) => {
-        acc[entry.date] = entry.count;
-        return acc;
-      }, {});
-    }
 
     async function bootstrapEntries() {
       if (!user) {
