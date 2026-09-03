@@ -1,1 +1,9 @@
 /frontend/node_modules
+
+.env
+.env.*
+
+Dati.txt
+
+dist
+errori.txt
