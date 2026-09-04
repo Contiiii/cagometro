@@ -100,3 +100,15 @@ export async function removeTeamMember(
     throw error;
   }
 }
+
+export async function getTeamLeaderboard() {
+  const { data, error } = await supabase.rpc(
+    "get_team_leaderboard"
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
