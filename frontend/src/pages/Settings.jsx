@@ -27,6 +27,10 @@ export default function Settings() {
 
   async function handleSaveProfile() {
     const trimmedName = displayName.trim();
+    
+    if (trimmedName === profile?.display_name) {
+      return;
+    }
 
     if (!trimmedName) {
       toast.error("Inserisci un nome pubblico");
@@ -42,7 +46,7 @@ export default function Settings() {
       });
 
       setDraftName(null);
-      
+
       toast.success("Profilo aggiornato");
     } catch (error) {
       console.error(error);
@@ -64,6 +68,26 @@ export default function Settings() {
           <>
             <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
               <h2 className="mb-4 text-lg font-semibold">👤 Account</h2>
+
+              <div className="mb-4 flex items-center gap-4">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={displayName || "Avatar profilo"}
+                    className="h-16 w-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-700 text-xl font-bold">
+                    {(displayName || "?").charAt(0).toUpperCase()}
+                  </div>
+                )}
+
+                <div>
+                  <p className="font-medium">
+                    {profile?.display_name ?? "Utente"}
+                  </p>
+                </div>
+              </div>
 
               <div className="space-y-4">
                 <div>
