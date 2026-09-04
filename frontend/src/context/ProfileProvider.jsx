@@ -62,7 +62,7 @@ export function ProfileProvider({ children }) {
   return (
     <ProfileContext.Provider
       value={{
-        profile,
+        profile: user ? profile : null,
         updateProfile,
       }}
     >

@@ -1,3 +1,7 @@
+import { useState } from "react";
+
+import toast from "react-hot-toast";
+
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 
@@ -8,13 +12,46 @@ import { useProfile } from "../hooks/useProfile";
 export default function Settings() {
   const { user, logout } = useAuth();
   const { syncStatus } = useEntries();
-  const { profile } = useProfile();
+  const { profile, updateProfile } = useProfile();
+
+  const [draftName, setDraftName] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const displayName = draftName ?? profile?.display_name ?? "";
 
   const syncLabel = {
     synced: "☁️ Sincronizzato",
     pending: "🟠 Modifiche da sincronizzare",
     error: "🔴 Errore sincronizzazione",
   };
+
+  async function handleSaveProfile() {
+    const trimmedName = displayName.trim();
+
+    if (!trimmedName) {
+      toast.error("Inserisci un nome pubblico");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      await updateProfile({
+        displayName: trimmedName,
+        avatarUrl: profile?.avatar_url ?? null,
+      });
+
+      setDraftName(null);
+      
+      toast.success("Profilo aggiornato");
+    } catch (error) {
+      console.error(error);
+
+      toast.error("Errore durante il salvataggio");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="min-h-dvh bg-black text-white">
@@ -26,18 +63,61 @@ export default function Settings() {
         {user ? (
           <>
             <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-              <h2 className="mb-3 text-lg font-semibold">👤 Account</h2>
+              <h2 className="mb-4 text-lg font-semibold">👤 Account</h2>
 
-              <div className="space-y-2">
-                <p className="text-sm text-zinc-400">Nome pubblico</p>
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="display-name"
+                    className="mb-2 block text-sm text-zinc-400"
+                  >
+                    Nome pubblico
+                  </label>
 
-                <p className="font-medium">
-                  {profile?.display_name ?? "Caricamento..."}
-                </p>
+                  <input
+                    id="display-name"
+                    type="text"
+                    maxLength={50}
+                    value={displayName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    className="
+          w-full
+          rounded-xl
+          border
+          border-zinc-700
+          bg-zinc-800
+          px-3
+          py-2
+          text-white
+          outline-none
+        "
+                  />
+                </div>
 
-                <p className="pt-2 text-sm text-zinc-400">Email</p>
+                <div>
+                  <p className="mb-2 text-sm text-zinc-400">Email</p>
 
-                <p>{user.email}</p>
+                  <p>{user.email}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className="
+        rounded-xl
+        bg-blue-600
+        px-4
+        py-2
+        font-medium
+        text-white
+        transition
+        hover:bg-blue-500
+        disabled:opacity-50
+      "
+                >
+                  {saving ? "Salvataggio..." : "Salva profilo"}
+                </button>
               </div>
             </section>
 
