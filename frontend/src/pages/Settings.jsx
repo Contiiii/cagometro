@@ -3,10 +3,12 @@ import BottomNav from "../components/BottomNav";
 
 import { useAuth } from "../hooks/useAuth";
 import { useEntries } from "../hooks/useEntries";
+import { useProfile } from "../hooks/useProfile";
 
 export default function Settings() {
   const { user, logout } = useAuth();
   const { syncStatus } = useEntries();
+  const { profile } = useProfile();
 
   const syncLabel = {
     synced: "☁️ Sincronizzato",
@@ -26,7 +28,17 @@ export default function Settings() {
             <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
               <h2 className="mb-3 text-lg font-semibold">👤 Account</h2>
 
-              <p className="font-medium">{user.email}</p>
+              <div className="space-y-2">
+                <p className="text-sm text-zinc-400">Nome pubblico</p>
+
+                <p className="font-medium">
+                  {profile?.display_name ?? "Caricamento..."}
+                </p>
+
+                <p className="pt-2 text-sm text-zinc-400">Email</p>
+
+                <p>{user.email}</p>
+              </div>
             </section>
 
             <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
