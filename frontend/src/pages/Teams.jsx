@@ -4,7 +4,6 @@ import toast from "react-hot-toast";
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 
-
 import { useTeam } from "../hooks/useTeam";
 
 import {
@@ -12,6 +11,7 @@ import {
   joinTeam,
   leaveTeam,
   transferOwnership,
+  removeTeamMember,
 } from "../services/teamService";
 
 export default function Teams() {
@@ -115,6 +115,19 @@ export default function Teams() {
     }
   }
 
+  async function handleRemoveMember(userId) {
+    try {
+      await removeTeamMember(userId);
+
+      await refreshMembers();
+
+      toast.success("Membro rimosso");
+    } catch (error) {
+      console.error(error);
+
+      toast.error(error.message);
+    }
+  }
 
   return (
     <div className="min-h-dvh bg-black text-white">
@@ -249,23 +262,40 @@ export default function Teams() {
                           {member.role}
                         </span>
 
-                        {team?.role === "owner" && member.role !== "owner" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleTransferOwnership(member.user_id)
-                            }
-                            className="
-              rounded-lg
-              bg-amber-500/15
-              px-2
-              py-1
-              text-xs
-              text-amber-300
-            "
-                          >
-                            Rendi owner
-                          </button>
+                        {team.role === "owner" && member.role !== "owner" && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleTransferOwnership(member.user_id)
+                              }
+                              className="
+          rounded-lg
+          bg-amber-500/15
+          px-2
+          py-1
+          text-xs
+          text-amber-300
+        "
+                            >
+                              Rendi owner
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMember(member.user_id)}
+                              className="
+          rounded-lg
+          bg-red-500/15
+          px-2
+          py-1
+          text-xs
+          text-red-300
+        "
+                            >
+                              Rimuovi
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>

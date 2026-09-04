@@ -85,3 +85,18 @@ export async function transferOwnership(
     throw error;
   }
 }
+
+export async function removeTeamMember(
+  userId,
+) {
+  const { error } = await supabase.rpc(
+    "remove_team_member",
+    {
+      target_user_id: userId,
+    },
+  );
+
+  if (error) {
+    throw error;
+  }
+}
