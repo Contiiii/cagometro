@@ -47,3 +47,41 @@ export async function joinTeam(inviteCode) {
 
   return data;
 }
+
+export async function leaveTeam() {
+  const { error } = await supabase.rpc(
+    "leave_team",
+  );
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function getTeamMembers() {
+  const { data, error } = await supabase.rpc(
+    "get_team_members",
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+
+export async function transferOwnership(
+  newOwnerUserId,
+) {
+  const { error } = await supabase.rpc(
+    "transfer_ownership",
+    {
+      new_owner_user_id: newOwnerUserId,
+    },
+  );
+
+  if (error) {
+    throw error;
+  }
+}
