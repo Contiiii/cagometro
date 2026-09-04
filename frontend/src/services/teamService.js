@@ -32,3 +32,18 @@ export async function getMyTeam() {
 
   return data?.[0] ?? null;
 }
+
+export async function joinTeam(inviteCode) {
+  const { data, error } = await supabase.rpc(
+    "join_team",
+    {
+      team_invite_code: inviteCode,
+    },
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
