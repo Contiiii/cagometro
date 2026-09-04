@@ -9,6 +9,8 @@ import { useAuth } from "../hooks/useAuth";
 import { useEntries } from "../hooks/useEntries";
 import { useProfile } from "../hooks/useProfile";
 
+
+
 export default function Settings() {
   const { user, logout } = useAuth();
   const { syncStatus } = useEntries();
@@ -27,7 +29,7 @@ export default function Settings() {
 
   async function handleSaveProfile() {
     const trimmedName = displayName.trim();
-    
+
     if (trimmedName === profile?.display_name) {
       return;
     }
@@ -56,6 +58,7 @@ export default function Settings() {
       setSaving(false);
     }
   }
+
 
   return (
     <div className="min-h-dvh bg-black text-white">

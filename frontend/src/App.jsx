@@ -4,12 +4,10 @@ import { Suspense, lazy } from "react";
 import { Toaster } from "react-hot-toast";
 
 const Home = lazy(() => import("./pages/Home"));
-
 const Report = lazy(() => import("./pages/Report"));
-
 const Achievements = lazy(() => import("./pages/Achievements"));
-
 const Settings = lazy(() => import("./pages/Settings"));
+const Teams = lazy(() => import("./pages/Teams"));
 
 export default function App() {
   return (
@@ -46,6 +44,8 @@ export default function App() {
           <Route path="/" element={<Home />} />
 
           <Route path="/settings" element={<Settings />} />
+
+          <Route path="/teams" element={<Teams />} />
 
           <Route path="/achievements" element={<Achievements />} />
 

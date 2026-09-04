@@ -7,6 +7,7 @@ import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthProvider.jsx";
 import { EntriesProvider } from "./context/EntriesProvider";
 import { ProfileProvider } from "./context/ProfileProvider";
+import { TeamProvider } from "./context/TeamProvider";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -19,9 +20,11 @@ createRoot(document.getElementById("root")).render(
     <ErrorBoundary>
       <AuthProvider>
         <ProfileProvider>
-          <EntriesProvider>
-            <App />
-          </EntriesProvider>
+          <TeamProvider>
+            <EntriesProvider>
+              <App />
+            </EntriesProvider>
+          </TeamProvider>
         </ProfileProvider>
       </AuthProvider>
     </ErrorBoundary>
