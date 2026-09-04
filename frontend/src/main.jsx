@@ -6,6 +6,7 @@ import "./index.css";
 import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthProvider.jsx";
 import { EntriesProvider } from "./context/EntriesProvider";
+import { ProfileProvider } from "./context/ProfileProvider";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -17,9 +18,11 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ErrorBoundary>
       <AuthProvider>
-        <EntriesProvider>
-          <App />
-        </EntriesProvider>
+        <ProfileProvider>
+          <EntriesProvider>
+            <App />
+          </EntriesProvider>
+        </ProfileProvider>
       </AuthProvider>
     </ErrorBoundary>
   </StrictMode>,
