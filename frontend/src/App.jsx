@@ -8,6 +8,7 @@ const Report = lazy(() => import("./pages/Report"));
 const Achievements = lazy(() => import("./pages/Achievements"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Teams = lazy(() => import("./pages/Teams"));
+import NotFound from "./pages/NotFound";
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/achievements" element={<Achievements />} />
 
           <Route path="/report" element={<Report />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

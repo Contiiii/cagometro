@@ -64,7 +64,7 @@ export default function Settings() {
     <div className="min-h-dvh bg-black text-white">
       <Header />
 
-      <main className="mx-auto max-w-xl space-y-5 p-5">
+      <main className="mx-auto max-w-xl space-y-5 p-5 pb-28">
         <h1 className="text-3xl font-bold">⚙️ Impostazioni</h1>
 
         {user ? (

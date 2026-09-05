@@ -90,28 +90,17 @@ export default function Report() {
 
       <main
         className="
-
-flex-1
-
-w-full
-
-max-w-3xl
-
-mx-auto
-
-px-4
-
-sm:px-6
-
-py-6
-
-flex
-
-flex-col
-
-gap-5
-
-"
+                    flex-1
+                    w-full
+                    max-w-3xl
+                    mx-auto
+                    px-4
+                    sm:px-6
+                    py-6
+                    flex
+                    flex-col
+                    gap-5
+                    "
       >
         {!hasEntries ? (
           <>

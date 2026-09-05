@@ -112,3 +112,51 @@ export async function getTeamLeaderboard() {
 
   return data ?? [];
 }
+
+export async function updateTeam({
+  name,
+  description,
+  avatarEmoji,
+}) {
+  const { data, error } = await supabase.rpc(
+    "update_team",
+    {
+      p_name: name,
+      p_description: description,
+      p_avatar_emoji: avatarEmoji,
+    },
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function toggleTeamInvites(
+  enabled,
+) {
+  const { error } = await supabase.rpc(
+    "toggle_team_invites",
+    {
+      p_enabled: enabled,
+    },
+  );
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function regenerateInviteCode() {
+  const { data, error } = await supabase.rpc(
+    "regenerate_invite_code"
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}

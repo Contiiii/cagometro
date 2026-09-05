@@ -1,5 +1,4 @@
 import { useContext } from "react";
-
 import { TeamContext } from "../context/team-context";
 
 export function useTeam() {

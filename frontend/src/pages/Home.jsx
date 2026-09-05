@@ -77,6 +77,7 @@ function Home() {
           px-5
           py-5
           text-center
+          pb-28
         "
         >
           {/* Streak */}
