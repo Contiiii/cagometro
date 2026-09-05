@@ -1,4 +1,8 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
+
+import { supabase } from "../lib/supabase";
+
+import { useAuth } from "../hooks/useAuth";
 
 import { TeamContext } from "./team-context";
 
@@ -14,6 +18,7 @@ export function TeamProvider({ children }) {
   const [members, setMembers] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [activity, setActivity] = useState([]);
+  const { user, loading: authLoading } = useAuth();
 
   const refreshTeam = useCallback(async () => {
     try {
@@ -54,6 +59,42 @@ export function TeamProvider({ children }) {
 
     setActivity(data);
   }, []);
+
+  useEffect(() => {
+    if (authLoading || !user) {
+      return undefined;
+    }
+
+    const channel = supabase
+      .channel(`team-activity-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "team_activity",
+        },
+        () => {
+
+          refreshActivity().catch((error) => {
+            console.error("Errore aggiornamento attività realtime:", error);
+          });
+        },
+      )
+      .subscribe((status, error) => {
+        if (error) {
+          console.error("Errore Team Realtime:", error);
+        }
+
+        if (status === "CHANNEL_ERROR") {
+          console.error("Canale Team Realtime non disponibile");
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [authLoading, user, refreshActivity]);
 
   return (
     <TeamContext.Provider
