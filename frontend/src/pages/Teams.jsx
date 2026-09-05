@@ -17,6 +17,7 @@ import {
   transferOwnership,
   removeTeamMember,
   regenerateInviteCode,
+  createTeamActivity,
 } from "../services/teamService";
 
 export default function Teams() {
@@ -27,6 +28,8 @@ export default function Teams() {
     refreshTeam,
     refreshMembers,
     refreshLeaderboard,
+    activity,
+    refreshActivity,
   } = useTeam();
 
   const teamTotal = leaderboard.reduce(
@@ -54,6 +57,10 @@ export default function Teams() {
 
   const { user } = useAuth();
 
+  const [activityLimit, setActivityLimit] = useState(5);
+
+  const visibleActivity = activity.slice(0, activityLimit);
+
   const [inviteCode, setInviteCode] = useState("");
   const [joining, setJoining] = useState(false);
   const [teamName, setTeamName] = useState("");
@@ -72,6 +79,8 @@ export default function Teams() {
 
       await joinTeam(code);
 
+      await createTeamActivity("member_joined");
+
       await refreshTeam();
       await refreshMembers();
 
@@ -89,13 +98,16 @@ export default function Teams() {
     refreshTeam().catch(console.error);
     refreshMembers().catch(console.error);
     refreshLeaderboard().catch(console.error);
-  }, [refreshTeam, refreshMembers, refreshLeaderboard]);
+    refreshActivity().catch(console.error);
+  }, [refreshTeam, refreshMembers, refreshLeaderboard, refreshActivity]);
 
   async function handleLeaveTeam() {
     try {
       if (!window.confirm("Vuoi davvero lasciare la squadra?")) {
         return;
       }
+
+      await createTeamActivity("member_left");
 
       await leaveTeam();
 
@@ -150,6 +162,10 @@ export default function Teams() {
 
   async function handleTransferOwnership(userId) {
     try {
+      await createTeamActivity("ownership_transferred", null, {
+        targetUserId: userId,
+      });
+
       await transferOwnership(userId);
 
       await refreshTeam();
@@ -168,6 +184,10 @@ export default function Teams() {
       if (!window.confirm("Vuoi davvero rimuovere questo membro?")) {
         return;
       }
+
+      await createTeamActivity("member_removed", null, {
+        targetUserId: userId,
+      });
 
       await removeTeamMember(userId);
 
@@ -439,7 +459,7 @@ active:scale-95
         ) : (
           <div className="space-y-5">
             <section
-  className="
+              className="
     rounded-3xl
     border
     border-pink-500/10
@@ -452,7 +472,7 @@ active:scale-95
     transition-all
     duration-300
   "
->
+            >
               <div className="flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-pink-500/15 text-3xl">
                   {team.avatar_emoji}
@@ -504,7 +524,7 @@ active:scale-95
                                 : ""
                             }
                           >
-                            🔄 {" "}
+                            🔄{" "}
                           </span>
                           Invito
                         </button>
@@ -723,7 +743,110 @@ active:scale-95
                     </>
                   )}
                 </section>
+                <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
+                  <h2 className="mb-4 text-lg font-semibold">
+                    📢 Attività recenti
+                  </h2>
 
+                  {activity.length > 0 && (
+                    <p className="mb-3 text-xs text-zinc-500">
+                      Mostrate {visibleActivity.length} di {activity.length}
+                    </p>
+                  )}
+
+                  {activity.length === 0 ? (
+                    <div className="text-center text-zinc-500">
+                      Nessuna attività disponibile
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {visibleActivity.map((item) => (
+                        <div
+                          key={item.id}
+                          className="rounded-xl bg-zinc-800/40 px-3 py-2"
+                        >
+                          <p className="text-sm text-zinc-300">
+                            {item.activity_type === "entry_created" && (
+                              <>
+                                🔥 {item.display_name} ha registrato{" "}
+                                <span className="font-semibold text-pink-400">
+                                  {item.points}
+                                </span>{" "}
+                                {item.points === 1 ? "punto" : "punti"}
+                              </>
+                            )}
+
+                            {item.activity_type === "member_joined" && (
+                              <>
+                                👋 {item.display_name} è entrato nella squadra
+                              </>
+                            )}
+
+                            {item.activity_type === "member_left" && (
+                              <>🚪 {item.display_name} ha lasciato la squadra</>
+                            )}
+
+                            {item.activity_type === "ownership_transferred" && (
+                              <>
+                                👑 {item.display_name} ha trasferito la
+                                proprietà
+                              </>
+                            )}
+
+                            {item.activity_type === "member_removed" && (
+                              <>❌ {item.display_name} ha rimosso un membro</>
+                            )}
+                          </p>
+
+                          <p className="text-[11px] text-zinc-500">
+                            {new Date(item.created_at).toLocaleString("it-IT")}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+                <div className="mt-4 flex gap-2">
+                  {activity.length > visibleActivity.length && (
+                    <button
+                      type="button"
+                      onClick={() => setActivityLimit((prev) => prev + 5)}
+                      className="
+        flex-1
+        rounded-xl
+        border
+        border-zinc-700
+        bg-zinc-800/40
+        p-3
+        text-sm
+        font-medium
+        text-zinc-300
+      "
+                    >
+                      Carica altre
+                    </button>
+                  )}
+
+                  {activityLimit > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setActivityLimit(5)}
+                      className="
+        flex-1
+        rounded-xl
+        border
+        border-zinc-700
+        bg-zinc-900
+        p-3
+        text-sm
+        font-medium
+        text-zinc-400
+      "
+                    >
+                      Mostra meno
+                    </button>
+                  )}
+                </div>
                 <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
                   <h2 className="mb-4 text-lg font-semibold">
                     👥 Membri ({members.length}/10)
@@ -817,7 +940,6 @@ active:scale-95
                     </div>
                   )}
                 </section>
-
                 <button
                   type="button"
                   onClick={handleLeaveTeam}

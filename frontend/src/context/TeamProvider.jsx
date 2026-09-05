@@ -2,13 +2,18 @@ import { useCallback, useState } from "react";
 
 import { TeamContext } from "./team-context";
 
-import { getMyTeam, getTeamMembers, getTeamLeaderboard } from "../services/teamService";
+import {
+  getMyTeam,
+  getTeamMembers,
+  getTeamLeaderboard,
+  getTeamActivity,
+} from "../services/teamService";
 
 export function TeamProvider({ children }) {
   const [team, setTeam] = useState(null);
   const [members, setMembers] = useState([]);
-  const [leaderboard, setLeaderboard] =
-  useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [activity, setActivity] = useState([]);
 
   const refreshTeam = useCallback(async () => {
     try {
@@ -38,24 +43,30 @@ export function TeamProvider({ children }) {
     }
   }, []);
 
-  const refreshLeaderboard =
-  useCallback(async () => {
-    const data =
-      await getTeamLeaderboard();
+  const refreshLeaderboard = useCallback(async () => {
+    const data = await getTeamLeaderboard();
 
     setLeaderboard(data);
+  }, []);
+
+  const refreshActivity = useCallback(async () => {
+    const data = await getTeamActivity();
+
+    setActivity(data);
   }, []);
 
   return (
     <TeamContext.Provider
       value={{
-  team,
-  members,
-  leaderboard,
-  refreshTeam,
-  refreshMembers,
-  refreshLeaderboard,
-}}
+        team,
+        members,
+        leaderboard,
+        refreshTeam,
+        activity,
+        refreshActivity,
+        refreshMembers,
+        refreshLeaderboard,
+      }}
     >
       {children}
     </TeamContext.Provider>
