@@ -27,9 +27,10 @@ export default function Teams() {
   } = useTeam();
 
   const teamTotal = leaderboard.reduce(
-    (sum, player) => sum + Number(player.total_count),
-    0,
-  );
+  (sum, player) =>
+    sum + Number(player.weekly_total),
+  0,
+);
 
   const [showCreateTeam, setShowCreateTeam] = useState(false);
 
@@ -409,16 +410,29 @@ export default function Teams() {
                                 : `#${index + 1}`}
                         </span>
 
-                        <span>
-                          {player.display_name || "Utente"}
+                        <div>
+  <div>
+    {player.display_name}
 
-                          {player.user_id === user?.id && " (tu)"}
-                        </span>
+    {player.user_id === user?.id &&
+      " (tu)"}
+  </div>
+
+  <div className="text-xs text-zinc-500">
+    Storico: {player.lifetime_total}
+  </div>
+</div>
                       </div>
 
-                      <span className="font-bold text-pink-400">
-                        {player.total_count}
-                      </span>
+                      <div className="text-right">
+  <div className="font-bold text-pink-400">
+    {player.weekly_total}
+  </div>
+
+  <div className="text-xs text-zinc-500">
+    settimana
+  </div>
+</div>
                     </div>
                   ))}
                 </div>
