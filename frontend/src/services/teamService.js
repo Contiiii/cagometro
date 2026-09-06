@@ -120,13 +120,21 @@ export async function regenerateInviteCode() {
   return data;
 }
 
-export async function getTeamActivity(limit = 20, offset = 0) {
-  const { data, error } = await supabase.rpc("get_team_activity", {
-    p_limit: limit,
-    p_offset: offset,
-  });
+export async function getTeamActivity(
+  limit = 20,
+  offset = 0,
+) {
+  const { data, error } = await supabase.rpc(
+    "get_team_activity",
+    {
+      p_limit: limit,
+      p_offset: offset,
+    },
+  );
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   return data ?? [];
 }

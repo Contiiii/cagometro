@@ -956,36 +956,62 @@ active:scale-95
                             <p className="text-sm text-zinc-300">
                               {item.activity_type === "entry_created" && (
                                 <>
-                                  🔥 {item.display_name} ha registrato{" "}
+                                  🔥 {item.display_name || "Utente"} ha
+                                  registrato{" "}
                                   <span className="font-semibold text-pink-400">
                                     {item.points}
                                   </span>{" "}
-                                  {item.points === 1 ? "punto" : "punti"}
+                                  {Number(item.points) === 1
+                                    ? "punto"
+                                    : "punti"}
                                 </>
                               )}
 
                               {item.activity_type === "member_joined" && (
                                 <>
-                                  👋 {item.display_name} è entrato nella squadra
+                                  👋 {item.display_name || "Un utente"} è
+                                  entrato nella squadra
                                 </>
                               )}
 
                               {item.activity_type === "member_left" && (
                                 <>
-                                  🚪 {item.display_name} ha lasciato la squadra
+                                  🚪 {item.display_name || "Un utente"} ha
+                                  lasciato la squadra
                                 </>
                               )}
 
                               {item.activity_type ===
                                 "ownership_transferred" && (
                                 <>
-                                  👑 {item.display_name} ha trasferito la
-                                  proprietà
+                                  👑 {item.display_name || "Un utente"} ha
+                                  trasferito la proprietà
+                                  {item.target_display_name
+                                    ? ` a ${item.target_display_name}`
+                                    : ""}
                                 </>
                               )}
 
                               {item.activity_type === "member_removed" && (
-                                <>❌ {item.display_name} ha rimosso un membro</>
+                                <>
+                                  ❌ {item.display_name || "Un utente"} ha
+                                  rimosso{" "}
+                                  {item.target_display_name || "un membro"}{" "}
+                                  dalla squadra
+                                </>
+                              )}
+
+                              {item.activity_type === "streak_bonus" && (
+                                <>
+                                  ⚡ {item.display_name || "Un utente"} ha
+                                  ottenuto{" "}
+                                  <span className="font-semibold text-amber-400">
+                                    +{item.points}
+                                  </span>{" "}
+                                  {Number(item.points) === 1
+                                    ? "punto bonus streak"
+                                    : "punti bonus streak"}
+                                </>
                               )}
                             </p>
 
