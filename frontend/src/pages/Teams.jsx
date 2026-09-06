@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 
+import { motion, AnimatePresence } from "framer-motion";
+
 import { useTeam } from "../hooks/useTeam";
 
 import { useAuth } from "../hooks/useAuth";
@@ -265,6 +267,21 @@ export default function Teams() {
       setRegenerating(false);
     }
   }
+
+  const weeklyTotal = leaderboard.reduce(
+    (sum, player) => sum + Number(player.weekly_total || 0),
+    0,
+  );
+
+  const lifetimeTotal = leaderboard.reduce(
+    (sum, player) => sum + Number(player.lifetime_total || 0),
+    0,
+  );
+
+  const averagePerMember =
+    members.length > 0 ? (weeklyTotal / members.length).toFixed(1) : 0;
+
+  const mvp = leaderboard[0];
 
   return (
     <div className="min-h-dvh bg-black text-white">
@@ -743,6 +760,49 @@ active:scale-95
                     </>
                   )}
                 </section>
+
+                <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
+                  <h2 className="mb-4 text-lg font-semibold">
+                    📊 Statistiche squadra
+                  </h2>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400">Punti settimana</span>
+
+                      <span className="font-semibold text-pink-400">
+                        {weeklyTotal}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400">Punti storico</span>
+
+                      <span className="font-semibold">{lifetimeTotal}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400">Media per membro</span>
+
+                      <span className="font-semibold">{averagePerMember}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400">MVP settimana</span>
+
+                      <span className="font-semibold text-amber-400">
+                        👑 {mvp?.display_name ?? "-"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400">Membri attivi</span>
+
+                      <span className="font-semibold">{members.length}</span>
+                    </div>
+                  </div>
+                </section>
+
                 <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
                   <h2 className="mb-4 text-lg font-semibold">
                     📢 Attività recenti
@@ -760,49 +820,73 @@ active:scale-95
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {visibleActivity.map((item) => (
-                        <div
-                          key={item.id}
-                          className="rounded-xl bg-zinc-800/40 px-3 py-2"
-                        >
-                          <p className="text-sm text-zinc-300">
-                            {item.activity_type === "entry_created" && (
-                              <>
-                                🔥 {item.display_name} ha registrato{" "}
-                                <span className="font-semibold text-pink-400">
-                                  {item.points}
-                                </span>{" "}
-                                {item.points === 1 ? "punto" : "punti"}
-                              </>
-                            )}
+                      <AnimatePresence initial={false}>
+                        {visibleActivity.map((item) => (
+                          <motion.div
+                            key={item.id}
+                            initial={{
+                              opacity: 0,
+                              y: -12,
+                              scale: 0.97,
+                            }}
+                            animate={{
+                              opacity: 1,
+                              y: 0,
+                              scale: 1,
+                            }}
+                            exit={{
+                              opacity: 0,
+                              y: 8,
+                            }}
+                            transition={{
+                              duration: 0.25,
+                            }}
+                            className="rounded-xl bg-zinc-800/40 px-3 py-2"
+                          >
+                            <p className="text-sm text-zinc-300">
+                              {item.activity_type === "entry_created" && (
+                                <>
+                                  🔥 {item.display_name} ha registrato{" "}
+                                  <span className="font-semibold text-pink-400">
+                                    {item.points}
+                                  </span>{" "}
+                                  {item.points === 1 ? "punto" : "punti"}
+                                </>
+                              )}
 
-                            {item.activity_type === "member_joined" && (
-                              <>
-                                👋 {item.display_name} è entrato nella squadra
-                              </>
-                            )}
+                              {item.activity_type === "member_joined" && (
+                                <>
+                                  👋 {item.display_name} è entrato nella squadra
+                                </>
+                              )}
 
-                            {item.activity_type === "member_left" && (
-                              <>🚪 {item.display_name} ha lasciato la squadra</>
-                            )}
+                              {item.activity_type === "member_left" && (
+                                <>
+                                  🚪 {item.display_name} ha lasciato la squadra
+                                </>
+                              )}
 
-                            {item.activity_type === "ownership_transferred" && (
-                              <>
-                                👑 {item.display_name} ha trasferito la
-                                proprietà
-                              </>
-                            )}
+                              {item.activity_type ===
+                                "ownership_transferred" && (
+                                <>
+                                  👑 {item.display_name} ha trasferito la
+                                  proprietà
+                                </>
+                              )}
 
-                            {item.activity_type === "member_removed" && (
-                              <>❌ {item.display_name} ha rimosso un membro</>
-                            )}
-                          </p>
+                              {item.activity_type === "member_removed" && (
+                                <>❌ {item.display_name} ha rimosso un membro</>
+                              )}
+                            </p>
 
-                          <p className="text-[11px] text-zinc-500">
-                            {new Date(item.created_at).toLocaleString("it-IT")}
-                          </p>
-                        </div>
-                      ))}
+                            <p className="text-[11px] text-zinc-500">
+                              {new Date(item.created_at).toLocaleString(
+                                "it-IT",
+                              )}
+                            </p>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
                     </div>
                   )}
                 </section>
