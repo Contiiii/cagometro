@@ -1,6 +1,7 @@
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 import { useEntries } from "../hooks/useEntries";
+import { LEVELS, getLevel } from "../config/levels";
 
 import { useTeam } from "../hooks/useTeam";
 
@@ -12,7 +13,7 @@ import {
   TEAM_ACHIEVEMENTS,
 } from "../config/achievements.js";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { calculateStreak, getTotalHistorical } from "../utils/stats";
 
@@ -25,6 +26,27 @@ export default function Achievements() {
   const totalHistorical = useMemo(() => getTotalHistorical(entries), [entries]);
 
   const streak = useMemo(() => calculateStreak(entries), [entries]);
+
+  const currentLevel = useMemo(
+    () => getLevel(totalHistorical),
+    [totalHistorical],
+  );
+
+  const [showXpInfo, setShowXpInfo] = useState(false);
+
+  const nextLevel =
+    LEVELS.find((level) => level.level === currentLevel.level + 1) ??
+    currentLevel;
+
+  const levelProgress =
+    nextLevel.xp > currentLevel.xp
+      ? Math.min(
+          ((totalHistorical - currentLevel.xp) /
+            (nextLevel.xp - currentLevel.xp)) *
+            100,
+          100,
+        )
+      : 100;
 
   const achievements = useMemo(() => {
     return ACHIEVEMENTS.map((achievement) => {
@@ -41,7 +63,7 @@ export default function Achievements() {
     });
   }, [totalHistorical, streak]);
 
-    const weeklyTotal = leaderboard.reduce(
+  const weeklyTotal = leaderboard.reduce(
     (sum, player) => sum + Number(player.weekly_total || 0),
     0,
   );
@@ -53,51 +75,39 @@ export default function Achievements() {
 
   const goalCompleted = weeklyTotal >= 100;
 
-  console.log("LEADERBOARD", leaderboard);
-console.log("weeklyTotal", weeklyTotal);
-console.log("lifetimeTotal", lifetimeTotal);
-
   const teamAchievements = TEAM_ACHIEVEMENTS.map((achievement) => {
     let progress = 0;
-    let target = 1;
 
     switch (achievement.id) {
       case "first-team":
-        progress = 1;
-        target = 1;
+        progress = members.length > 0 ? 1 : 0;
         break;
 
       case "weekly-100":
         progress = weeklyTotal;
-        target = 100;
         break;
 
       case "lifetime-500":
         progress = lifetimeTotal;
-        target = 500;
         break;
 
       case "lifetime-1000":
         progress = lifetimeTotal;
-        target = 1000;
         break;
 
       case "ten-members":
         progress = members.length;
-        target = 10;
         break;
 
       case "goal-completed":
         progress = goalCompleted ? 1 : 0;
-        target = 1;
         break;
     }
 
     return {
       ...achievement,
       progress,
-      target,
-      unlocked: progress >= target,
+      unlocked: progress >= achievement.target,
     };
   });
 
@@ -194,6 +204,141 @@ console.log("lifetimeTotal", lifetimeTotal);
               Completa le missioni e conquista tutti i traguardi
             </p>
           </div>
+
+          <section
+            className="
+    overflow-hidden
+    rounded-3xl
+    border
+    border-yellow-500/20
+    bg-gradient-to-br
+    from-yellow-500/10
+    via-zinc-900
+    to-zinc-950
+    p-6
+  "
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-zinc-400">Livello attuale</p>
+
+                <h2 className="mt-1 text-3xl font-black text-yellow-400">
+                  ⭐ Livello {currentLevel.level}
+                </h2>
+
+                <span
+                  className="
+        mt-3
+        inline-flex
+        rounded-full
+        border
+        border-yellow-500/20
+        bg-yellow-500/10
+        px-3
+        py-1
+        text-xs
+        font-semibold
+        text-yellow-300
+      "
+                >
+                  ✨ XP Totali: {totalHistorical}
+                </span>
+              </div>
+
+              <div className="flex flex-col items-end">
+                <button
+                  type="button"
+                  onClick={() => setShowXpInfo((prev) => !prev)}
+                  className="
+      flex
+      h-9
+      w-9
+      items-center
+      justify-center
+      rounded-full
+      border
+      border-yellow-500/20
+      bg-yellow-500/10
+      text-sm
+      text-yellow-300
+      transition-colors
+      hover:bg-yellow-500/20
+    "
+                >
+                  ℹ️
+                </button>
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {showXpInfo && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="
+        mt-4
+        overflow-hidden
+        rounded-2xl
+        border
+        border-yellow-500/20
+        bg-yellow-500/5
+        p-4
+      "
+                >
+                  <ul className="space-y-2 text-sm text-zinc-300">
+                    <li>💩 Ogni punto registrato aggiunge XP.</li>
+                    <li>⭐ Gli XP determinano il tuo livello.</li>
+                    <li>📈 Più registrazioni fai, più velocemente sali.</li>
+                    <li>
+                      🏆 Completare gli achievement aiuta a monitorare i tuoi
+                      progressi.
+                    </li>
+                    <li>🔒 I livelli ottenuti non vengono persi.</li>
+                  </ul>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="mt-5 h-3 overflow-hidden rounded-full bg-zinc-800">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{
+                  width: `${levelProgress}%`,
+                }}
+                transition={{
+                  duration: 0.8,
+                }}
+                className="
+        h-full
+        rounded-full
+        bg-gradient-to-r
+        from-yellow-500
+        to-amber-300
+      "
+              />
+            </div>
+
+            <div className="mt-3 flex items-center justify-between text-sm">
+              <span className="text-zinc-400">{totalHistorical} XP</span>
+
+              {currentLevel.level === nextLevel.level ? (
+                <span className="font-semibold text-green-400">
+                  Livello massimo raggiunto 🎉
+                </span>
+              ) : (
+                <span className="font-semibold text-yellow-300">
+                  Prossimo livello: {nextLevel.xp} XP
+                </span>
+              )}
+            </div>
+
+            {currentLevel.level !== nextLevel.level && (
+              <p className="mt-2 text-xs text-zinc-500">
+                Mancano {nextLevel.xp - totalHistorical} XP al prossimo livello
+              </p>
+            )}
+          </section>
 
           {/* Progresso complessivo */}
           <div

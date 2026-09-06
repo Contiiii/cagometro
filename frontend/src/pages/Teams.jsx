@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import toast from "react-hot-toast";
 import Header from "../components/Header";
@@ -33,6 +33,24 @@ export default function Teams() {
     activity,
     refreshActivity,
   } = useTeam();
+
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState("week");
+
+  const filteredLeaderboard = useMemo(() => {
+    return [...leaderboard].sort((a, b) => {
+      const aScore =
+        leaderboardPeriod === "week"
+          ? Number(a.weekly_total || 0)
+          : Number(a.lifetime_total || 0);
+
+      const bScore =
+        leaderboardPeriod === "week"
+          ? Number(b.weekly_total || 0)
+          : Number(b.lifetime_total || 0);
+
+      return bScore - aScore;
+    });
+  }, [leaderboard, leaderboardPeriod]);
 
   const [showCreateTeam, setShowCreateTeam] = useState(false);
 
@@ -702,7 +720,33 @@ active:scale-95
             ) : (
               <>
                 <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
-                  <h2 className="mb-4 text-lg font-semibold">🏆 Classifica</h2>
+                  <h2 className="text-lg font-semibold">🏆 Classifica</h2>
+
+                  <div className="mt-2 mb-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setLeaderboardPeriod("week")}
+                      className={`rounded-2xl px-4 py-2 text-sm font-medium transition-all ${
+                        leaderboardPeriod === "week"
+                          ? "bg-pink-600 text-white shadow-lg shadow-pink-600/20"
+                          : "bg-zinc-800 text-zinc-400"
+                      }`}
+                    >
+                      Settimana
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setLeaderboardPeriod("all")}
+                      className={`rounded-2xl px-4 py-2 text-sm font-medium transition-all ${
+                        leaderboardPeriod === "all"
+                          ? "bg-pink-600 text-white shadow-lg shadow-pink-600/20"
+                          : "bg-zinc-800 text-zinc-400"
+                      }`}
+                    >
+                      Storico
+                    </button>
+                  </div>
 
                   {leaderboard.length === 0 ? (
                     <div className="text-center text-zinc-500">
@@ -711,7 +755,7 @@ active:scale-95
                   ) : (
                     <>
                       <div className="space-y-2">
-                        {leaderboard.map((player, index) => (
+                        {filteredLeaderboard.map((player, index) => (
                           <div
                             key={player.user_id}
                             className={`flex items-center justify-between rounded-xl p-3 ${
@@ -738,18 +782,24 @@ active:scale-95
                                 </div>
 
                                 <div className="text-xs text-zinc-500">
-                                  Storico: {player.lifetime_total}
+                                  {leaderboardPeriod === "week"
+                                    ? `Storico: ${player.lifetime_total}`
+                                    : `Settimana: ${player.weekly_total}`}
                                 </div>
                               </div>
                             </div>
 
                             <div className="text-right">
                               <div className="font-bold text-pink-400">
-                                {player.weekly_total}
+                                {leaderboardPeriod === "week"
+                                  ? player.weekly_total
+                                  : player.lifetime_total}
                               </div>
 
                               <div className="text-xs text-zinc-500">
-                                settimana
+                                {leaderboardPeriod === "week"
+                                  ? "settimana"
+                                  : "storico"}
                               </div>
                             </div>
                           </div>
@@ -763,7 +813,9 @@ active:scale-95
                           </span>
 
                           <span className="text-lg font-bold text-pink-400">
-                            {weeklyTotal}
+                            {leaderboardPeriod === "week"
+                              ? weeklyTotal
+                              : lifetimeTotal}
                           </span>
                         </div>
                       </div>

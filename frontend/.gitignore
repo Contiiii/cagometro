@@ -30,3 +30,12 @@ Dati.txt
 
 dist
 errori.txt
+
+/testhome/*
+/testreport/*
+
+/src/pages/teamsTest.jsx
+/src/pages/SettingsTest.jsx
+/src/pages/ReportTest.jsx
+/src/pages/AchievementTest.jsx
+/src/pages/HomeTest4.jsx
