@@ -59,6 +59,8 @@ export default function Teams() {
 
   const { user } = useAuth();
 
+  const TEAM_WEEKLY_GOAL = 100;
+
   const [activityLimit, setActivityLimit] = useState(5);
 
   const visibleActivity = activity.slice(0, activityLimit);
@@ -282,6 +284,12 @@ export default function Teams() {
     members.length > 0 ? (weeklyTotal / members.length).toFixed(1) : 0;
 
   const mvp = leaderboard[0];
+
+  const weeklyGoal = 100;
+
+  const goalProgress = Math.min((weeklyTotal / weeklyGoal) * 100, 100);
+
+  const goalCompleted = weeklyTotal >= weeklyGoal;
 
   return (
     <div className="min-h-dvh bg-black text-white">
@@ -801,6 +809,47 @@ active:scale-95
                       <span className="font-semibold">{members.length}</span>
                     </div>
                   </div>
+                </section>
+
+                <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
+                  <h2 className="mb-4 text-lg font-semibold">
+                    🎯 Obiettivo squadra
+                  </h2>
+
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-zinc-400">Progresso settimanale</span>
+
+                    <span className="font-semibold text-pink-400">
+                      {weeklyTotal} / {weeklyGoal}
+                    </span>
+                  </div>
+
+                  <div className="h-3 overflow-hidden rounded-full bg-zinc-800">
+                    <div
+                      style={{
+                        width: `${goalProgress}%`,
+                      }}
+                      className="
+        h-full
+        rounded-full
+        bg-gradient-to-r
+        from-pink-500
+        to-pink-400
+        transition-all
+        duration-500
+      "
+                    />
+                  </div>
+
+                  <p className="mt-3 text-sm text-zinc-400">
+                    {goalProgress.toFixed(0)}% completato
+                  </p>
+
+                  <p className="mt-3 text-sm text-zinc-400">
+                    {goalCompleted
+                      ? "La squadra ha raggiunto l'obiettivo!"
+                      : `Mancano ${weeklyGoal - weeklyTotal} punti`}
+                  </p>
                 </section>
 
                 <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
