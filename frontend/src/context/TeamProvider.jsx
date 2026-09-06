@@ -75,7 +75,6 @@ export function TeamProvider({ children }) {
           table: "team_activity",
         },
         () => {
-
           refreshActivity().catch((error) => {
             console.error("Errore aggiornamento attività realtime:", error);
           });
@@ -96,6 +95,35 @@ export function TeamProvider({ children }) {
     };
   }, [authLoading, user, refreshActivity]);
 
+  useEffect(() => {
+    if (authLoading || !user) {
+      return;
+    }
+
+    async function loadTeamData() {
+      try {
+        await Promise.all([
+          refreshTeam(),
+          refreshMembers(),
+          refreshLeaderboard(),
+          refreshActivity(),
+        ]);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    loadTeamData();
+  }, [
+    authLoading,
+    user,
+    refreshTeam,
+    refreshMembers,
+    refreshLeaderboard,
+    refreshActivity,
+  ]);
+
+  
   return (
     <TeamContext.Provider
       value={{

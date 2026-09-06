@@ -41,10 +41,7 @@ export const ACHIEVEMENTS = [
   },
 ];
 
-export function getAchievementProgress(
-  achievement,
-  statistics,
-) {
+export function getAchievementProgress(achievement, statistics) {
   if (achievement.type === "total") {
     return statistics.total;
   }
@@ -55,3 +52,48 @@ export function getAchievementProgress(
 
   return 0;
 }
+
+export const TEAM_ACHIEVEMENTS = [
+  {
+    id: "first-team",
+    title: "Prima squadra",
+    description: "Crea o entra nella tua prima squadra",
+    icon: "🏅",
+    target: 1,
+  },
+  {
+    id: "weekly-100",
+    title: "100 punti settimana",
+    description: "Raggiungi 100 punti settimanali come squadra",
+    icon: "🔥",
+    target: 100,
+  },
+  {
+    id: "lifetime-500",
+    title: "500 punti storico",
+    description: "Accumula 500 punti totali",
+    icon: "⚡",
+    target: 500,
+  },
+  {
+    id: "lifetime-1000",
+    title: "1000 punti storico",
+    description: "Accumula 1000 punti totali",
+    icon: "🏆",
+    target: 1000,
+  },
+  {
+    id: "ten-members",
+    title: "Squadra al completo",
+    description: "Raggiungi 10 membri attivi",
+    icon: "👥",
+    target: 10,
+  },
+  {
+    id: "goal-completed",
+    title: "Obiettivo completato",
+    description: "Completa l'obiettivo settimanale della squadra",
+    icon: "🎯",
+    target: 1,
+  },
+];

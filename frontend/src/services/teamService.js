@@ -1,5 +1,7 @@
 import { supabase } from "../lib/supabase";
 
+
+
 export async function createTeam({ name, description, avatarEmoji }) {
   const { data, error } = await supabase.rpc("create_team", {
     team_name: name,

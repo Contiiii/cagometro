@@ -2,11 +2,14 @@ import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
 import { useEntries } from "../hooks/useEntries";
 
-import { useMemo } from "react";
+import { useTeam } from "../hooks/useTeam";
+
+import { useMemo, useState } from "react";
 
 import {
   ACHIEVEMENTS,
   getAchievementProgress,
+  TEAM_ACHIEVEMENTS,
 } from "../config/achievements.js";
 
 import { motion } from "framer-motion";
@@ -15,6 +18,9 @@ import { calculateStreak, getTotalHistorical } from "../utils/stats";
 
 export default function Achievements() {
   const { entries } = useEntries();
+
+  const [category, setCategory] = useState("personal");
+  const { leaderboard, members } = useTeam();
 
   const totalHistorical = useMemo(() => getTotalHistorical(entries), [entries]);
 
@@ -35,14 +41,76 @@ export default function Achievements() {
     });
   }, [totalHistorical, streak]);
 
-  const completedAchievements = useMemo(
-    () => achievements.filter((achievement) => achievement.unlocked).length,
-    [achievements],
+    const weeklyTotal = leaderboard.reduce(
+    (sum, player) => sum + Number(player.weekly_total || 0),
+    0,
   );
 
+  const lifetimeTotal = leaderboard.reduce(
+    (sum, player) => sum + Number(player.lifetime_total || 0),
+    0,
+  );
+
+  const goalCompleted = weeklyTotal >= 100;
+
+  console.log("LEADERBOARD", leaderboard);
+console.log("weeklyTotal", weeklyTotal);
+console.log("lifetimeTotal", lifetimeTotal);
+
+  const teamAchievements = TEAM_ACHIEVEMENTS.map((achievement) => {
+    let progress = 0;
+    let target = 1;
+
+    switch (achievement.id) {
+      case "first-team":
+        progress = 1;
+        target = 1;
+        break;
+
+      case "weekly-100":
+        progress = weeklyTotal;
+        target = 100;
+        break;
+
+      case "lifetime-500":
+        progress = lifetimeTotal;
+        target = 500;
+        break;
+
+      case "lifetime-1000":
+        progress = lifetimeTotal;
+        target = 1000;
+        break;
+
+      case "ten-members":
+        progress = members.length;
+        target = 10;
+        break;
+
+      case "goal-completed":
+        progress = goalCompleted ? 1 : 0;
+        target = 1;
+        break;
+    }
+
+    return {
+      ...achievement,
+      progress,
+      target,
+      unlocked: progress >= target,
+    };
+  });
+
+  const activeAchievements =
+    category === "personal" ? achievements : teamAchievements;
+
+  const completedAchievements = activeAchievements.filter(
+    (achievement) => achievement.unlocked,
+  ).length;
+
   const completionPercentage =
-    achievements.length > 0
-      ? Math.round((completedAchievements / achievements.length) * 100)
+    activeAchievements.length > 0
+      ? Math.round((completedAchievements / activeAchievements.length) * 100)
       : 0;
 
   return (
@@ -96,6 +164,32 @@ export default function Achievements() {
               🏆 Achievements
             </h1>
 
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setCategory("personal")}
+                className={`rounded-xl px-4 py-2 text-sm font-medium ${
+                  category === "personal"
+                    ? "bg-pink-600 text-white"
+                    : "bg-zinc-800 text-zinc-400"
+                }`}
+              >
+                🏆 Personali
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCategory("team")}
+                className={`rounded-xl px-4 py-2 text-sm font-medium ${
+                  category === "team"
+                    ? "bg-pink-600 text-white"
+                    : "bg-zinc-800 text-zinc-400"
+                }`}
+              >
+                🏅 Squadra
+              </button>
+            </div>
+
             <p className="mt-1 text-sm text-zinc-500">
               Completa le missioni e conquista tutti i traguardi
             </p>
@@ -143,7 +237,7 @@ export default function Achievements() {
                     {completedAchievements}
                     <span className="text-xl text-zinc-500">
                       {" "}
-                      / {achievements.length}
+                      / {activeAchievements.length}
                     </span>
                   </p>
                 </div>
@@ -206,7 +300,7 @@ export default function Achievements() {
 
           {/* Lista Achievement */}
           <div className="flex flex-col gap-4">
-            {achievements.map((achievement, index) => {
+            {activeAchievements.map((achievement, index) => {
               const currentProgress = Math.min(
                 achievement.progress,
                 achievement.target,

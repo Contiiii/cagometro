@@ -34,11 +34,6 @@ export default function Teams() {
     refreshActivity,
   } = useTeam();
 
-  const teamTotal = leaderboard.reduce(
-    (sum, player) => sum + Number(player.weekly_total),
-    0,
-  );
-
   const [showCreateTeam, setShowCreateTeam] = useState(false);
 
   const [showJoinTeam, setShowJoinTeam] = useState(false);
@@ -88,6 +83,9 @@ export default function Teams() {
       await refreshTeam();
       await refreshMembers();
 
+      await refreshLeaderboard();
+      await refreshActivity();
+
       toast.success("Sei entrato nella squadra");
     } catch (error) {
       console.error(error);
@@ -118,6 +116,9 @@ export default function Teams() {
       await refreshTeam();
       await refreshMembers();
 
+      await refreshLeaderboard();
+      await refreshActivity();
+
       toast.success("Hai lasciato la squadra");
     } catch (error) {
       console.error(error);
@@ -145,6 +146,9 @@ export default function Teams() {
 
       await refreshTeam();
       await refreshMembers();
+
+      await refreshLeaderboard();
+      await refreshActivity();
 
       setTeamName("");
 
@@ -285,11 +289,9 @@ export default function Teams() {
 
   const mvp = leaderboard[0];
 
-  const weeklyGoal = 100;
+  const goalProgress = Math.min((weeklyTotal / TEAM_WEEKLY_GOAL) * 100, 100);
 
-  const goalProgress = Math.min((weeklyTotal / weeklyGoal) * 100, 100);
-
-  const goalCompleted = weeklyTotal >= weeklyGoal;
+  const goalCompleted = weeklyTotal >= TEAM_WEEKLY_GOAL;
 
   return (
     <div className="min-h-dvh bg-black text-white">
@@ -761,7 +763,7 @@ active:scale-95
                           </span>
 
                           <span className="text-lg font-bold text-pink-400">
-                            {teamTotal}
+                            {weeklyTotal}
                           </span>
                         </div>
                       </div>
@@ -815,15 +817,13 @@ active:scale-95
                   <h2 className="mb-4 text-lg font-semibold">
                     🎯 Obiettivo squadra
                   </h2>
-
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-zinc-400">Progresso settimanale</span>
 
                     <span className="font-semibold text-pink-400">
-                      {weeklyTotal} / {weeklyGoal}
+                      {weeklyTotal} / {TEAM_WEEKLY_GOAL}
                     </span>
                   </div>
-
                   <div className="h-3 overflow-hidden rounded-full bg-zinc-800">
                     <div
                       style={{
@@ -840,16 +840,24 @@ active:scale-95
       "
                     />
                   </div>
-
                   <p className="mt-3 text-sm text-zinc-400">
                     {goalProgress.toFixed(0)}% completato
                   </p>
-
-                  <p className="mt-3 text-sm text-zinc-400">
-                    {goalCompleted
-                      ? "La squadra ha raggiunto l'obiettivo!"
-                      : `Mancano ${weeklyGoal - weeklyTotal} punti`}
-                  </p>
+                  {goalCompleted && (
+                    <div
+                      className="
+      mt-4
+      rounded-xl
+      border
+      border-green-500/20
+      bg-green-500/10
+      p-3
+      text-green-300
+    "
+                    >
+                      🎉 Obiettivo completato!
+                    </div>
+                  )}
                 </section>
 
                 <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
@@ -872,6 +880,7 @@ active:scale-95
                       <AnimatePresence initial={false}>
                         {visibleActivity.map((item) => (
                           <motion.div
+                            layout
                             key={item.id}
                             initial={{
                               opacity: 0,
