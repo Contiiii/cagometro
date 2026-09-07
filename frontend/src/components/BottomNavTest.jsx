@@ -20,7 +20,7 @@ import { useTheme } from "../hooks/useTheme";
 const NAV_ITEMS = [
   {
     label: "Home",
-    path: "/homeTest",
+    path: "/",
     icon: Home,
   },
   {

@@ -2,6 +2,8 @@ import { Moon, Settings, Sun } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
+import poopIcon from "../assets/poop.png";
+
 import { useTheme } from "../hooks/useTheme";
 import { useProfile } from "../hooks/useProfile";
 
@@ -80,21 +82,26 @@ export default function Header({
           aria-label="Vai alla Home"
         >
           <div
-            className="
-              grid
-              h-10
-              w-10
-              shrink-0
-              place-items-center
-              rounded-2xl
-              bg-pink-500
-              text-lg
-              shadow-[0_8px_20px_rgba(236,72,153,0.28)]
-            "
-            aria-hidden="true"
-          >
-            💩
-          </div>
+  className="
+    grid
+    h-10
+    w-10
+    shrink-0
+    place-items-center
+    rounded-2xl
+    bg-pink-500
+    shadow-[0_8px_20px_rgba(236,72,153,0.28)]
+    overflow-hidden
+  "
+  aria-hidden="true"
+>
+  <img
+    src={poopIcon}
+    alt=""
+    className="h-6 w-6 object-contain select-none"
+    draggable={false}
+  />
+</div>
 
           <div className="min-w-0">
             <p
