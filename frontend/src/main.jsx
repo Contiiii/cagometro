@@ -8,6 +8,8 @@ import { AuthProvider } from "./context/AuthProvider.jsx";
 import { EntriesProvider } from "./context/EntriesProvider";
 import { ProfileProvider } from "./context/ProfileProvider";
 import { TeamProvider } from "./context/TeamProvider";
+import { ThemeProvider } from "./context/ThemeProvider";
+import { SettingsProvider } from "./context/SettingsProvider";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -22,7 +24,11 @@ createRoot(document.getElementById("root")).render(
         <ProfileProvider>
           <TeamProvider>
             <EntriesProvider>
-              <App />
+              <ThemeProvider>
+                <SettingsProvider>
+                  <App />
+                </SettingsProvider>
+              </ThemeProvider>
             </EntriesProvider>
           </TeamProvider>
         </ProfileProvider>
