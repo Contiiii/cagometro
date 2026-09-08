@@ -2,11 +2,19 @@ import { supabase } from "../lib/supabase";
 
 
 
-export async function createTeam({ name, description, avatarEmoji }) {
+export async function createTeam({
+  name,
+  description,
+  avatarEmoji,
+  privacy,
+  accent,
+}) {
   const { data, error } = await supabase.rpc("create_team", {
     team_name: name,
     team_description: description,
     team_avatar_emoji: avatarEmoji,
+    team_privacy: privacy,
+    team_accent: accent,
   });
 
   if (error) {
@@ -15,6 +23,7 @@ export async function createTeam({ name, description, avatarEmoji }) {
 
   return data;
 }
+
 
 export async function getMyTeam() {
   const { data, error } = await supabase.rpc("get_my_team");

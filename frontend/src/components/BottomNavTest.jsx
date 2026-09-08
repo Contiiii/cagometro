@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   },
   {
     label: "Teams",
-    path: "/teamstest",
+    path: "/teams",
     icon: UsersRound,
   },
   {

@@ -1,90 +1,423 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Clipboard,
+  Copy,
+  Crown,
+  Flame,
+  Link,
+  Medal,
+  Plus,
+  Settings,
+  Share2,
+  ShieldCheck,
+  Trophy,
+  UserPlus,
+  UsersRound,
+  Wifi,
+  X,
+} from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTheme } from "../hooks/useTheme";
+import { useTeam } from "../hooks/useTeam";
+import { useAuth } from "../hooks/useAuth";
+
+import Header from "../components/HeaderTest";
+import BottomNav from "../components/BottomNavTest";
+import CreateTeamModal from "../components/teams/CreateTeamModal";
 
 import toast from "react-hot-toast";
-import Header from "../components/Header";
-import BottomNav from "../components/BottomNav";
-
-import { motion, AnimatePresence } from "framer-motion";
-
-import { useTeam } from "../hooks/useTeam";
-
-import { useAuth } from "../hooks/useAuth";
 
 import {
   createTeam,
   joinTeam,
   leaveTeam,
-  updateTeam,
-  toggleTeamInvites,
+  createTeamActivity,
   transferOwnership,
   removeTeamMember,
+  updateTeam,
   regenerateInviteCode,
-  createTeamActivity,
 } from "../services/teamService";
 
-export default function Teams() {
+const getActivityIcon = (type) => {
+  const icons = {
+    entry_created: Plus,
+    member_joined: UserPlus,
+    member_left: UsersRound,
+    ownership_transferred: Crown,
+    member_removed: X,
+    streak_bonus: Flame,
+  };
+
+  return icons[type] || Activity;
+};
+
+const getActivityStyle = (type, isDark) => {
+  const styles = {
+    entry_created: isDark
+      ? "bg-pink-500/15 text-pink-400"
+      : "bg-pink-500/12 text-pink-600",
+
+    member_joined: isDark
+      ? "bg-emerald-400/15 text-emerald-400"
+      : "bg-emerald-500/12 text-emerald-700",
+
+    member_left: isDark
+      ? "bg-zinc-400/15 text-zinc-300"
+      : "bg-zinc-500/12 text-zinc-600",
+
+    ownership_transferred: isDark
+      ? "bg-amber-400/15 text-amber-300"
+      : "bg-amber-400/15 text-amber-700",
+
+    member_removed: isDark
+      ? "bg-rose-400/15 text-rose-400"
+      : "bg-rose-500/12 text-rose-700",
+
+    streak_bonus: isDark
+      ? "bg-orange-400/15 text-orange-400"
+      : "bg-orange-500/12 text-orange-700",
+  };
+
+  return styles[type] || styles.entry_created;
+};
+
+const getRankStyle = (rank, isDark) => {
+  if (rank === 1) {
+    return isDark
+      ? "border-amber-300/25 bg-amber-300/15 text-amber-300"
+      : "border-amber-500/25 bg-amber-400/15 text-amber-700";
+  }
+
+  if (rank === 2) {
+    return isDark
+      ? "border-zinc-300/20 bg-zinc-200/10 text-zinc-200"
+      : "border-zinc-500/20 bg-zinc-500/10 text-zinc-700";
+  }
+
+  if (rank === 3) {
+    return isDark
+      ? "border-orange-300/20 bg-orange-300/10 text-orange-300"
+      : "border-orange-500/20 bg-orange-400/15 text-orange-700";
+  }
+
+  return isDark
+    ? "border-white/[0.08] bg-white/[0.05] text-zinc-400"
+    : "border-zinc-900/[0.08] bg-zinc-900/[0.04] text-zinc-500";
+};
+
+const avatarGradients = [
+  "from-pink-400 to-fuchsia-600",
+  "from-violet-400 to-indigo-600",
+  "from-sky-400 to-blue-600",
+  "from-emerald-300 to-teal-600",
+  "from-amber-300 to-orange-500",
+];
+
+const TEAM_EMOJIS = [
+  "🏆",
+  "💩",
+  "🔥",
+  "🚀",
+  "⚡",
+  "👑",
+  "🎯",
+  "🌋",
+  "🍕",
+  "🦍",
+];
+
+const getAvatarGradient = (userId = "") => {
+  const normalizedId = String(userId || "");
+
+  const value = [...normalizedId].reduce(
+    (total, character) => total + character.charCodeAt(0),
+    0,
+  );
+
+  return avatarGradients[value % avatarGradients.length];
+};
+
+const getActivityText = (item) => {
+  const displayName = item.display_name || "Un utente";
+  const targetName = item.target_display_name || "un membro";
+  const points = Number(item.points || 0);
+
+  switch (item.activity_type) {
+    case "entry_created":
+      return `${displayName} ha registrato ${points} ${
+        points === 1 ? "punto" : "punti"
+      }`;
+
+    case "member_joined":
+      return `${displayName} è entrato nella squadra`;
+
+    case "member_left":
+      return `${displayName} ha lasciato la squadra`;
+
+    case "ownership_transferred":
+      return `${displayName} ha trasferito la proprietà${
+        item.target_display_name ? ` a ${targetName}` : ""
+      }`;
+
+    case "member_removed":
+      return `${displayName} ha rimosso ${targetName} dalla squadra`;
+
+    case "streak_bonus":
+      return `${displayName} ha ottenuto +${points} ${
+        points === 1 ? "punto bonus streak" : "punti bonus streak"
+      }`;
+
+    default:
+      return `${displayName} ha aggiornato la squadra`;
+  }
+};
+
+const formatActivityTime = (createdAt) => {
+  if (!createdAt) return "";
+
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleString("it-IT", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+export default function CagometroTeams() {
+  const prefersReducedMotion = useReducedMotion();
+
+  const { resolvedTheme } = useTheme();
+  const { user } = useAuth();
+
   const {
     team,
     members,
     leaderboard,
+    activity,
     refreshTeam,
     refreshMembers,
     refreshLeaderboard,
-    activity,
     refreshActivity,
   } = useTeam();
 
-  const [leaderboardPeriod, setLeaderboardPeriod] = useState("week");
+  const isDark = resolvedTheme === "dark";
 
-  const filteredLeaderboard = useMemo(() => {
+  const [rankingMode, setRankingMode] = useState("week");
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [showAllActivities, setShowAllActivities] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const visibleActivities = showAllActivities ? activity : activity.slice(0, 3);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  function openConfirm(config) {
+    setConfirmConfig(config);
+    setConfirmOpen(true);
+  }
+
+  const totalWeekly = leaderboard.reduce(
+    (total, member) => total + Number(member.weekly_total || 0),
+    0,
+  );
+
+  const weeklyGoal = 140;
+  const weeklyProgress = Math.min(
+    100,
+    Math.round((totalWeekly / weeklyGoal) * 100),
+  );
+
+  const ranking = useMemo(() => {
     return [...leaderboard].sort((a, b) => {
       const aScore =
-        leaderboardPeriod === "week"
+        rankingMode === "week"
           ? Number(a.weekly_total || 0)
           : Number(a.lifetime_total || 0);
 
       const bScore =
-        leaderboardPeriod === "week"
+        rankingMode === "week"
           ? Number(b.weekly_total || 0)
           : Number(b.lifetime_total || 0);
 
       return bScore - aScore;
     });
-  }, [leaderboard, leaderboardPeriod]);
+  }, [leaderboard, rankingMode]);
 
-  const [showCreateTeam, setShowCreateTeam] = useState(false);
+  const currentUserPosition = useMemo(() => {
+    const index = ranking.findIndex((member) => member.user_id === user?.id);
 
-  const [showJoinTeam, setShowJoinTeam] = useState(false);
+    return index >= 0 ? index + 1 : null;
+  }, [ranking, user?.id]);
 
-  const [teamDescription, setTeamDescription] = useState("");
+  const selectedData = useMemo(() => {
+    return (
+      leaderboard.find((member) => member.user_id === selectedMember) || null
+    );
+  }, [leaderboard, selectedMember]);
 
-  const [teamEmoji, setTeamEmoji] = useState("🏆");
+  const selectedPosition = useMemo(() => {
+    if (!selectedData) return null;
 
-  const [editingTeam, setEditingTeam] = useState(false);
+    const index = ranking.findIndex(
+      (member) => member.user_id === selectedData.user_id,
+    );
 
-  const [editName, setEditName] = useState("");
+    return index >= 0 ? index + 1 : null;
+  }, [ranking, selectedData]);
 
-  const [editDescription, setEditDescription] = useState("");
+  const selectedMembership = useMemo(() => {
+    if (!selectedData) return null;
 
-  const [editEmoji, setEditEmoji] = useState("🏆");
+    return (
+      members.find((member) => member.user_id === selectedData.user_id) || null
+    );
+  }, [members, selectedData]);
 
-  const [regenerating, setRegenerating] = useState(false);
+  const inviteCode = team?.invite_code ?? "";
 
-  const { user } = useAuth();
+  const inviteLink = inviteCode
+    ? `${window.location.origin}/join/${inviteCode}`
+    : "";
 
-  const TEAM_WEEKLY_GOAL = 100;
+  const theme = isDark
+    ? {
+        app: "bg-[#0c0c0f] text-zinc-100",
+        surface: "bg-zinc-900/80 border-white/[0.08]",
+        softSurface: "bg-white/[0.035] border-white/[0.07]",
+        muted: "text-zinc-400",
+        subtle: "text-zinc-500",
+        primaryText: "text-zinc-50",
+        header: "bg-[#0c0c0f]/80 border-white/[0.07]",
+        nav: "bg-zinc-950/80 border-white/[0.09]",
+        navInactive: "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05]",
+        secondary:
+          "bg-white/[0.055] border-white/[0.08] text-zinc-300 hover:bg-white/[0.09]",
+        sheet: "bg-[#17171b] border-white/[0.09]",
+        input:
+          "border-white/[0.10] bg-white/[0.05] text-zinc-100 placeholder:text-zinc-500",
+        focusOffset: "focus-visible:ring-offset-[#0c0c0f]",
+      }
+    : {
+        app: "bg-[#f8f5f3] text-zinc-900",
+        surface: "bg-white/85 border-zinc-200/80",
+        softSurface: "bg-zinc-900/[0.035] border-zinc-900/[0.07]",
+        muted: "text-zinc-600",
+        subtle: "text-zinc-500",
+        primaryText: "text-zinc-950",
+        header: "bg-[#f8f5f3]/80 border-zinc-900/[0.07]",
+        nav: "bg-white/85 border-zinc-900/[0.09]",
+        navInactive:
+          "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-900/[0.05]",
+        secondary:
+          "bg-zinc-900/[0.045] border-zinc-900/[0.08] text-zinc-700 hover:bg-zinc-900/[0.08]",
+        sheet: "bg-[#fdfbf9] border-zinc-900/[0.09]",
+        input:
+          "border-zinc-900/[0.12] bg-zinc-900/[0.04] text-zinc-900 placeholder:text-zinc-400",
+        focusOffset: "focus-visible:ring-offset-[#f8f5f3]",
+      };
 
-  const [activityLimit, setActivityLimit] = useState(5);
+  const copyInvite = async () => {
+    if (!inviteLink) {
+      toast.error("Codice invito non disponibile");
+      return;
+    }
 
-  const visibleActivity = activity.slice(0, activityLimit);
+    try {
+      await navigator.clipboard.writeText(inviteLink);
 
-  const [inviteCode, setInviteCode] = useState("");
-  const [joining, setJoining] = useState(false);
-  const [teamName, setTeamName] = useState("");
-  const [creating, setCreating] = useState(false);
+      setCopied(true);
+
+      window.setTimeout(() => {
+        setCopied(false);
+      }, 2200);
+    } catch (error) {
+      console.error("Errore durante la copia dell'invito:", error);
+      toast.error("Non è stato possibile copiare il link");
+    }
+  };
+
+  const shareInvite = async () => {
+    if (!inviteLink) {
+      toast.error("Codice invito non disponibile");
+      return;
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Unisciti a ${team?.team_name || "questa squadra"}`,
+          text: `Entra nella squadra ${team?.team_name || ""} su Cagometro.`,
+          url: inviteLink,
+        });
+
+        return;
+      } catch (error) {
+        if (error?.name === "AbortError") {
+          return;
+        }
+
+        console.error("Errore durante la condivisione:", error);
+      }
+    }
+
+    await copyInvite();
+  };
+
+  async function handleCreateTeam(payload) {
+    const name = payload.name?.trim();
+
+    if (!name) {
+      toast.error("Inserisci un nome squadra");
+      throw new Error("Nome squadra mancante");
+    }
+
+    try {
+      await createTeam({
+        name,
+        description: payload.description?.trim() || null,
+        avatarEmoji: "🏆",
+        privacy: payload.privacy,
+        accent: payload.accent,
+      });
+
+      await Promise.all([
+        refreshTeam(),
+        refreshMembers(),
+        refreshLeaderboard(),
+        refreshActivity(),
+      ]);
+
+      toast.success("Squadra creata");
+    } catch (error) {
+      console.error("Errore durante la creazione della squadra:", error);
+
+      toast.error(error.message || "Non è stato possibile creare la squadra");
+
+      throw error;
+    }
+  }
 
   async function handleJoinTeam() {
-    const code = inviteCode.trim().toUpperCase();
+    const code = joinCode.trim().toUpperCase();
 
     if (!code) {
       toast.error("Inserisci un codice invito");
@@ -100,11 +433,13 @@ export default function Teams() {
 
       await refreshTeam();
       await refreshMembers();
-
       await refreshLeaderboard();
       await refreshActivity();
 
       toast.success("Sei entrato nella squadra");
+
+      setJoinOpen(false);
+      setJoinCode("");
     } catch (error) {
       console.error(error);
 
@@ -114,1079 +449,1629 @@ export default function Teams() {
     }
   }
 
-  useEffect(() => {
-    refreshTeam().catch(console.error);
-    refreshMembers().catch(console.error);
-    refreshLeaderboard().catch(console.error);
-    refreshActivity().catch(console.error);
-  }, [refreshTeam, refreshMembers, refreshLeaderboard, refreshActivity]);
-
   async function handleLeaveTeam() {
-    try {
-      if (!window.confirm("Vuoi davvero lasciare la squadra?")) {
-        return;
-      }
+    openConfirm({
+      title: "Lascia squadra",
+      description:
+        team?.role === "owner"
+          ? "Sei il proprietario della squadra. Assicurati di aver trasferito la proprietà."
+          : "Vuoi davvero lasciare la squadra?",
+      confirmText: "Lascia",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          setLeaving(true);
 
-      await createTeamActivity("member_left");
+          await createTeamActivity("member_left");
+          await leaveTeam();
 
-      await leaveTeam();
+          setSelectedMember(null);
+          setInviteOpen(false);
+          setSettingsOpen(false);
+          setShowAllActivities(false);
 
-      await refreshTeam();
-      await refreshMembers();
+          await Promise.all([
+            refreshTeam(),
+            refreshMembers(),
+            refreshLeaderboard(),
+            refreshActivity(),
+          ]);
 
-      await refreshLeaderboard();
-      await refreshActivity();
-
-      toast.success("Hai lasciato la squadra");
-    } catch (error) {
-      console.error(error);
-
-      toast.error(error.message);
-    }
+          toast.success("Hai lasciato la squadra");
+        } catch (error) {
+          console.error(error);
+          throw error;
+        } finally {
+          setLeaving(false);
+        }
+      },
+    });
   }
 
-  async function handleCreateTeam() {
-    const name = teamName.trim();
+  async function handleTransferOwnership(member) {
+    openConfirm({
+      title: "Trasferisci proprietà",
+      description: `${member.display_name} diventerà il nuovo proprietario della squadra.`,
+      confirmText: "Trasferisci",
+      variant: "warning",
+      onConfirm: async () => {
+        try {
+          await transferOwnership(member.user_id);
 
-    if (!name) {
-      toast.error("Inserisci un nome squadra");
-      return;
-    }
+          await createTeamActivity("ownership_transferred", null, {
+            target_user_id: member.user_id,
+            target_display_name: member.display_name,
+          });
 
-    try {
-      setCreating(true);
+          await Promise.all([
+            refreshTeam(),
+            refreshMembers(),
+            refreshLeaderboard(),
+            refreshActivity(),
+          ]);
 
-      await createTeam({
-        name,
-        description: teamDescription || null,
-        avatarEmoji: teamEmoji,
-      });
+          toast.success(`${member.display_name} è ora il proprietario`);
 
-      await refreshTeam();
-      await refreshMembers();
-
-      await refreshLeaderboard();
-      await refreshActivity();
-
-      setTeamName("");
-
-      toast.success("Squadra creata");
-
-      setTeamName("");
-      setTeamDescription("");
-      setTeamEmoji("🏆");
-
-      setShowCreateTeam(false);
-    } catch (error) {
-      console.error(error);
-
-      toast.error(error.message);
-    } finally {
-      setCreating(false);
-    }
+          setMembersOpen(false);
+        } catch (error) {
+          console.error(error);
+          throw error;
+        }
+      },
+    });
   }
 
-  async function handleTransferOwnership(userId) {
-    try {
-      await createTeamActivity("ownership_transferred", null, {
-        targetUserId: userId,
-      });
+  async function handleRemoveMember(member) {
+    openConfirm({
+      title: "Rimuovi membro",
+      description: `Vuoi rimuovere ${member.display_name} dalla squadra?`,
+      confirmText: "Rimuovi",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await removeTeamMember(member.user_id);
 
-      await transferOwnership(userId);
+          await createTeamActivity("member_removed", null, {
+            target_user_id: member.user_id,
+            target_display_name: member.display_name,
+          });
 
-      await refreshTeam();
-      await refreshMembers();
+          await Promise.all([
+            refreshMembers(),
+            refreshLeaderboard(),
+            refreshActivity(),
+          ]);
 
-      toast.success("Proprietà trasferita");
-    } catch (error) {
-      console.error(error);
-
-      toast.error(error.message);
-    }
+          toast.success(`${member.display_name} è stato rimosso`);
+        } catch (error) {
+          console.error(error);
+          throw error;
+        }
+      },
+    });
   }
 
-  async function handleRemoveMember(userId) {
-    try {
-      if (!window.confirm("Vuoi davvero rimuovere questo membro?")) {
-        return;
-      }
+  function handleRegenerateInvite() {
+    setSettingsOpen(false);
 
-      await createTeamActivity("member_removed", null, {
-        targetUserId: userId,
-      });
+    openConfirm({
+      title: "Rigenera codice invito",
+      description:
+        "Il codice attuale e tutti i link già condivisi smetteranno di funzionare.",
+      confirmText: "Rigenera",
+      variant: "warning",
+      onConfirm: async () => {
+        await regenerateInviteCode();
+        await refreshTeam();
 
-      await removeTeamMember(userId);
-
-      await refreshMembers();
-
-      toast.success("Membro rimosso");
-    } catch (error) {
-      console.error(error);
-
-      toast.error(error.message);
-    }
+        setCopied(false);
+        toast.success("Nuovo codice invito generato");
+      },
+    });
   }
 
-  function handleStartEdit() {
-    setEditName(team.name ?? team.team_name);
+  const getInitials = (name = "") =>
+    name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
 
-    setEditDescription(team.description ?? "");
-
-    setEditEmoji(team.avatar_emoji ?? "🏆");
-
-    setEditingTeam(true);
-  }
-
-  async function handleUpdateTeam() {
-    try {
-      await updateTeam({
-        name: editName,
-        description: editDescription,
-        avatarEmoji: editEmoji,
-      });
-
-      await refreshTeam();
-      await refreshMembers();
-
-      setEditingTeam(false);
-
-      toast.success("Squadra aggiornata");
-    } catch (error) {
-      console.error(error);
-
-      toast.error(error.message);
-    }
-  }
-
-  async function handleToggleInvites() {
-    try {
-      await toggleTeamInvites(!team.invite_enabled);
-
-      await refreshTeam();
-
-      toast.success(
-        team.invite_enabled ? "Inviti disattivati" : "Inviti attivati",
-      );
-    } catch (error) {
-      console.error(error);
-
-      toast.error(error.message);
-    }
-  }
-
-  async function handleRegenerateCode() {
-    try {
-      setRegenerating(true);
-
-      await regenerateInviteCode();
-
-      await refreshTeam();
-
-      toast.success("Codice rigenerato");
-    } catch (error) {
-      console.error(error);
-
-      toast.error(error.message);
-    } finally {
-      setRegenerating(false);
-    }
-  }
-
-  const weeklyTotal = leaderboard.reduce(
-    (sum, player) => sum + Number(player.weekly_total || 0),
+  const totalLifetime = leaderboard.reduce(
+    (total, member) => total + Number(member.lifetime_total || 0),
     0,
   );
 
-  const lifetimeTotal = leaderboard.reduce(
-    (sum, player) => sum + Number(player.lifetime_total || 0),
-    0,
-  );
+  if (!team) {
+    return (
+      <div
+        className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
+      >
+        <Header eyebrow="Cagometro" title="Squadre" />
 
-  const averagePerMember =
-    members.length > 0 ? (weeklyTotal / members.length).toFixed(1) : 0;
+        <main className="mx-auto flex min-h-[calc(100vh-72px)] max-w-2xl items-center px-5 pb-36 pt-8 sm:px-8">
+          <section
+            className={`relative w-full overflow-hidden rounded-[2rem] border p-6 sm:p-10 ${theme.surface}`}
+          >
+            <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-pink-500/[0.10] blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-amber-400/[0.07] blur-3xl" />
 
-  const mvp = leaderboard[0];
+            <div className="relative">
+              <div className="grid h-16 w-16 place-items-center rounded-[1.4rem] bg-pink-500 text-3xl shadow-[0_12px_30px_rgba(236,72,153,0.25)]">
+                💩
+              </div>
 
-  const goalProgress = Math.min((weeklyTotal / TEAM_WEEKLY_GOAL) * 100, 100);
-
-  const goalCompleted = weeklyTotal >= TEAM_WEEKLY_GOAL;
-
-  return (
-    <div className="min-h-dvh bg-black text-white">
-      <Header />
-
-      <main className="mx-auto max-w-xl p-5 pb-28">
-        {!team ? (
-          <div className="space-y-5">
-            <h1 className="text-3xl font-bold">🏆 Squadre</h1>
-
-            <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="mb-3 text-xl font-semibold">
-                Crea o unisciti a una squadra
-              </h2>
-
-              <p className="mb-5 text-zinc-400">
-                Sfida i tuoi amici, scala la classifica e conquista il titolo di
-                MVP.
+              <p className={`mt-8 text-sm font-semibold ${theme.muted}`}>
+                La squadra è il posto dove le tue statistiche diventano una
+                storia condivisa.
               </p>
 
-              <div className="space-y-3">
+              <h1
+                className={`mt-3 max-w-md text-[clamp(2.2rem,8vw,4rem)] font-black leading-[0.95] tracking-[-0.065em] ${theme.primaryText}`}
+              >
+                Da soli è un dato.
+                <br />
+                Insieme è una <span className="text-pink-500">leggenda.</span>
+              </h1>
+
+              <div className="mt-9 grid gap-3 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowCreateTeam(true);
-                    setShowJoinTeam(false);
-                  }}
-                  className="
-                    w-full
-                    rounded-2xl
-                    bg-pink-600
-                    p-4
-                    font-semibold
-                    transition-transform
-active:scale-95
-                  "
+                  onClick={() => setCreateOpen(true)}
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.24)] transition-transform hover:bg-pink-400 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
                 >
-                  ➕ Crea squadra
+                  <Plus className="h-5 w-5" strokeWidth={2.5} />
+                  Crea una squadra
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowJoinTeam(true);
-                    setShowCreateTeam(false);
-                  }}
-                  className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-zinc-700
-                    p-4
-                    font-semibold
-                    transition-transform
-active:scale-95
-                  "
+                  onClick={() => setJoinOpen(true)}
+                  className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 ${theme.secondary} ${theme.focusOffset}`}
                 >
-                  🎟️ Entra con codice
+                  <Link className="h-5 w-5" strokeWidth={2.2} />
+                  Entra con un codice
                 </button>
               </div>
-            </section>
 
-            {showCreateTeam && (
-              <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-                <h3 className="mb-4 text-lg font-semibold">➕ Nuova squadra</h3>
+              <div
+                className={`mt-7 flex items-center gap-2 text-xs font-semibold ${theme.muted}`}
+              >
+                <Wifi className="h-4 w-4 text-emerald-500" strokeWidth={2.2} />
+                Le squadre si aggiornano in tempo reale.
+              </div>
+            </div>
+          </section>
+        </main>
 
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Nome squadra"
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                    className="
-                      w-full
-                      rounded-2xl
-                      border
-                      border-zinc-700
-                      bg-zinc-800
-                      p-4
-                    "
-                  />
+        <BottomNav />
 
-                  <textarea
-                    placeholder="Descrizione"
-                    value={teamDescription}
-                    onChange={(e) => setTeamDescription(e.target.value)}
-                    maxLength={150}
-                    className="
-                      w-full
-                      rounded-2xl
-                      border
-                      border-zinc-700
-                      bg-zinc-800
-                      p-4
-                    "
-                  />
-
-                  <input
-                    type="text"
-                    placeholder="🏆"
-                    value={teamEmoji}
-                    onChange={(e) => setTeamEmoji(e.target.value)}
-                    maxLength={2}
-                    className="
-                      w-full
-                      rounded-2xl
-                      border
-                      border-zinc-700
-                      bg-zinc-800
-                      p-4
-                      text-center
-                      text-2xl
-                    "
-                  />
-
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-800/50 p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="text-3xl">{teamEmoji || "🏆"}</div>
-
-                      <div>
-                        <p className="font-semibold">
-                          {teamName || "Nome squadra"}
-                        </p>
-
-                        <p className="text-sm text-zinc-400">
-                          {teamDescription || "Descrizione squadra"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleCreateTeam}
-                    disabled={creating}
-                    className="
-                      w-full
-                      rounded-2xl
-                      bg-pink-600
-                      p-4
-                      font-semibold
-                      disabled:opacity-50
-                    "
-                  >
-                    {creating ? "Creazione..." : "Crea squadra"}
-                  </button>
-                </div>
-              </section>
-            )}
-
-            {showJoinTeam && (
-              <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-                <h3 className="mb-4 text-lg font-semibold">🎟️ Codice invito</h3>
-
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    placeholder="TRONO-8K4P"
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value)}
-                    className="
-                      w-full
-                      rounded-2xl
-                      border
-                      border-zinc-700
-                      bg-zinc-800
-                      p-4
-                      text-center
-                      uppercase
-                    "
-                  />
-
-                  <button
-                    type="button"
-                    onClick={handleJoinTeam}
-                    disabled={joining}
-                    className="
-                      w-full
-                      rounded-2xl
-                      border
-                      border-zinc-700
-                      p-4
-                      font-semibold
-                    "
-                  >
-                    {joining ? "Ingresso..." : "Entra nella squadra"}
-                  </button>
-                </div>
-              </section>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-5">
-            <section
-              className="
-    rounded-3xl
-    border
-    border-pink-500/10
-    bg-gradient-to-br
-    from-zinc-900
-    to-zinc-950
-    p-6
-    shadow-lg
-    shadow-pink-500/5
-    transition-all
-    duration-300
-  "
+        <AnimatePresence>
+          {joinOpen && (
+            <ModalShell
+              theme={theme}
+              prefersReducedMotion={prefersReducedMotion}
+              onClose={() => setJoinOpen(false)}
             >
-              <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-pink-500/15 text-3xl">
-                  {team.avatar_emoji}
-                </div>
-
-                <div>
-                  <h1 className="text-3xl font-bold">{team.team_name}</h1>
-
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(team.invite_code);
-                        toast.success("Codice copiato");
-                      }}
-                      className="
-      rounded-lg
-      bg-pink-500/10
-      px-3
-      py-1
-      text-xs
-      font-medium
-      text-pink-300
-    "
+              <div className="p-6 sm:p-7">
+                <div className="flex items-start justify-between gap-5">
+                  <div>
+                    <p className={`text-sm font-semibold ${theme.muted}`}>
+                      Entra in squadra
+                    </p>
+                    <h2
+                      className={`mt-1 text-2xl font-black tracking-tight ${theme.primaryText}`}
                     >
-                      {team.invite_code}
-                    </button>
-
-                    {team.role === "owner" && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={handleRegenerateCode}
-                          className="
-    rounded-lg
-    bg-amber-500/15
-    px-3
-    py-1
-    text-xs
-    text-amber-300
-    transition-transform
-    active:scale-95
-  "
-                        >
-                          <span
-                            className={
-                              regenerating
-                                ? "inline-block animate-[spin_2s_linear_infinite]"
-                                : ""
-                            }
-                          >
-                            🔄{" "}
-                          </span>
-                          Invito
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleStartEdit}
-                          className="
-          rounded-lg
-          bg-zinc-800
-          px-3
-          py-1
-          text-xs
-          text-zinc-300
-        "
-                        >
-                          Modifica
-                        </button>
-                      </>
-                    )}
+                      Hai un codice?
+                    </h2>
                   </div>
 
-                  <p className="mt-2 text-zinc-400">
-                    {team.description || "Nessuna descrizione"}
-                  </p>
+                  <CloseButton
+                    onClick={() => setJoinOpen(false)}
+                    theme={theme}
+                    isDark={isDark}
+                  />
                 </div>
+
+                <label
+                  htmlFor="team-code"
+                  className={`mt-7 block text-sm font-bold ${theme.primaryText}`}
+                >
+                  Codice squadra
+                </label>
+
+                <input
+                  id="team-code"
+                  value={joinCode}
+                  onChange={(event) =>
+                    setJoinCode(event.target.value.toUpperCase())
+                  }
+                  placeholder="ES. CAGO-7F9K"
+                  className={`mt-2 min-h-14 w-full rounded-2xl border px-4 font-mono text-base font-bold tracking-[0.12em] outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 ${theme.input}`}
+                />
+
+                <button
+                  type="button"
+                  onClick={handleJoinTeam}
+                  disabled={joining}
+                  className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(236,72,153,0.22)] transition hover:bg-pink-400 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+                >
+                  <UsersRound className="h-5 w-5" strokeWidth={2.3} />
+                  {joining ? "Ingresso..." : "Entra nella squadra"}
+                </button>
               </div>
-            </section>
+            </ModalShell>
+          )}
+        </AnimatePresence>
+        <CreateTeamModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreate={handleCreateTeam}
+          isDark={isDark}
+        />
+      </div>
+    );
+  }
 
-            {editingTeam ? (
-              <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-                <h2 className="mb-4 text-lg font-semibold">
-                  ✏️ Modifica squadra
-                </h2>
+  return (
+    <div
+      className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
+    >
+      <Header eyebrow="Squadra attiva" title={team?.team_name || "Squadra"} />
 
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="
-                      w-full
-                      rounded-2xl
-                      border
-                      border-zinc-700
-                      bg-zinc-800
-                      p-4
-                    "
-                  />
+      <main className="mx-auto w-full max-w-5xl px-5 pb-36 pt-7 sm:px-8 sm:pt-10">
+        <section className="mx-auto max-w-3xl">
+          <div className="relative">
+            <div
+              className={`relative overflow-hidden rounded-[2rem] border ${theme.surface}`}
+            >
+              <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-pink-500/[0.08] blur-3xl" />
+              <div className="pointer-events-none absolute -left-10 bottom-0 h-24 w-24 rounded-full bg-amber-400/[0.06] blur-3xl" />
 
-                  <textarea
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    className="
-                      w-full
-                      rounded-2xl
-                      border
-                      border-zinc-700
-                      bg-zinc-800
-                      p-4
-                    "
-                  />
-
-                  <input
-                    type="text"
-                    value={editEmoji}
-                    maxLength={2}
-                    onChange={(e) => setEditEmoji(e.target.value)}
-                    className="
-                      w-full
-                      rounded-2xl
-                      border
-                      border-zinc-700
-                      bg-zinc-800
-                      p-4
-                      text-center
-                      text-2xl
-                    "
-                  />
-
-                  <button
-                    type="button"
-                    onClick={handleToggleInvites}
-                    className={`
-                      w-full
-                      rounded-2xl
-                      p-4
-                      font-medium
-                      ${
-                        team.invite_enabled
-                          ? "bg-green-500/15 text-green-300"
-                          : "bg-red-500/15 text-red-300"
-                      }
-                    `}
-                  >
-                    {team.invite_enabled
-                      ? "✅ Inviti attivi"
-                      : "❌ Inviti disattivati"}
-                  </button>
-
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-800/50 p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="text-3xl">{editEmoji || "🏆"}</div>
-
-                      <div>
-                        <p className="font-semibold">
-                          {editName || "Nome squadra"}
-                        </p>
-
-                        <p className="text-sm text-zinc-400">
-                          {editDescription || "Descrizione squadra"}
-                        </p>
-                      </div>
-                    </div>
+              <div className="relative p-4 sm:p-5">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-[1.35rem] bg-pink-500 text-2xl shadow-[0_12px_30px_rgba(236,72,153,0.28)] sm:h-16 sm:w-16 sm:text-3xl">
+                    {team?.avatar_emoji || "🏆"}
                   </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditingTeam(false)}
-                      className="
-                        flex-1
-                        rounded-2xl
-                        border
-                        border-zinc-700
-                        p-3
-                      "
-                    >
-                      Annulla
-                    </button>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1
+                        className={`min-w-0 break-words text-[clamp(1.35rem,5vw,2.2rem)] font-black leading-[0.95] tracking-[-0.055em] ${theme.primaryText}`}
+                      >
+                        {team?.team_name || "Squadra senza nome"}
+                      </h1>
 
-                    <button
-                      type="button"
-                      onClick={handleUpdateTeam}
-                      className="
-                        flex-1
-                        rounded-2xl
-                        bg-pink-600
-                        p-3
-                        font-semibold
-                      "
+                      {team?.role === "owner" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-pink-500/10 px-2.5 py-1 text-[10px] font-extrabold text-pink-500 sm:text-[11px]">
+                          <ShieldCheck
+                            className="h-3.5 w-3.5"
+                            strokeWidth={2.4}
+                          />
+                          ADMIN
+                        </span>
+                      )}
+                    </div>
+
+                    <p
+                      className={`mt-2 max-w-[52ch] text-sm font-medium leading-relaxed ${theme.muted}`}
                     >
-                      Salva
-                    </button>
+                      {team?.description ||
+                        "Nessuna descrizione della squadra."}
+                    </p>
                   </div>
                 </div>
-              </section>
-            ) : (
-              <>
-                <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
-                  <h2 className="text-lg font-semibold">🏆 Classifica</h2>
 
-                  <div className="mt-2 mb-3 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setLeaderboardPeriod("week")}
-                      className={`rounded-2xl px-4 py-2 text-sm font-medium transition-all ${
-                        leaderboardPeriod === "week"
-                          ? "bg-pink-600 text-white shadow-lg shadow-pink-600/20"
-                          : "bg-zinc-800 text-zinc-400"
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${
+                        isDark
+                          ? "border-white/[0.08] bg-white/[0.04]"
+                          : "border-zinc-900/[0.08] bg-zinc-900/[0.03]"
                       }`}
                     >
-                      Settimana
-                    </button>
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
+                      Squadra attiva
+                    </span>
 
-                    <button
-                      type="button"
-                      onClick={() => setLeaderboardPeriod("all")}
-                      className={`rounded-2xl px-4 py-2 text-sm font-medium transition-all ${
-                        leaderboardPeriod === "all"
-                          ? "bg-pink-600 text-white shadow-lg shadow-pink-600/20"
-                          : "bg-zinc-800 text-zinc-400"
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${
+                        isDark
+                          ? "border-white/[0.08] bg-white/[0.04]"
+                          : "border-zinc-900/[0.08] bg-zinc-900/[0.03]"
                       }`}
                     >
-                      Storico
-                    </button>
-                  </div>
-
-                  {leaderboard.length === 0 ? (
-                    <div className="text-center text-zinc-500">
-                      Nessun punteggio disponibile
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-2">
-                        {filteredLeaderboard.map((player, index) => (
-                          <div
-                            key={player.user_id}
-                            className={`flex items-center justify-between rounded-xl p-3 ${
-                              index === 0
-                                ? "border border-amber-500/20 bg-amber-500/10"
-                                : "bg-zinc-800/40"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="w-6 text-center">
-                                {index === 0
-                                  ? "🥇"
-                                  : index === 1
-                                    ? "🥈"
-                                    : index === 2
-                                      ? "🥉"
-                                      : `#${index + 1}`}
-                              </span>
-
-                              <div>
-                                <div>
-                                  {player.display_name}
-                                  {player.user_id === user?.id && " (tu)"}
-                                </div>
-
-                                <div className="text-xs text-zinc-500">
-                                  {leaderboardPeriod === "week"
-                                    ? `Storico: ${player.lifetime_total}`
-                                    : `Settimana: ${player.weekly_total}`}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="text-right">
-                              <div className="font-bold text-pink-400">
-                                {leaderboardPeriod === "week"
-                                  ? player.weekly_total
-                                  : player.lifetime_total}
-                              </div>
-
-                              <div className="text-xs text-zinc-500">
-                                {leaderboardPeriod === "week"
-                                  ? "settimana"
-                                  : "storico"}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 border-t border-zinc-800 pt-4">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-zinc-300">
-                            Totale squadra
-                          </span>
-
-                          <span className="text-lg font-bold text-pink-400">
-                            {leaderboardPeriod === "week"
-                              ? weeklyTotal
-                              : lifetimeTotal}
-                          </span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </section>
-
-                <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
-                  <h2 className="mb-4 text-lg font-semibold">
-                    📊 Statistiche squadra
-                  </h2>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-400">Punti settimana</span>
-
-                      <span className="font-semibold text-pink-400">
-                        {weeklyTotal}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-400">Punti storico</span>
-
-                      <span className="font-semibold">{lifetimeTotal}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-400">Media per membro</span>
-
-                      <span className="font-semibold">{averagePerMember}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-400">MVP settimana</span>
-
-                      <span className="font-semibold text-amber-400">
-                        👑 {mvp?.display_name ?? "-"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-400">Membri attivi</span>
-
-                      <span className="font-semibold">{members.length}</span>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
-                  <h2 className="mb-4 text-lg font-semibold">
-                    🎯 Obiettivo squadra
-                  </h2>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-zinc-400">Progresso settimanale</span>
-
-                    <span className="font-semibold text-pink-400">
-                      {weeklyTotal} / {TEAM_WEEKLY_GOAL}
+                      <UsersRound className="h-3.5 w-3.5" strokeWidth={2.2} />
+                      {members.length}{" "}
+                      {members.length === 1 ? "membro" : "membri"}
                     </span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-zinc-800">
-                    <div
-                      style={{
-                        width: `${goalProgress}%`,
-                      }}
-                      className="
-        h-full
-        rounded-full
-        bg-gradient-to-r
-        from-pink-500
-        to-pink-400
-        transition-all
-        duration-500
-      "
-                    />
+
+                  <div
+                    className={`grid gap-2 ${
+                      team?.role === "owner" ? "grid-cols-2" : "grid-cols-1"
+                    } sm:flex`}
+                  >
+                    {team?.role === "owner" && (
+                      <button
+                        type="button"
+                        onClick={() => setSettingsOpen(true)}
+                        aria-label="Gestisci squadra"
+                        className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${theme.secondary}`}
+                      >
+                        <Settings className="h-4 w-4" strokeWidth={2.2} />
+                        <span>Gestisci</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setInviteOpen(true)}
+                      aria-label="Invita un membro"
+                      disabled={!inviteCode}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-4 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(236,72,153,0.22)] transition hover:bg-pink-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+                    >
+                      <UserPlus className="h-4 w-4" strokeWidth={2.5} />
+                      <span>Invita</span>
+                    </button>
                   </div>
-                  <p className="mt-3 text-sm text-zinc-400">
-                    {goalProgress.toFixed(0)}% completato
-                  </p>
-                  {goalCompleted && (
-                    <div
-                      className="
-      mt-4
-      rounded-xl
-      border
-      border-green-500/20
-      bg-green-500/10
-      p-3
-      text-green-300
-    "
-                    >
-                      🎉 Obiettivo completato!
-                    </div>
-                  )}
-                </section>
-
-                <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
-                  <h2 className="mb-4 text-lg font-semibold">
-                    📢 Attività recenti
-                  </h2>
-
-                  {activity.length > 0 && (
-                    <p className="mb-3 text-xs text-zinc-500">
-                      Mostrate {visibleActivity.length} di {activity.length}
-                    </p>
-                  )}
-
-                  {activity.length === 0 ? (
-                    <div className="text-center text-zinc-500">
-                      Nessuna attività disponibile
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <AnimatePresence initial={false}>
-                        {visibleActivity.map((item) => (
-                          <motion.div
-                            layout
-                            key={item.id}
-                            initial={{
-                              opacity: 0,
-                              y: -12,
-                              scale: 0.97,
-                            }}
-                            animate={{
-                              opacity: 1,
-                              y: 0,
-                              scale: 1,
-                            }}
-                            exit={{
-                              opacity: 0,
-                              y: 8,
-                            }}
-                            transition={{
-                              duration: 0.25,
-                            }}
-                            className="rounded-xl bg-zinc-800/40 px-3 py-2"
-                          >
-                            <p className="text-sm text-zinc-300">
-                              {item.activity_type === "entry_created" && (
-                                <>
-                                  🔥 {item.display_name || "Utente"} ha
-                                  registrato{" "}
-                                  <span className="font-semibold text-pink-400">
-                                    {item.points}
-                                  </span>{" "}
-                                  {Number(item.points) === 1
-                                    ? "punto"
-                                    : "punti"}
-                                </>
-                              )}
-
-                              {item.activity_type === "member_joined" && (
-                                <>
-                                  👋 {item.display_name || "Un utente"} è
-                                  entrato nella squadra
-                                </>
-                              )}
-
-                              {item.activity_type === "member_left" && (
-                                <>
-                                  🚪 {item.display_name || "Un utente"} ha
-                                  lasciato la squadra
-                                </>
-                              )}
-
-                              {item.activity_type ===
-                                "ownership_transferred" && (
-                                <>
-                                  👑 {item.display_name || "Un utente"} ha
-                                  trasferito la proprietà
-                                  {item.target_display_name
-                                    ? ` a ${item.target_display_name}`
-                                    : ""}
-                                </>
-                              )}
-
-                              {item.activity_type === "member_removed" && (
-                                <>
-                                  ❌ {item.display_name || "Un utente"} ha
-                                  rimosso{" "}
-                                  {item.target_display_name || "un membro"}{" "}
-                                  dalla squadra
-                                </>
-                              )}
-
-                              {item.activity_type === "streak_bonus" && (
-                                <>
-                                  ⚡ {item.display_name || "Un utente"} ha
-                                  ottenuto{" "}
-                                  <span className="font-semibold text-amber-400">
-                                    +{item.points}
-                                  </span>{" "}
-                                  {Number(item.points) === 1
-                                    ? "punto bonus streak"
-                                    : "punti bonus streak"}
-                                </>
-                              )}
-                            </p>
-
-                            <p className="text-[11px] text-zinc-500">
-                              {new Date(item.created_at).toLocaleString(
-                                "it-IT",
-                              )}
-                            </p>
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  )}
-                </section>
-                <div className="mt-4 flex gap-2">
-                  {activity.length > visibleActivity.length && (
-                    <button
-                      type="button"
-                      onClick={() => setActivityLimit((prev) => prev + 5)}
-                      className="
-        flex-1
-        rounded-xl
-        border
-        border-zinc-700
-        bg-zinc-800/40
-        p-3
-        text-sm
-        font-medium
-        text-zinc-300
-      "
-                    >
-                      Carica altre
-                    </button>
-                  )}
-
-                  {activityLimit > 5 && (
-                    <button
-                      type="button"
-                      onClick={() => setActivityLimit(5)}
-                      className="
-        flex-1
-        rounded-xl
-        border
-        border-zinc-700
-        bg-zinc-900
-        p-3
-        text-sm
-        font-medium
-        text-zinc-400
-      "
-                    >
-                      Mostra meno
-                    </button>
-                  )}
                 </div>
-                <section className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
-                  <h2 className="mb-4 text-lg font-semibold">
-                    👥 Membri ({members.length}/10)
-                  </h2>
+              </div>
 
-                  {members.length === 0 ? (
-                    <div className="text-center text-zinc-500">
-                      Nessun membro presente
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {members.map((member) => (
-                        <div
-                          key={member.user_id}
-                          className="
-                            flex
-                            items-center
-                            justify-between
-                            rounded-2xl
-                            border
-                            border-zinc-800
-                            bg-zinc-800/40
-                            p-3
-                          "
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-700 font-semibold">
-                              {(member.display_name || "?")
-                                .charAt(0)
-                                .toUpperCase()}
-                            </div>
+              <div
+                className={`grid grid-cols-3 border-t ${isDark ? "border-white/[0.08]" : "border-zinc-900/[0.08]"}`}
+              >
+                <div className="px-4 py-4 sm:px-5">
+                  <p
+                    className={`text-[11px] font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+                  >
+                    Membri
+                  </p>
+                  <p
+                    className={`mt-1 text-xl font-black tracking-tight ${theme.primaryText}`}
+                  >
+                    {members.length}
+                  </p>
+                </div>
 
-                            <div>
-                              <p className="font-medium">
-                                {member.display_name || "Utente"}
-
-                                {member.user_id === user?.id && (
-                                  <span className="ml-2 text-xs text-pink-400">
-                                    (tu)
-                                  </span>
-                                )}
-                              </p>
-
-                              {member.role === "owner" && (
-                                <p className="text-xs text-amber-400">
-                                  👑 Owner
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {team.role === "owner" && member.role !== "owner" && (
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleTransferOwnership(member.user_id)
-                                }
-                                className="
-                                    rounded-lg
-                                    bg-amber-500/15
-                                    px-2
-                                    py-1
-                                    text-xs
-                                    text-amber-300
-                                  "
-                              >
-                                Owner
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleRemoveMember(member.user_id)
-                                }
-                                className="
-                                    rounded-lg
-                                    bg-red-500/15
-                                    px-2
-                                    py-1
-                                    text-xs
-                                    text-red-300
-                                  "
-                              >
-                                Rimuovi
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-                <button
-                  type="button"
-                  onClick={handleLeaveTeam}
-                  className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-red-500/20
-                    bg-red-500/10
-                    p-4
-                    font-semibold
-                    text-red-300
-                    transition
-                    hover:bg-red-500/20
-                    transition-transform
-active:scale-95
-                  "
+                <div
+                  className={`px-4 py-4 sm:px-5 ${isDark ? "border-x border-white/[0.08]" : "border-x border-zinc-900/[0.08]"}`}
                 >
-                  🚪 Lascia squadra
-                </button>
-              </>
+                  <p
+                    className={`text-[11px] font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+                  >
+                    Totale
+                  </p>
+                  <p
+                    className={`mt-1 text-xl font-black tracking-tight ${theme.primaryText}`}
+                  >
+                    {totalLifetime.toLocaleString("it-IT")}
+                  </p>
+                </div>
+
+                <div className="px-4 py-4 sm:px-5">
+                  <p
+                    className={`text-[11px] font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+                  >
+                    Posizione
+                  </p>
+                  <p
+                    className={`mt-1 text-xl font-black tracking-tight ${theme.primaryText}`}
+                  >
+                    {currentUserPosition ? `#${currentUserPosition}` : "-"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto mt-5 max-w-3xl">
+          <article className={`rounded-[1.7rem] border p-5 ${theme.surface}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className={`text-sm font-bold ${theme.primaryText}`}>
+                  Obiettivo settimanale
+                </p>
+                <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
+                  Mancano {Math.max(0, weeklyGoal - totalWeekly)} registrazioni
+                  al traguardo.
+                </p>
+              </div>
+
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-400/15 text-amber-500">
+                <Flame className="h-5 w-5" strokeWidth={2.3} />
+              </span>
+            </div>
+
+            <div className="mt-6 flex items-end justify-between gap-4">
+              <div>
+                <span
+                  className={`text-3xl font-black tracking-[-0.06em] ${theme.primaryText}`}
+                >
+                  {totalWeekly}
+                </span>
+                <span className={`ml-2 text-sm font-bold ${theme.muted}`}>
+                  / {weeklyGoal}
+                </span>
+              </div>
+
+              <span className="text-sm font-extrabold text-pink-500">
+                {weeklyProgress}%
+              </span>
+            </div>
+
+            <div
+              className={`mt-3 h-2.5 overflow-hidden rounded-full ${isDark ? "bg-white/[0.08]" : "bg-zinc-900/[0.08]"}`}
+            >
+              <motion.div
+                initial={false}
+                animate={{ width: `${weeklyProgress}%` }}
+                transition={{
+                  duration: prefersReducedMotion ? 0 : 0.55,
+                  ease: "easeOut",
+                }}
+                className="h-full rounded-full bg-pink-500"
+              />
+            </div>
+          </article>
+        </section>
+
+        <section className="mx-auto mt-7 max-w-3xl">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2
+                className={`mt-1 text-2xl font-black tracking-[-0.055em] ${theme.primaryText}`}
+              >
+                La classifica
+              </h2>
+            </div>
+
+            <div className={`flex rounded-xl border p-1 ${theme.softSurface}`}>
+              <button
+                type="button"
+                onClick={() => setRankingMode("week")}
+                aria-pressed={rankingMode === "week"}
+                className={`min-h-9 rounded-lg px-3 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
+                  rankingMode === "week"
+                    ? isDark
+                      ? "bg-zinc-100 text-zinc-950 shadow-sm"
+                      : "bg-zinc-900 text-white shadow-sm"
+                    : theme.muted
+                }`}
+              >
+                Settimana
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRankingMode("all")}
+                aria-pressed={rankingMode === "all"}
+                className={`min-h-9 rounded-lg px-3 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
+                  rankingMode === "all"
+                    ? isDark
+                      ? "bg-zinc-100 text-zinc-950 shadow-sm"
+                      : "bg-zinc-900 text-white shadow-sm"
+                    : theme.muted
+                }`}
+              >
+                Storico
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`mt-4 overflow-hidden rounded-[1.75rem] border ${theme.surface}`}
+          >
+            {ranking.length === 0 ? (
+              <div className="px-5 py-10 text-center">
+                <Trophy
+                  className={`mx-auto h-7 w-7 ${theme.subtle}`}
+                  strokeWidth={1.8}
+                />
+
+                <p className={`mt-3 text-sm font-bold ${theme.primaryText}`}>
+                  Nessun punteggio disponibile
+                </p>
+
+                <p className={`mt-1 text-xs ${theme.muted}`}>
+                  Le registrazioni della squadra appariranno qui.
+                </p>
+              </div>
+            ) : (
+              ranking.map((member, index) => {
+                const position = index + 1;
+                const isCurrentUser = member.user_id === user?.id;
+
+                const membership = members.find(
+                  (item) => item.user_id === member.user_id,
+                );
+
+                const isOwner = membership?.role === "owner";
+
+                const avatarGradient =
+                  member.avatar || getAvatarGradient(member.user_id);
+
+                const metric =
+                  rankingMode === "week"
+                    ? Number(member.weekly_total || 0)
+                    : Number(member.lifetime_total || 0);
+
+                return (
+                  <motion.button
+                    layout
+                    key={member.user_id}
+                    type="button"
+                    onClick={() => setSelectedMember(member.user_id)}
+                    initial={
+                      prefersReducedMotion ? false : { opacity: 0, y: 10 }
+                    }
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={
+                      prefersReducedMotion
+                        ? { duration: 0 }
+                        : {
+                            layout: {
+                              type: "spring",
+                              stiffness: 450,
+                              damping: 35,
+                            },
+                            delay: index * 0.04,
+                            duration: 0.24,
+                          }
+                    }
+                    className={`flex min-h-[76px] w-full items-center gap-3 px-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${
+                      isCurrentUser
+                        ? isDark
+                          ? "bg-pink-500/[0.10]"
+                          : "bg-pink-500/[0.07]"
+                        : isDark
+                          ? "hover:bg-white/[0.045]"
+                          : "hover:bg-zinc-900/[0.035]"
+                    } ${index !== ranking.length - 1 ? (isDark ? "border-b border-white/[0.07]" : "border-b border-zinc-900/[0.07]") : ""}`}
+                  >
+                    <span
+                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl border text-xs font-black ${getRankStyle(position, isDark)}`}
+                    >
+                      {position === 1 ? (
+                        <Crown className="h-4 w-4" strokeWidth={2.2} />
+                      ) : position === 2 || position === 3 ? (
+                        <Medal className="h-4 w-4" strokeWidth={2.2} />
+                      ) : (
+                        position
+                      )}
+                    </span>
+
+                    <div className="relative shrink-0">
+                      <div
+                        className={`grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br ${avatarGradient} text-xs font-black text-white`}
+                      >
+                        {getInitials(member.display_name)}
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`truncate text-sm font-extrabold ${theme.primaryText}`}
+                        >
+                          {member.display_name}
+                        </span>
+                        {isCurrentUser && (
+                          <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-500">
+                            TU
+                          </span>
+                        )}
+
+                        {isOwner && (
+                          <Crown
+                            className="h-3.5 w-3.5 text-amber-500"
+                            strokeWidth={2.4}
+                            aria-label="Proprietario della squadra"
+                          />
+                        )}
+                      </div>
+
+                      <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
+                        {rankingMode === "week" ? (
+                          <>
+                            Storico:{" "}
+                            {Number(member.lifetime_total || 0).toLocaleString(
+                              "it-IT",
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            Settimana:{" "}
+                            {Number(member.weekly_total || 0).toLocaleString(
+                              "it-IT",
+                            )}
+                          </>
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className="text-right">
+                        <p
+                          className={`text-lg font-black leading-none tracking-tight ${theme.primaryText}`}
+                        >
+                          {metric.toLocaleString("it-IT")}
+                        </p>
+                      </div>
+
+                      <ChevronRight
+                        className={`h-4 w-4 ${theme.subtle}`}
+                        strokeWidth={2.2}
+                      />
+                    </div>
+                  </motion.button>
+                );
+              })
             )}
           </div>
-        )}
+        </section>
+
+        <section className="mx-auto mt-8 max-w-3xl">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2
+                className={`mt-1 text-2xl font-black tracking-[-0.055em] ${theme.primaryText}`}
+              >
+                Attività recente
+              </h2>
+            </div>
+
+            <span className="flex items-center gap-1.5 pb-1 text-xs font-bold text-emerald-500">
+              <Wifi className="h-4 w-4" strokeWidth={2.2} />
+              Live
+            </span>
+          </div>
+
+          <div
+            className={`mt-4 overflow-hidden rounded-[1.75rem] border ${theme.surface}`}
+          >
+            {visibleActivities.length === 0 ? (
+              <div className="px-5 py-10 text-center">
+                <Activity
+                  className={`mx-auto h-7 w-7 ${theme.subtle}`}
+                  strokeWidth={1.8}
+                />
+
+                <p className={`mt-3 text-sm font-bold ${theme.primaryText}`}>
+                  Nessuna attività recente
+                </p>
+
+                <p className={`mt-1 text-xs ${theme.muted}`}>
+                  Le azioni della squadra appariranno qui.
+                </p>
+              </div>
+            ) : (
+              <AnimatePresence initial={false}>
+                {visibleActivities.map((item, index) => {
+                  const ActivityIcon = getActivityIcon(item.activity_type);
+
+                  const avatarGradient = getAvatarGradient(
+                    String(item.user_id || item.id || ""),
+                  );
+
+                  const activityText = getActivityText(item);
+
+                  return (
+                    <motion.article
+                      layout
+                      key={
+                        item.id || `${item.activity_type}-${item.created_at}`
+                      }
+                      initial={
+                        prefersReducedMotion ? false : { opacity: 0, y: -8 }
+                      }
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={
+                        prefersReducedMotion
+                          ? { opacity: 0 }
+                          : { opacity: 0, height: 0 }
+                      }
+                      transition={{
+                        duration: prefersReducedMotion ? 0 : 0.25,
+                      }}
+                      className={`relative flex gap-3 px-4 py-4 ${
+                        index !== visibleActivities.length - 1
+                          ? isDark
+                            ? "border-b border-white/[0.07]"
+                            : "border-b border-zinc-900/[0.07]"
+                          : ""
+                      }`}
+                    >
+                      <div className="relative shrink-0">
+                        <div
+                          className={`grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br ${avatarGradient} text-[11px] font-black text-white`}
+                        >
+                          {getInitials(item.display_name || "Utente")}
+                        </div>
+
+                        <span
+                          className={`absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-lg ${getActivityStyle(
+                            item.activity_type,
+                            isDark,
+                          )}`}
+                        >
+                          <ActivityIcon className="h-3 w-3" strokeWidth={2.6} />
+                        </span>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`text-sm leading-snug ${theme.primaryText}`}
+                        >
+                          {activityText}
+                        </p>
+
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <span
+                            className={`text-xs font-medium ${theme.subtle}`}
+                          >
+                            {formatActivityTime(item.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.article>
+                  );
+                })}
+              </AnimatePresence>
+            )}
+
+            {activity.length > 3 && (
+              <button
+                type="button"
+                onClick={() => setShowAllActivities((current) => !current)}
+                className={`flex min-h-14 w-full items-center justify-center gap-2 border-t text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${
+                  isDark
+                    ? "border-white/[0.07] hover:bg-white/[0.045]"
+                    : "border-zinc-900/[0.07] hover:bg-zinc-900/[0.035]"
+                } ${theme.primaryText}`}
+              >
+                {showAllActivities
+                  ? "Mostra meno"
+                  : `Carica altre ${activity.length - 3} attività`}
+
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${
+                    showAllActivities ? "rotate-180" : ""
+                  }`}
+                  strokeWidth={2.4}
+                />
+              </button>
+            )}
+          </div>
+        </section>
       </main>
 
       <BottomNav />
+
+      <AnimatePresence>
+        {selectedData && (
+          <ModalShell
+            theme={theme}
+            prefersReducedMotion={prefersReducedMotion}
+            onClose={() => setSelectedMember(null)}
+          >
+            <div className="p-6 sm:p-7">
+              <div className="flex items-start justify-between gap-5">
+                <div className="flex min-w-0 items-center gap-4">
+                  <div
+                    className={`grid h-14 w-14 shrink-0 place-items-center rounded-[1.3rem] bg-gradient-to-br ${
+                      selectedData.avatar ||
+                      getAvatarGradient(selectedData.user_id)
+                    } text-sm font-black text-white`}
+                  >
+                    {getInitials(selectedData.display_name || "Utente")}
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h2
+                        className={`truncate text-xl font-black tracking-tight ${theme.primaryText}`}
+                      >
+                        {selectedData.display_name || "Utente"}
+                      </h2>
+
+                      {selectedData.user_id === user?.id && (
+                        <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-500">
+                          TU
+                        </span>
+                      )}
+                    </div>
+
+                    <p className={`mt-1 text-sm font-medium ${theme.muted}`}>
+                      {selectedMembership?.role === "owner"
+                        ? "Proprietario"
+                        : "Membro"}{" "}
+                      · posizione #{selectedPosition || "-"}
+                    </p>
+                  </div>
+                </div>
+
+                <CloseButton
+                  onClick={() => setSelectedMember(null)}
+                  theme={theme}
+                  isDark={isDark}
+                />
+              </div>
+
+              <div className="mt-7 grid grid-cols-3 gap-3">
+                <div className={`rounded-2xl border p-3 ${theme.softSurface}`}>
+                  <p
+                    className={`text-[10px] font-bold uppercase tracking-[0.1em] ${theme.subtle}`}
+                  >
+                    Posizione
+                  </p>
+
+                  <p
+                    className={`mt-2 text-2xl font-black tracking-tight ${theme.primaryText}`}
+                  >
+                    #{selectedPosition || "-"}
+                  </p>
+                </div>
+
+                <div className={`rounded-2xl border p-3 ${theme.softSurface}`}>
+                  <p
+                    className={`text-[10px] font-bold uppercase tracking-[0.1em] ${theme.subtle}`}
+                  >
+                    Settimana
+                  </p>
+
+                  <p
+                    className={`mt-2 text-2xl font-black tracking-tight ${theme.primaryText}`}
+                  >
+                    {Number(selectedData.weekly_total || 0).toLocaleString(
+                      "it-IT",
+                    )}
+                  </p>
+                </div>
+
+                <div className={`rounded-2xl border p-3 ${theme.softSurface}`}>
+                  <p
+                    className={`text-[10px] font-bold uppercase tracking-[0.1em] ${theme.subtle}`}
+                  >
+                    Storico
+                  </p>
+
+                  <p
+                    className={`mt-2 text-2xl font-black tracking-tight ${theme.primaryText}`}
+                  >
+                    {Number(selectedData.lifetime_total || 0).toLocaleString(
+                      "it-IT",
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className={`mt-5 rounded-2xl border p-4 ${theme.softSurface}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className={`text-sm font-bold ${theme.primaryText}`}>
+                    Contributo settimanale
+                  </p>
+
+                  <span className="text-sm font-black text-pink-500">
+                    {Number(selectedData.weekly_total || 0).toLocaleString(
+                      "it-IT",
+                    )}
+                  </span>
+                </div>
+
+                <div
+                  className={`mt-3 h-2 overflow-hidden rounded-full ${
+                    isDark ? "bg-white/[0.08]" : "bg-zinc-900/[0.08]"
+                  }`}
+                >
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{
+                      width: `${
+                        totalWeekly > 0
+                          ? Math.min(
+                              100,
+                              (Number(selectedData.weekly_total || 0) /
+                                totalWeekly) *
+                                100,
+                            )
+                          : 0
+                      }%`,
+                    }}
+                    transition={{
+                      duration: prefersReducedMotion ? 0 : 0.5,
+                      ease: "easeOut",
+                    }}
+                    className="h-full rounded-full bg-pink-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </ModalShell>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {inviteOpen && (
+          <ModalShell
+            theme={theme}
+            prefersReducedMotion={prefersReducedMotion}
+            onClose={() => setInviteOpen(false)}
+          >
+            <div className="p-6 sm:p-7">
+              <div className="flex items-start justify-between gap-5">
+                <div>
+                  <p className={`text-sm font-semibold ${theme.muted}`}>
+                    {team?.team_name || "Squadra"}
+                  </p>
+                  <h2
+                    className={`mt-1 text-2xl font-black tracking-tight ${theme.primaryText}`}
+                  >
+                    Porta qualcuno nel team.
+                  </h2>
+                </div>
+
+                <CloseButton
+                  onClick={() => setInviteOpen(false)}
+                  theme={theme}
+                  isDark={isDark}
+                />
+              </div>
+
+              <div
+                className={`mt-7 rounded-[1.5rem] border p-5 ${theme.softSurface}`}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p
+                      className={`text-[11px] font-bold uppercase tracking-[0.14em] ${theme.subtle}`}
+                    >
+                      Codice squadra
+                    </p>
+                    <p
+                      className={`mt-2 font-mono text-2xl font-black tracking-[0.12em] ${theme.primaryText}`}
+                    >
+                      {inviteCode}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={copyInvite}
+                    aria-label="Copia link invito"
+                    className={`grid h-11 w-11 place-items-center rounded-2xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 ${theme.secondary} ${theme.focusOffset}`}
+                  >
+                    {copied ? (
+                      <Check
+                        className="h-5 w-5 text-emerald-500"
+                        strokeWidth={2.5}
+                      />
+                    ) : (
+                      <Copy className="h-5 w-5" strokeWidth={2.2} />
+                    )}
+                  </button>
+                </div>
+
+                <p
+                  className={`mt-4 text-xs font-medium leading-relaxed ${theme.muted}`}
+                >
+                  Condividi il codice oppure copia il link completo per invitare
+                  nuovi membri.
+                </p>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={copyInvite}
+                  className={`flex min-h-13 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 ${theme.secondary} ${theme.focusOffset}`}
+                >
+                  {copied ? (
+                    <>
+                      <Check
+                        className="h-4 w-4 text-emerald-500"
+                        strokeWidth={2.5}
+                      />
+                      Link copiato
+                    </>
+                  ) : (
+                    <>
+                      <Clipboard className="h-4 w-4" strokeWidth={2.2} />
+                      Copia invito
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={shareInvite}
+                  className="flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-4 text-sm font-extrabold text-white shadow-[0_10px_22px_rgba(236,72,153,0.20)] transition hover:bg-pink-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+                >
+                  <Share2 className="h-4 w-4" strokeWidth={2.3} />
+                  Condividi
+                </button>
+              </div>
+            </div>
+          </ModalShell>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {settingsOpen && (
+          <ModalShell
+            theme={theme}
+            prefersReducedMotion={prefersReducedMotion}
+            onClose={() => setSettingsOpen(false)}
+          >
+            <div className="p-6 sm:p-7">
+              <div className="flex items-start justify-between gap-5">
+                <div>
+                  <p className={`text-sm font-semibold ${theme.muted}`}>
+                    Gestione squadra
+                  </p>
+                  <h2
+                    className={`mt-1 text-2xl font-black tracking-tight ${theme.primaryText}`}
+                  >
+                    {team?.team_name || "Squadra"}
+                  </h2>
+                </div>
+
+                <CloseButton
+                  onClick={() => setSettingsOpen(false)}
+                  theme={theme}
+                  isDark={isDark}
+                />
+              </div>
+
+              <div
+                className={`mt-7 overflow-hidden rounded-[1.4rem] border ${theme.softSurface}`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    setEditOpen(true);
+                  }}
+                  className={`flex min-h-14 w-full items-center justify-between px-4 text-left text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${
+                    isDark
+                      ? "hover:bg-white/[0.05]"
+                      : "hover:bg-zinc-900/[0.04]"
+                  } ${theme.primaryText}`}
+                >
+                  Modifica identità della squadra
+                  <ChevronRight
+                    className={`h-4 w-4 ${theme.subtle}`}
+                    strokeWidth={2.2}
+                  />
+                </button>
+                <button
+                  type="button"
+                  className={`flex min-h-14 w-full items-center justify-between border-t px-4 text-left text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${
+                    isDark
+                      ? "border-white/[0.07] hover:bg-white/[0.05]"
+                      : "border-zinc-900/[0.07] hover:bg-zinc-900/[0.04]"
+                  } ${theme.primaryText}`}
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    setMembersOpen(true);
+                  }}
+                >
+                  Gestisci membri
+                  <ChevronRight
+                    className={`h-4 w-4 ${theme.subtle}`}
+                    strokeWidth={2.2}
+                  />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRegenerateInvite}
+                  className={`flex min-h-14 w-full items-center justify-between border-t px-4 text-left text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${
+                    isDark
+                      ? "border-white/[0.07] hover:bg-white/[0.05]"
+                      : "border-zinc-900/[0.07] hover:bg-zinc-900/[0.04]"
+                  } ${theme.primaryText}`}
+                >
+                  Rigenera codice invito
+                  <ChevronRight
+                    className={`h-4 w-4 ${theme.subtle}`}
+                    strokeWidth={2.2}
+                  />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLeaveTeam}
+                disabled={leaving}
+                className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl text-sm font-bold text-rose-500 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+              >
+                {leaving ? "Uscita in corso..." : "Abbandona squadra"}
+              </button>
+            </div>
+          </ModalShell>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {membersOpen && (
+          <ModalShell
+            theme={theme}
+            prefersReducedMotion={prefersReducedMotion}
+            onClose={() => setMembersOpen(false)}
+          >
+            <div className="p-6 sm:p-7">
+              <div className="flex items-start justify-between gap-5">
+                <div>
+                  <p className={`text-sm font-semibold ${theme.muted}`}>
+                    Gestione squadra
+                  </p>
+
+                  <h2
+                    className={`mt-1 text-2xl font-black tracking-tight ${theme.primaryText}`}
+                  >
+                    Membri e ruoli ({members.length})
+                  </h2>
+                </div>
+
+                <CloseButton
+                  onClick={() => setMembersOpen(false)}
+                  theme={theme}
+                  isDark={isDark}
+                />
+              </div>
+
+              <div className="mt-6 max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+                {members.map((member) => {
+                  const isOwner = member.role === "owner";
+                  const isCurrentUser = member.user_id === user?.id;
+
+                  const leaderboardData = leaderboard.find(
+                    (item) => item.user_id === member.user_id,
+                  );
+
+                  return (
+                    <div
+                      key={member.user_id}
+                      className={`rounded-2xl border p-4 ${theme.softSurface}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${getAvatarGradient(
+                            member.user_id,
+                          )} text-xs font-black text-white`}
+                        >
+                          {getInitials(member.display_name || "Utente")}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={`truncate font-extrabold ${theme.primaryText}`}
+                            >
+                              {member.display_name || "Utente"}
+                            </p>
+
+                            {isCurrentUser && (
+                              <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-500">
+                                TU
+                              </span>
+                            )}
+
+                            {isOwner && (
+                              <Crown
+                                className="h-4 w-4 text-amber-500"
+                                strokeWidth={2.4}
+                              />
+                            )}
+                          </div>
+
+                          <p className={`text-xs ${theme.muted}`}>
+                            {isOwner ? "Proprietario" : "Membro"}
+                          </p>
+                        </div>
+
+                        <div className="text-right">
+                          <p className={`font-black ${theme.primaryText}`}>
+                            {Number(
+                              leaderboardData?.lifetime_total || 0,
+                            ).toLocaleString("it-IT")}
+                          </p>
+
+                          <p className={`text-xs ${theme.muted}`}>storico</p>
+                        </div>
+                      </div>
+
+                      {team?.role === "owner" && !isCurrentUser && (
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleTransferOwnership(member)}
+                            className={`min-h-11 rounded-xl border text-xs font-bold ${theme.secondary}`}
+                          >
+                            Rendi proprietario
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMember(member)}
+                            className="min-h-11 rounded-xl bg-rose-500/10 text-xs font-bold text-rose-500"
+                          >
+                            Rimuovi
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </ModalShell>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {editOpen && (
+          <EditTeamModal
+            open={editOpen}
+            onClose={() => setEditOpen(false)}
+            team={team}
+            isDark={isDark}
+            theme={theme}
+            prefersReducedMotion={prefersReducedMotion}
+            onSaved={async () => {
+              await Promise.all([
+                refreshTeam(),
+                refreshMembers(),
+                refreshLeaderboard(),
+                refreshActivity(),
+              ]);
+            }}
+          />
+        )}
+      </AnimatePresence>
+      <ConfirmModal
+        open={confirmOpen}
+        onClose={() => {
+          setConfirmOpen(false);
+          setConfirmConfig(null);
+        }}
+        title={confirmConfig?.title}
+        description={confirmConfig?.description}
+        confirmText={confirmConfig?.confirmText}
+        onConfirm={confirmConfig?.onConfirm}
+        prefersReducedMotion={prefersReducedMotion}
+        theme={theme}
+        isDanger={confirmConfig?.variant === "danger"}
+      />
     </div>
+  );
+}
+
+function CloseButton({ onClick, theme, isDark }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Chiudi pannello"
+      className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 ${theme.secondary} ${
+        isDark
+          ? "focus-visible:ring-offset-[#17171b]"
+          : "focus-visible:ring-offset-[#fdfbf9]"
+      }`}
+    >
+      <X className="h-5 w-5" strokeWidth={2.2} />
+    </button>
+  );
+}
+
+function ModalShell({ children, onClose, theme, prefersReducedMotion }) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/55 p-3 sm:items-center sm:p-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        className={`w-full max-w-lg overflow-hidden rounded-[2rem] border shadow-2xl ${theme.sheet}`}
+        initial={
+          prefersReducedMotion ? false : { opacity: 0, y: 28, scale: 0.98 }
+        }
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={
+          prefersReducedMotion
+            ? { opacity: 0 }
+            : { opacity: 0, y: 20, scale: 0.98 }
+        }
+        transition={{
+          type: "spring",
+          stiffness: 380,
+          damping: 30,
+          duration: prefersReducedMotion ? 0 : undefined,
+        }}
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function ConfirmModal({
+  open,
+  onClose,
+  title,
+  description,
+  confirmText,
+  onConfirm,
+  theme,
+  isDanger = false,
+  prefersReducedMotion,
+}) {
+  const [loading, setLoading] = useState(false);
+
+  function handleClose() {
+    if (!loading) {
+      onClose();
+    }
+  }
+  if (!open) return null;
+
+  return (
+    <ModalShell
+      theme={theme}
+      prefersReducedMotion={prefersReducedMotion}
+      onClose={handleClose}
+    >
+      <div className="p-6">
+        <div
+          className={`mb-5 grid h-12 w-12 place-items-center rounded-2xl ${
+            isDanger
+              ? "bg-rose-500/10 text-rose-500"
+              : "bg-amber-500/10 text-amber-500"
+          }`}
+        >
+          <AlertTriangle className="h-6 w-6" strokeWidth={2.4} />
+        </div>
+        <h2 className={`text-xl font-black ${theme.primaryText}`}>{title}</h2>
+
+        <p className={`mt-3 text-sm leading-relaxed ${theme.muted}`}>
+          {description}
+        </p>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={handleClose}
+            className={`flex-1 rounded-2xl border py-3 text-sm font-bold ${
+              theme.secondary
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            Annulla
+          </button>
+
+          <button
+            type="button"
+            disabled={loading}
+            onClick={async () => {
+              if (!onConfirm || loading) return;
+
+              try {
+                setLoading(true);
+                await onConfirm();
+                onClose();
+              } catch (error) {
+                console.error(error);
+
+                toast.error(
+                  error?.message || "Impossibile completare l’operazione",
+                );
+              } finally {
+                setLoading(false);
+              }
+            }}
+            className={`flex-1 rounded-2xl py-3 text-sm font-bold text-white ${
+              isDanger ? "bg-rose-500" : "bg-pink-500"
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {loading ? "Attendere..." : confirmText}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+function EditTeamModal({
+  onClose,
+  team,
+  theme,
+  isDark,
+  prefersReducedMotion,
+  onSaved,
+}) {
+  const [name, setName] = useState(team?.team_name || "");
+  const [description, setDescription] = useState(team?.description || "");
+  const [emoji, setEmoji] = useState(team?.avatar_emoji || "🏆");
+  const [saving, setSaving] = useState(false);
+
+  const originalName = (team?.team_name || "").trim();
+  const originalDescription = (team?.description || "").trim();
+  const originalEmoji = team?.avatar_emoji || "🏆";
+
+  const hasChanges =
+    name.trim() !== originalName ||
+    description.trim() !== originalDescription ||
+    emoji !== originalEmoji;
+
+  async function handleSave() {
+    if (!name.trim()) {
+      toast.error("Inserisci un nome squadra");
+      return;
+    }
+    try {
+      setSaving(true);
+
+      await updateTeam({
+        name: name.trim(),
+        description: description.trim(),
+        avatarEmoji: emoji,
+      });
+
+      if (onSaved) {
+        await onSaved();
+      }
+
+      toast.success("Squadra aggiornata");
+
+      onClose();
+    } catch (error) {
+      console.error(error);
+
+      toast.error(error.message || "Impossibile aggiornare la squadra");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ModalShell
+      theme={theme}
+      prefersReducedMotion={prefersReducedMotion}
+      onClose={() => {
+        if (!saving) {
+          onClose();
+        }
+      }}
+    >
+      <div className="p-6 sm:p-7">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className={`text-sm font-semibold ${theme.muted}`}>
+              Personalizzazione
+            </p>
+
+            <h2 className={`mt-1 text-2xl font-black ${theme.primaryText}`}>
+              Identità squadra
+            </h2>
+          </div>
+
+          <CloseButton
+            onClick={() => {
+              if (!saving) {
+                onClose();
+              }
+            }}
+            theme={theme}
+            isDark={isDark}
+          />
+        </div>
+
+        <div
+          className={`mt-6 rounded-[1.5rem] border p-5 ${theme.softSurface}`}
+        >
+          <div className="flex items-center gap-4">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-pink-500 text-3xl">
+              {emoji}
+            </div>
+
+            <div>
+              <h3 className={`font-black ${theme.primaryText}`}>
+                {name || "Nome squadra"}
+              </h3>
+
+              <p className={`mt-1 text-sm leading-relaxed ${theme.muted}`}>
+                {description || "Anteprima descrizione"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <label className={`block text-sm font-bold ${theme.primaryText}`}>
+            Nome squadra
+          </label>
+
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={40}
+            className={`mt-2 w-full rounded-2xl border px-4 py-3 ${theme.input}`}
+          />
+        </div>
+
+        <div className="mt-5">
+          <label className={`block text-sm font-bold ${theme.primaryText}`}>
+            Descrizione
+          </label>
+
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            maxLength={160}
+            className={`mt-2 w-full resize-none rounded-2xl border px-4 py-3 ${theme.input}`}
+          />
+          <div className="mt-2 flex justify-end">
+            <span className={`text-xs ${theme.subtle}`}>
+              {description.length}/160
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <p className={`text-sm font-bold ${theme.primaryText}`}>
+            Avatar squadra
+          </p>
+
+          <div className="mt-3 grid grid-cols-5 gap-2">
+            {TEAM_EMOJIS.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setEmoji(item)}
+                className={`h-12 rounded-2xl border text-2xl ${
+                  emoji === item
+                    ? "border-pink-500 bg-pink-500/10 ring-2 ring-pink-500/20"
+                    : ""
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={onClose}
+            type="button"
+            disabled={saving}
+            className={`flex-1 rounded-2xl border py-3 text-sm font-bold ${theme.secondary}`}
+          >
+            Annulla
+          </button> 
+
+          <button
+            onClick={handleSave}
+            type="button"
+            disabled={saving || !hasChanges}
+            className="flex-1 rounded-2xl bg-pink-500 py-3 text-sm font-bold text-white disabled:opacity-50"
+          >
+            {saving ? "Salvataggio..." : "Salva modifiche"}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
   );
 }
