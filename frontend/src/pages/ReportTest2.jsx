@@ -255,7 +255,7 @@ export default function CagometroReport() {
       <main className="mx-auto w-full max-w-5xl px-5 pb-36 pt-7 sm:px-8 sm:pt-10">
         <section className="mx-auto max-w-3xl">
           <p className={`text-sm font-medium ${theme.muted}`}>
-            Dati dimostrativi · {report.label}
+            {report.label}
           </p>
 
           <h1
@@ -490,38 +490,6 @@ export default function CagometroReport() {
                 );
               })}
             </div>
-
-            <button
-              type="button"
-              onClick={() => setDetailsOpen(true)}
-              className={`mt-5 flex min-h-14 w-full items-center justify-between gap-4 rounded-2xl border px-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${theme.softSurface}`}
-            >
-              <span>
-                <span className={`block text-sm font-black ${theme.text}`}>
-                  {selectedPoint.date}
-                </span>
-                <span
-                  className={`mt-1 block text-xs font-medium ${theme.muted}`}
-                >
-                  {selectedPoint.value >= average
-                    ? `Sopra la media di ${average.toFixed(1)}: buon colpo.`
-                    : `Sotto la media di ${average.toFixed(1)}, ma il ritmo resta vivo.`}
-                </span>
-              </span>
-
-              <span className="shrink-0 text-right">
-                <strong
-                  className={`block text-2xl font-black tracking-tight ${theme.text}`}
-                >
-                  {selectedPoint.value}
-                </strong>
-                <span
-                  className={`text-[10px] font-bold uppercase tracking-[0.1em] ${theme.subtle}`}
-                >
-                  attività
-                </span>
-              </span>
-            </button>
           </div>
         </section>
 

@@ -49,16 +49,22 @@ export function TeamProvider({ children }) {
   }, []);
 
   const refreshLeaderboard = useCallback(async () => {
+  try {
     const data = await getTeamLeaderboard();
-
     setLeaderboard(data);
-  }, []);
+  } catch (error) {
+    console.error("Errore caricamento leaderboard:", error);
+  }
+}, []);
 
   const refreshActivity = useCallback(async () => {
+  try {
     const data = await getTeamActivity();
-
     setActivity(data);
-  }, []);
+  } catch (error) {
+    console.error("Errore caricamento attività:", error);
+  }
+}, []);
 
   useEffect(() => {
     if (authLoading || !user) {
