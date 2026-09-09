@@ -166,3 +166,45 @@ export function getMonthChartData(entries, date) {
 
   return data;
 }
+
+export function getPreviousWeekTotal(entries) {
+  let total = 0;
+
+  for (let index = 7; index < 14; index++) {
+    const date = new Date();
+
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() - index);
+
+    const dateString = getLocalDateKey(date);
+
+    total += entries[dateString] || 0;
+  }
+
+  return total;
+}
+
+export function getPreviousMonthTotal(entries, selectedDate) {
+  const previousMonth = new Date(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth() - 1,
+    1,
+  );
+
+  return getMonthTotal(entries, previousMonth);
+}
+
+export function getPreviousYearTotal(entries) {
+  const previousYear = new Date().getFullYear() - 1;
+
+  return Object.entries(entries).reduce(
+    (total, [dateKey, count]) => {
+      const date = new Date(dateKey);
+
+      return date.getFullYear() === previousYear
+        ? total + Number(count)
+        : total;
+    },
+    0,
+  );
+}

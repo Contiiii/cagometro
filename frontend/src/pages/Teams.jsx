@@ -22,7 +22,7 @@ import TeamWeeklyGoal from "../components/teams/TeamWeeklyGoal";
 
 import toast from "react-hot-toast";
 
-
+import poopIcon from "../assets/poop.png";
 
 import {
   createTeam,
@@ -364,8 +364,12 @@ export default function CagometroTeams() {
             <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-amber-400/[0.07] blur-3xl" />
 
             <div className="relative">
-              <div className="grid h-16 w-16 place-items-center rounded-[1.4rem] bg-pink-500 text-3xl shadow-[0_12px_30px_rgba(236,72,153,0.25)]">
-                💩
+              <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-[1.4rem] bg-pink-500 shadow-[0_12px_30px_rgba(236,72,153,0.25)]">
+                <img
+                  src={poopIcon}
+                  alt="Icona squadra"
+                  className="h-10 w-10 object-contain"
+                />
               </div>
 
               <p className={`mt-8 text-sm font-semibold ${theme.muted}`}>

@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   },
   {
     label: "Report",
-    path: "/reporttest",
+    path: "/report",
     icon: BarChart3,
   },
   {
