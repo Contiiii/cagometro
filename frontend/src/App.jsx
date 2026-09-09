@@ -6,7 +6,6 @@ import { Toaster } from "react-hot-toast";
 const Home = lazy(() => import("./pages/Home"));
 const Report = lazy(() => import("./pages/Report"));
 const Achievements = lazy(() => import("./pages/Achievements"));
-const AchievementTest = lazy(() => import("./pages/AchievementTest"));
 const Settings = lazy(() => import("./pages/Settings"));
 const SettingsTest = lazy(() => import("./pages/SettingsTest"));
 const Teams = lazy(() => import("./pages/Teams"));
@@ -53,7 +52,6 @@ export default function App() {
           <Route path="/teams" element={<Teams />} />
 
           <Route path="/achievements" element={<Achievements />} />
-          <Route path="/AchievementTest" element={<AchievementTest />} />
 
           <Route path="/report" element={<Report />} />
           <Route path="/join/:code" element={<JoinTeamPage />} />

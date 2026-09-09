@@ -49,22 +49,22 @@ export function TeamProvider({ children }) {
   }, []);
 
   const refreshLeaderboard = useCallback(async () => {
-  try {
-    const data = await getTeamLeaderboard();
-    setLeaderboard(data);
-  } catch (error) {
-    console.error("Errore caricamento leaderboard:", error);
-  }
-}, []);
+    try {
+      const data = await getTeamLeaderboard();
+      setLeaderboard(data);
+    } catch (error) {
+      console.error("Errore caricamento leaderboard:", error);
+    }
+  }, []);
 
   const refreshActivity = useCallback(async () => {
-  try {
-    const data = await getTeamActivity();
-    setActivity(data);
-  } catch (error) {
-    console.error("Errore caricamento attività:", error);
-  }
-}, []);
+    try {
+      const data = await getTeamActivity();
+      setActivity(data);
+    } catch (error) {
+      console.error("Errore caricamento attività:", error);
+    }
+  }, []);
 
   useEffect(() => {
     if (authLoading || !user) {
@@ -84,6 +84,14 @@ export function TeamProvider({ children }) {
           refreshActivity().catch((error) => {
             console.error("Errore aggiornamento attività realtime:", error);
           });
+
+          refreshLeaderboard().catch((error) => {
+            console.error("Errore aggiornamento leaderboard realtime:", error);
+          });
+
+          refreshMembers().catch((error) => {
+            console.error("Errore aggiornamento membri realtime:", error);
+          });
         },
       )
       .subscribe((status, error) => {
@@ -99,7 +107,7 @@ export function TeamProvider({ children }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authLoading, user, refreshActivity]);
+  }, [authLoading, user, refreshActivity, refreshLeaderboard, refreshMembers]);
 
   useEffect(() => {
     if (authLoading || !user) {
@@ -129,7 +137,6 @@ export function TeamProvider({ children }) {
     refreshActivity,
   ]);
 
-  
   return (
     <TeamContext.Provider
       value={{
