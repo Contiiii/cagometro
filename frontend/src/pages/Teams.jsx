@@ -5,8 +5,8 @@ import { useTheme } from "../hooks/useTheme";
 import { useTeam } from "../hooks/useTeam";
 import { useAuth } from "../hooks/useAuth";
 
-import Header from "../components/HeaderTest";
-import BottomNav from "../components/BottomNavTest";
+import Header from "../components/Header";
+import BottomNav from "../components/BottomNav";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
 import ConfirmModal from "../components/teams/ConfirmModal";
 import EditTeamModal from "../components/teams/EditTeamModal";

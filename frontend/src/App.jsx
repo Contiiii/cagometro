@@ -7,7 +7,6 @@ const Home = lazy(() => import("./pages/Home"));
 const Report = lazy(() => import("./pages/Report"));
 const Achievements = lazy(() => import("./pages/Achievements"));
 const Settings = lazy(() => import("./pages/Settings"));
-const SettingsTest = lazy(() => import("./pages/SettingsTest"));
 const Teams = lazy(() => import("./pages/Teams"));
 const JoinTeamPage = lazy(() => import("./pages/JoinTeamPage"));
 import NotFound from "./pages/NotFound";
@@ -47,7 +46,6 @@ export default function App() {
           <Route path="/" element={<Home />} />
 
           <Route path="/settings" element={<Settings />} />
-          <Route path="/settingstest" element={<SettingsTest />} />
 
           <Route path="/teams" element={<Teams />} />
 

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
-import Header from "../components/HeaderTest";
-import BottomNav from "../components/BottomNavTest";
+import Header from "../components/Header";
+import BottomNav from "../components/BottomNav";
 import { useTheme } from "../hooks/useTheme";
 
 import { useEntries } from "../hooks/useEntries";

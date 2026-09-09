@@ -1,104 +1,284 @@
-import poop from "../assets/poop.png";
-import { useAuth } from "../hooks/useAuth";
-import ProfileButton from "./ProfileButton";
-import SyncStatus from "./SyncStatus";
+import { Moon, Settings, Sun } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
-export default function Header() {
-  const { user, login, logout } = useAuth();
+import poopIcon from "../assets/poop.png";
+
+import { useTheme } from "../hooks/useTheme";
+import { useProfile } from "../hooks/useProfile";
+
+export default function Header({
+  eyebrow = "Cagometro",
+  title = "Il tuo archivio",
+  showSettings = true,
+}) {
+  const navigate = useNavigate();
+  const prefersReducedMotion = useReducedMotion();
+
+  const { resolvedTheme, setTheme } = useTheme();
+
+  const { profile } = useProfile();
+
+  const isDark = resolvedTheme === "dark";
+
+  function toggleTheme() {
+    setTheme(isDark ? "light" : "dark");
+  }
+
+  function handleAccountClick() {
+    navigate("/settings");
+  }
+
+  const displayName = profile?.display_name || "Utente";
 
   return (
-    <header className="w-full bg-transparent">
+    <header
+      className={`
+    sticky
+    top-0
+    z-30
+    border-b
+    backdrop-blur-xl
+    transition-colors
+    duration-300
+    ${
+      isDark
+        ? "border-white/[0.07] bg-[#0c0c0f]/80"
+        : "border-zinc-900/[0.07] bg-[#f8f5f3]/80"
+    }
+  `}
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+      }}
+    >
       <div
         className="
-          relative
           mx-auto
           flex
-          min-h-20
-pt-10
-pb-16
+          h-[72px]
           w-full
-          max-w-6xl
+          max-w-5xl
           items-center
-          px-4
-          sm:h-24
-          sm:px-6
+          justify-between
+          gap-4
+          px-5
+          sm:px-8
         "
       >
-        <div
+        <button
+          type="button"
+          onClick={() => navigate("/")}
           className="
-            absolute
-            left-1/2
             flex
-            -translate-x-1/2
+            min-w-0
             items-center
-            gap-2
-            sm:gap-3
+            gap-3
+            rounded-2xl
+            text-left
+            focus-visible:outline-none
+            focus-visible:ring-2
+            focus-visible:ring-pink-500
           "
+          aria-label="Vai alla Home"
         >
           <div
-            className="
-              flex
-              h-10
-              w-10
-              shrink-0
-              items-center
-              justify-center
-              rounded-2xl
-              border
-              border-pink-500/20
-              bg-pink-500/10
-              shadow-lg
-              shadow-pink-950/20
-              sm:h-12
-              sm:w-12
-            "
-          >
-            <img
-              src={poop}
-              alt="Logo Cagometro"
-              className="h-7 w-7 object-contain sm:h-8 sm:w-8"
-            />
-          </div>
+  className="
+    grid
+    h-10
+    w-10
+    shrink-0
+    place-items-center
+    rounded-2xl
+    bg-pink-500
+    shadow-[0_8px_20px_rgba(236,72,153,0.28)]
+    overflow-hidden
+  "
+  aria-hidden="true"
+>
+  <img
+    src={poopIcon}
+    alt=""
+    className="h-6 w-6 object-contain select-none"
+    draggable={false}
+  />
+</div>
 
           <div className="min-w-0">
-            <h1
-              className="
-                whitespace-nowrap
-                text-2xl
-                font-black
-                tracking-tight
-                text-pink-400
-                sm:text-4xl
-              "
+            <p
+              className={`
+    text-[11px]
+    font-semibold
+    uppercase
+    tracking-[0.16em]
+    ${isDark ? "text-zinc-500" : "text-zinc-600"}
+  `}
             >
-              CAGOMETRO
-            </h1>
+              {eyebrow}
+            </p>
 
             <p
-              className="
-                hidden
-                text-xs
-                uppercase
-                tracking-[0.18em]
-                text-zinc-500
-                sm:block
-              "
+              className={`
+    truncate
+    text-[17px]
+    font-bold
+    tracking-tight
+    ${isDark ? "text-zinc-50" : "text-zinc-950"}
+  `}
             >
-              Tracking professionale
+              {title}
             </p>
           </div>
-        </div>
+        </button>
 
-        <div className="ml-auto shrink-0">
-          <div className="ml-auto shrink-0 flex flex-col items-center">
-  <ProfileButton
-    user={user}
-    login={login}
-    logout={logout}
-  />
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={isDark ? "Attiva tema chiaro" : "Attiva tema scuro"}
+            aria-pressed={isDark}
+            className={`
+  relative
+  flex
+  h-11
+  w-[78px]
+  items-center
+  rounded-full
+  border
+  p-1
+  transition-colors
+  duration-300
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-pink-500
+  ${
+    isDark
+      ? "border-white/[0.10] bg-white/[0.07]"
+      : "border-zinc-900/[0.10] bg-zinc-900/[0.05]"
+  }
+`}
+          >
+            <Sun
+              className="
+    absolute
+    left-2.5
+    h-4
+    w-4
+    text-amber-500
+  "
+              aria-hidden="true"
+            />
 
-  <SyncStatus />
-</div>
+            <Moon
+              className={`
+    absolute
+    right-2.5
+    h-4
+    w-4
+    ${isDark ? "text-pink-300" : "text-zinc-400"}
+  `}
+              aria-hidden="true"
+            />
+
+            <motion.span
+              initial={false}
+              animate={{
+                x: isDark ? 34 : 0,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 520,
+                damping: 32,
+                duration: prefersReducedMotion ? 0 : undefined,
+              }}
+              className={`
+    relative
+    z-10
+    grid
+    h-9
+    w-9
+    shrink-0
+    place-items-center
+    rounded-full
+    shadow-sm
+    ${isDark ? "bg-zinc-100 text-zinc-950" : "bg-white text-zinc-800"}
+  `}
+            >
+              {isDark ? (
+                <Moon className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Sun className="h-4 w-4" aria-hidden="true" />
+              )}
+            </motion.span>
+          </button>
+
+          {showSettings && (
+            <button
+              type="button"
+              onClick={handleAccountClick}
+              aria-label={`Apri le impostazioni di ${displayName}`}
+              className={`
+  grid
+  h-11
+  w-11
+  shrink-0
+  place-items-center
+  overflow-hidden
+  rounded-2xl
+  border
+  transition
+  active:scale-95
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-pink-500
+  ${
+    isDark
+      ? "border-white/[0.10] bg-white/[0.07]"
+      : "border-zinc-900/[0.10] bg-zinc-900/[0.05]"
+  }
+`}
+            >
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span
+                  className={`
+    text-sm
+    font-black
+    ${isDark ? "text-zinc-200" : "text-zinc-700"}
+  `}
+                >
+                  {displayName.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </button>
+          )}
+
+          {!showSettings && (
+            <div
+              className={`
+      grid
+      h-11
+      w-11
+      place-items-center
+      rounded-2xl
+      border
+      transition-colors
+      duration-300
+      ${
+        isDark
+          ? "border-white/[0.10] bg-white/[0.07] text-zinc-200"
+          : "border-zinc-900/[0.10] bg-zinc-900/[0.05] text-zinc-700"
+      }
+    `}
+              aria-hidden="true"
+            >
+              <Settings className="h-5 w-5" />
+            </div>
+          )}
         </div>
       </div>
     </header>

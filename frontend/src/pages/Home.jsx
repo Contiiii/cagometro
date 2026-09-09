@@ -4,8 +4,8 @@ import { useReducedMotion } from "framer-motion";
 import AchievementUnlockModal from "../components/achievements/AchievementUnlockModal";
 import CloudBackupWarning from "../components/CloudBackupWarning.jsx";
 
-import Header from "../components/HeaderTest.jsx";
-import BottomNav from "../components/BottomNavTest.jsx";
+import Header from "../components/Header.jsx";
+import BottomNav from "../components/BottomNav.jsx";
 import StreakCard from "../components/home/StreakCard.jsx";
 import DailyCounter from "../components/home/DailyCounter.jsx";
 import PoopButton from "../components/home/PoopButton.jsx";
