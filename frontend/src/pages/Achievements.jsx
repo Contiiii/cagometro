@@ -15,6 +15,10 @@ import AchievementsHero from "../components/achievements/AchievementsHero";
 import AchievementFilters from "../components/achievements/AchievementFilters";
 import AchievementSectionSwitcher from "../components/achievements/AchievementSectionSwitcher";
 
+import AchievementUnlockModal from "../components/achievements/AchievementUnlockModal";
+
+import { useAchievements } from "../hooks/useAchievements";
+
 import {
   getAchievementTheme,
   getAchievementAccentStyles,
@@ -30,6 +34,8 @@ export default function Achievements() {
   const { entries } = useEntries();
   const { leaderboard, members } = useTeam();
   const isDark = resolvedTheme === "dark";
+
+  const { unlockedAchievement, closeAchievement } = useAchievements();
 
   const [section, setSection] = useState(() => {
     return localStorage.getItem("achievements-section") || "personali";
@@ -187,6 +193,14 @@ export default function Achievements() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AchievementUnlockModal
+        achievement={unlockedAchievement}
+        open={!!unlockedAchievement}
+        onClose={closeAchievement}
+        theme={theme}
+        prefersReducedMotion={prefersReducedMotion}
+      />
     </div>
   );
 }

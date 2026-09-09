@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
-import Confetti from "react-confetti";
-
-import AchievementModal from "../components/AchievementModal.jsx";
+import AchievementUnlockModal from "../components/achievements/AchievementUnlockModal";
 import CloudBackupWarning from "../components/CloudBackupWarning.jsx";
 
 import Header from "../components/HeaderTest.jsx";
@@ -29,7 +27,6 @@ export default function CagometroHome() {
 
   const {
     unlockedAchievement,
-    showConfetti,
     closeAchievement,
     checkAchievements,
     resetLockedAchievements,
@@ -41,26 +38,6 @@ export default function CagometroHome() {
   const [message, setMessage] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
-
-  const [windowSize, setWindowSize] = useState(() => ({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  }));
-
-  useEffect(() => {
-    function handleResize() {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    }
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
 
   const registerActivity = async () => {
     if (isRegistering || isUndoing) return;
@@ -244,27 +221,14 @@ export default function CagometroHome() {
         </section>
       </main>
 
-      {showConfetti && (
-        <Confetti
-          width={windowSize.width}
-          height={windowSize.height}
-          recycle={false}
-          numberOfPieces={500}
-          gravity={0.15}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            zIndex: 100,
-            pointerEvents: "none",
-          }}
-        />
-      )}
 
-      <AchievementModal
-        achievement={unlockedAchievement}
-        onClose={closeAchievement}
-      />
+      <AchievementUnlockModal
+  achievement={unlockedAchievement}
+  open={!!unlockedAchievement}
+  onClose={closeAchievement}
+  theme={theme}
+  prefersReducedMotion={prefersReducedMotion}
+/>
 
       <BottomNav />
     </div>
