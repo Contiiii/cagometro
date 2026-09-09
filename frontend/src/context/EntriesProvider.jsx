@@ -4,6 +4,9 @@ import { EntriesContext } from "./entries-context";
 
 import { useAuth } from "../hooks/useAuth";
 
+import { createTeamActivity }
+  from "../services/teamService";
+
 import {
   getEntries,
   saveEntry,
@@ -190,10 +193,15 @@ export function EntriesProvider({ children }) {
     try {
 
       await saveEntry({
-        userId: user.id,
-        date,
-        count,
-      });
+  userId: user.id,
+  date,
+  count,
+});
+
+await createTeamActivity(
+  "entry_created",
+  1,
+);
 
       await flushPendingChanges();
 

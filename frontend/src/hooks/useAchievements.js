@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import toast from "react-hot-toast";
 
 import { getShownAchievements, saveShownAchievements } from "../utils/storage";
@@ -10,7 +11,6 @@ import {
 
 export function useAchievements() {
   const [achievementQueue, setAchievementQueue] = useState([]);
-  const [showConfetti, setShowConfetti] = useState(false);
 
   const unlockedAchievement = achievementQueue[0] ?? null;
 
@@ -45,12 +45,6 @@ export function useAchievements() {
       ...currentQueue,
       ...newAchievements,
     ]);
-
-    setShowConfetti(true);
-
-    window.setTimeout(() => {
-      setShowConfetti(false);
-    }, 3000);
 
     newAchievements.forEach((achievement) => {
       toast.success(`🏆 ${achievement.title}`, {
@@ -90,7 +84,6 @@ export function useAchievements() {
 
   return {
     unlockedAchievement,
-    showConfetti,
     closeAchievement,
     checkAchievements,
     resetLockedAchievements,

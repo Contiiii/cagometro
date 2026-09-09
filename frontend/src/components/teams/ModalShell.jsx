@@ -1,0 +1,70 @@
+import { motion } from "framer-motion";
+
+export default function ModalShell({
+  children,
+  onClose,
+  theme,
+  prefersReducedMotion,
+  labelledBy,
+  describedBy,
+  maxWidth = "max-w-lg",
+}) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/55 p-3 sm:items-center sm:p-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{
+        duration: prefersReducedMotion ? 0 : 0.2,
+      }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose?.();
+        }
+      }}
+    >
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        aria-describedby={describedBy}
+        className={`w-full ${maxWidth} overflow-hidden rounded-[2rem] border shadow-2xl ${theme.sheet}`}
+        initial={
+          prefersReducedMotion
+            ? false
+            : {
+                opacity: 0,
+                y: 28,
+                scale: 0.98,
+              }
+        }
+        animate={{
+          opacity: 1,
+          y: 0,
+          scale: 1,
+        }}
+        exit={
+          prefersReducedMotion
+            ? { opacity: 0 }
+            : {
+                opacity: 0,
+                y: 20,
+                scale: 0.98,
+              }
+        }
+        transition={{
+          type: "spring",
+          stiffness: 380,
+          damping: 30,
+          duration: prefersReducedMotion ? 0 : undefined,
+        }}
+        onMouseDown={(event) => {
+          event.stopPropagation();
+        }}
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+}

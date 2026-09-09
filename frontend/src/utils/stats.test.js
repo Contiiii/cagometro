@@ -1,4 +1,12 @@
-import { describe, it, expect } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+
 import {
   calculateStreak,
   calculateBestStreak,
@@ -9,49 +17,70 @@ import {
   getWeeklyChartData,
   getMonthChartData,
 } from "./stats";
-import { getLocalDateKey } from "./date";
 
-describe("calculateStreak", () => {
-  it("restituisce 0 senza registrazioni", () => {
-    expect(calculateStreak({})).toBe(0);
+describe("stats", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+
+    vi.setSystemTime(
+      new Date(2026, 8, 6, 12, 0, 0),
+    );
   });
 
-  it("restituisce 1 se oggi ha almeno una registrazione", () => {
-    const today = getLocalDateKey();
-
-    const entries = {
-      [today]: 1,
-    };
-
-    expect(calculateStreak(entries)).toBe(1);
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("restituisce 2 con registrazioni oggi e ieri", () => {
-    const today = new Date();
+  describe("calculateStreak", () => {
+    it("restituisce 0 senza registrazioni", () => {
+      expect(calculateStreak({})).toBe(0);
+    });
 
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
+    it("restituisce 1 con una registrazione oggi", () => {
+      const entries = {
+        "2026-09-06": 1,
+      };
 
-    const entries = {
-      [getLocalDateKey(today)]: 1,
-      [getLocalDateKey(yesterday)]: 1,
-    };
+      expect(calculateStreak(entries)).toBe(1);
+    });
 
-    expect(calculateStreak(entries)).toBe(2);
-  });
+    it("restituisce 2 con registrazioni oggi e ieri", () => {
+      const entries = {
+        "2026-09-06": 1,
+        "2026-09-05": 2,
+      };
 
-  it("interrompe la streak se manca il giorno precedente", () => {
-    const today = new Date();
+      expect(calculateStreak(entries)).toBe(2);
+    });
 
-    const twoDaysAgo = new Date(today);
-    twoDaysAgo.setDate(today.getDate() - 2);
+    it("conta una streak di più giorni", () => {
+      const entries = {
+        "2026-09-06": 1,
+        "2026-09-05": 2,
+        "2026-09-04": 1,
+        "2026-09-03": 3,
+      };
 
-    const entries = {
-      [getLocalDateKey(today)]: 1,
-      [getLocalDateKey(twoDaysAgo)]: 1,
-    };
+      expect(calculateStreak(entries)).toBe(4);
+    });
 
-    expect(calculateStreak(entries)).toBe(1);
+    it("interrompe la streak al primo giorno mancante", () => {
+      const entries = {
+        "2026-09-06": 1,
+        "2026-09-04": 5,
+      };
+
+      expect(calculateStreak(entries)).toBe(1);
+    });
+
+    it("ignora i giorni con count pari a zero", () => {
+      const entries = {
+        "2026-09-06": 0,
+        "2026-09-05": 3,
+      };
+
+      expect(calculateStreak(entries)).toBe(0);
+    });
   });
 
   describe("calculateBestStreak", () => {
@@ -59,7 +88,15 @@ describe("calculateStreak", () => {
       expect(calculateBestStreak({})).toBe(0);
     });
 
-    it("restituisce 3 per una streak di tre giorni consecutivi", () => {
+    it("restituisce 1 con una sola giornata attiva", () => {
+      const entries = {
+        "2026-09-01": 2,
+      };
+
+      expect(calculateBestStreak(entries)).toBe(1);
+    });
+
+    it("restituisce 3 con tre giorni consecutivi", () => {
       const entries = {
         "2026-09-01": 1,
         "2026-09-02": 1,
@@ -69,7 +106,7 @@ describe("calculateStreak", () => {
       expect(calculateBestStreak(entries)).toBe(3);
     });
 
-    it("restituisce la streak migliore anche se ci sono interruzioni", () => {
+    it("trova la streak migliore tra periodi separati", () => {
       const entries = {
         "2026-09-01": 1,
         "2026-09-02": 1,
@@ -80,9 +117,24 @@ describe("calculateStreak", () => {
 
       expect(calculateBestStreak(entries)).toBe(3);
     });
+
+    it("ignora le date con count pari a zero", () => {
+      const entries = {
+        "2026-09-01": 1,
+        "2026-09-02": 0,
+        "2026-09-03": 1,
+      };
+
+      expect(calculateBestStreak(entries)).toBe(1);
+    });
   });
+
   describe("getTotalHistorical", () => {
-    it("somma correttamente tutte le registrazioni", () => {
+    it("restituisce 0 senza registrazioni", () => {
+      expect(getTotalHistorical({})).toBe(0);
+    });
+
+    it("somma tutte le registrazioni", () => {
       const entries = {
         "2026-09-01": 5,
         "2026-09-02": 2,
@@ -92,8 +144,13 @@ describe("calculateStreak", () => {
       expect(getTotalHistorical(entries)).toBe(10);
     });
   });
+
   describe("getRecordHistorical", () => {
-    it("restituisce il record massimo", () => {
+    it("restituisce 0 senza registrazioni", () => {
+      expect(getRecordHistorical({})).toBe(0);
+    });
+
+    it("restituisce il valore giornaliero massimo", () => {
       const entries = {
         "2026-09-01": 5,
         "2026-09-02": 2,
@@ -103,21 +160,36 @@ describe("calculateStreak", () => {
       expect(getRecordHistorical(entries)).toBe(8);
     });
   });
+
   describe("getLastNDaysTotal", () => {
-    it("somma correttamente gli ultimi 7 giorni", () => {
-      const today = new Date();
-
-      const yesterday = new Date(today);
-      yesterday.setDate(today.getDate() - 1);
-
+    it("somma solamente gli ultimi sette giorni", () => {
       const entries = {
-        [getLocalDateKey(today)]: 3,
-        [getLocalDateKey(yesterday)]: 2,
+        "2026-09-06": 3,
+        "2026-09-05": 2,
+        "2026-09-01": 4,
+        "2026-08-30": 100,
       };
 
-      expect(getLastNDaysTotal(entries, 7)).toBe(5);
+      expect(getLastNDaysTotal(entries, 7)).toBe(9);
+    });
+
+    it("restituisce 0 se non esistono dati recenti", () => {
+      const entries = {
+        "2026-01-01": 100,
+      };
+
+      expect(getLastNDaysTotal(entries, 7)).toBe(0);
+    });
+
+    it("include la giornata corrente", () => {
+      const entries = {
+        "2026-09-06": 7,
+      };
+
+      expect(getLastNDaysTotal(entries, 1)).toBe(7);
     });
   });
+
   describe("getMonthTotal", () => {
     it("somma solo le registrazioni del mese selezionato", () => {
       const entries = {
@@ -126,23 +198,181 @@ describe("calculateStreak", () => {
         "2026-08-20": 10,
       };
 
-      const selectedMonth = new Date("2026-09-01");
+      const selectedMonth = new Date(
+        2026,
+        8,
+        1,
+        12,
+        0,
+        0,
+      );
 
-      expect(getMonthTotal(entries, selectedMonth)).toBe(5);
+      expect(
+        getMonthTotal(entries, selectedMonth),
+      ).toBe(5);
+    });
+
+    it("distingue correttamente anni differenti", () => {
+      const entries = {
+        "2026-09-01": 2,
+        "2025-09-01": 20,
+      };
+
+      const selectedMonth = new Date(
+        2026,
+        8,
+        1,
+        12,
+        0,
+        0,
+      );
+
+      expect(
+        getMonthTotal(entries, selectedMonth),
+      ).toBe(2);
+    });
+
+    it("restituisce 0 se il mese non contiene dati", () => {
+      const entries = {
+        "2026-08-01": 5,
+      };
+
+      const selectedMonth = new Date(
+        2026,
+        8,
+        1,
+        12,
+        0,
+        0,
+      );
+
+      expect(
+        getMonthTotal(entries, selectedMonth),
+      ).toBe(0);
     });
   });
+
   describe("getWeeklyChartData", () => {
-    it("restituisce sempre 7 elementi", () => {
+    it("restituisce sempre sette elementi", () => {
       const result = getWeeklyChartData({});
 
       expect(result).toHaveLength(7);
     });
+
+    it("ordina i giorni dal meno recente a oggi", () => {
+      const result = getWeeklyChartData({});
+
+      expect(result[0].date).toBe("2026-08-31");
+      expect(result[6].date).toBe("2026-09-06");
+    });
+
+    it("associa il count alla data corretta", () => {
+      const entries = {
+        "2026-09-06": 4,
+        "2026-09-05": 2,
+      };
+
+      const result = getWeeklyChartData(entries);
+
+      expect(result[5].count).toBe(2);
+      expect(result[6].count).toBe(4);
+    });
+
+    it("usa zero per le date senza registrazioni", () => {
+      const result = getWeeklyChartData({});
+
+      expect(
+        result.every((item) => item.count === 0),
+      ).toBe(true);
+    });
   });
+
   describe("getMonthChartData", () => {
-    it("restituisce tutti i giorni del mese", () => {
-      const result = getMonthChartData({}, new Date("2026-02-01"));
+    it("restituisce 28 giorni per febbraio 2026", () => {
+      const selectedMonth = new Date(
+        2026,
+        1,
+        1,
+        12,
+        0,
+        0,
+      );
+
+      const result = getMonthChartData(
+        {},
+        selectedMonth,
+      );
 
       expect(result).toHaveLength(28);
+    });
+
+    it("restituisce 29 giorni per febbraio bisestile", () => {
+      const selectedMonth = new Date(
+        2024,
+        1,
+        1,
+        12,
+        0,
+        0,
+      );
+
+      const result = getMonthChartData(
+        {},
+        selectedMonth,
+      );
+
+      expect(result).toHaveLength(29);
+    });
+
+    it("restituisce 30 giorni per settembre", () => {
+      const selectedMonth = new Date(
+        2026,
+        8,
+        1,
+        12,
+        0,
+        0,
+      );
+
+      const result = getMonthChartData(
+        {},
+        selectedMonth,
+      );
+
+      expect(result).toHaveLength(30);
+    });
+
+    it("associa i count ai giorni corretti", () => {
+      const entries = {
+        "2026-09-01": 3,
+        "2026-09-15": 7,
+      };
+
+      const selectedMonth = new Date(
+        2026,
+        8,
+        1,
+        12,
+        0,
+        0,
+      );
+
+      const result = getMonthChartData(
+        entries,
+        selectedMonth,
+      );
+
+      expect(result[0]).toEqual({
+        day: 1,
+        date: "2026-09-01",
+        count: 3,
+      });
+
+      expect(result[14]).toEqual({
+        day: 15,
+        date: "2026-09-15",
+        count: 7,
+      });
     });
   });
 });

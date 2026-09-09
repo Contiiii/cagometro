@@ -1,442 +1,206 @@
+import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
-import { useEntries } from "../hooks/useEntries";
+import { useTheme } from "../hooks/useTheme";
 
-import { useMemo } from "react";
+import { useEntries } from "../hooks/useEntries";
+import { useTeam } from "../hooks/useTeam";
+
+import AchievementDetailModal from "../components/achievements/AchievementDetailModal";
+import AchievementCard from "../components/achievements/AchievementCard";
+import NextAchievementCard from "../components/achievements/NextAchievementCard";
+import AchievementsHero from "../components/achievements/AchievementsHero";
+import AchievementFilters from "../components/achievements/AchievementFilters";
+import AchievementSectionSwitcher from "../components/achievements/AchievementSectionSwitcher";
+
+import AchievementUnlockModal from "../components/achievements/AchievementUnlockModal";
+
+import { useAchievements } from "../hooks/useAchievements";
 
 import {
-  ACHIEVEMENTS,
-  getAchievementProgress,
-} from "../config/achievements.js";
+  getAchievementTheme,
+  getAchievementAccentStyles,
+} from "../config/achievementTheme";
 
-import { motion } from "framer-motion";
+import { useAchievementsData } from "../hooks/useAchievementsData";
 
-import { calculateStreak, getTotalHistorical } from "../utils/stats";
+const filters = ["Tutti", "Ottenuti", "In corso", "Segreti"];
 
 export default function Achievements() {
+  const prefersReducedMotion = useReducedMotion();
+  const { resolvedTheme } = useTheme();
   const { entries } = useEntries();
+  const { leaderboard, members } = useTeam();
+  const isDark = resolvedTheme === "dark";
 
-  const totalHistorical = useMemo(() => getTotalHistorical(entries), [entries]);
+  const { unlockedAchievement, closeAchievement } = useAchievements();
 
-  const streak = useMemo(() => calculateStreak(entries), [entries]);
+  const [section, setSection] = useState(() => {
+    return localStorage.getItem("achievements-section") || "personali";
+  });
+  const [activeFilter, setActiveFilter] = useState("Tutti");
+  const [selectedAchievement, setSelectedAchievement] = useState(null);
 
-  const achievements = useMemo(() => {
-    return ACHIEVEMENTS.map((achievement) => {
-      const progress = getAchievementProgress(achievement, {
-        total: totalHistorical,
-        streak,
-      });
+  const switchSection = (nextSection) => {
+    setSection(nextSection);
+    localStorage.setItem("achievements-section", nextSection);
+    setActiveFilter("Tutti");
+  };
 
-      return {
-        ...achievement,
-        progress,
-        unlocked: progress >= achievement.target,
-      };
-    });
-  }, [totalHistorical, streak]);
+  const {
+    allAchievements,
+    unlocked,
+    inProgress,
+    filteredAchievements,
+    nextAchievement,
+    overallProgress,
+    nextAchievementProgress,
+  } = useAchievementsData({
+    entries,
+    leaderboard,
+    members,
+    section,
+    activeFilter,
+  });
 
-  const completedAchievements = useMemo(
-    () => achievements.filter((achievement) => achievement.unlocked).length,
-    [achievements],
-  );
+  const theme = getAchievementTheme(isDark);
 
-  const completionPercentage =
-    achievements.length > 0
-      ? Math.round((completedAchievements / achievements.length) * 100)
-      : 0;
+  const accentStyles = getAchievementAccentStyles(isDark);
+
+  const circumference = 2 * Math.PI * 44;
+  const dashOffset = circumference - (overallProgress / 100) * circumference;
 
   return (
     <div
-      className="
-        relative
-        min-h-dvh
-        overflow-x-hidden
-        bg-black
-        pb-28
-        text-white
-      "
+      className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
     >
-      {/* Luce decorativa */}
-      <div
-        className="
-          pointer-events-none
-          fixed
-          left-1/2
-          top-1/3
-          h-80
-          w-80
-          -translate-x-1/2
-          rounded-full
-          bg-pink-500/10
-          blur-[130px]
-        "
-      />
+      <Header eyebrow="La tua collezione" title="Traguardi" />
 
-      <div className="relative z-10 flex min-h-dvh flex-col">
-        <Header />
+      <main className="mx-auto w-full max-w-5xl px-5 pb-36 pt-7 sm:px-8 sm:pt-10">
+        <section className="mx-auto max-w-2xl">
+          <p className={`text-sm font-medium ${theme.muted}`}>
+            {section === "personali"
+              ? "Archivio personale"
+              : "Archivio della squadra"}
+          </p>
 
-        <main
-          className="
-            mx-auto
-            flex
-            w-full
-            max-w-3xl
-            flex-1
-            flex-col
-            gap-5
-            px-4
-            py-6
-            sm:px-6
-          "
-        >
-          {/* Intestazione */}
-          <div>
-            <h1 className="text-3xl font-black text-pink-400">
-              🏆 Achievements
-            </h1>
-
-            <p className="mt-1 text-sm text-zinc-500">
-              Completa le missioni e conquista tutti i traguardi
-            </p>
-          </div>
-
-          {/* Progresso complessivo */}
-          <div
-            className="
-              relative
-              overflow-hidden
-              rounded-[2rem]
-              border
-              border-pink-500/20
-              bg-gradient-to-br
-              from-pink-500/15
-              via-zinc-900/70
-              to-zinc-950
-              p-6
-              shadow-xl
-              shadow-pink-500/10
-            "
+          <h1
+            className={`mt-1 text-[clamp(2.15rem,7vw,4rem)] font-black leading-[0.95] tracking-[-0.075em] ${theme.text}`}
           >
-            <div
-              className="
-                pointer-events-none
-                absolute
-                -right-10
-                -top-10
-                h-36
-                w-36
-                rounded-full
-                bg-pink-500/15
-                blur-3xl
-              "
-            />
+            I tuoi traguardi,
+            <br />
+            messi <span className="text-pink-500">nero su rosa.</span>
+          </h1>
 
-            <div className="relative">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-zinc-400">
-                    Collezione completata
-                  </p>
+          <AchievementSectionSwitcher
+            section={section}
+            switchSection={switchSection}
+            theme={theme}
+            isDark={isDark}
+          />
+        </section>
 
-                  <p className="mt-2 text-4xl font-black text-pink-400">
-                    {completedAchievements}
-                    <span className="text-xl text-zinc-500">
-                      {" "}
-                      / {achievements.length}
-                    </span>
-                  </p>
-                </div>
+        <AchievementsHero
+          unlocked={unlocked}
+          allAchievements={allAchievements}
+          inProgress={inProgress}
+          overallProgress={overallProgress}
+          theme={theme}
+          isDark={isDark}
+          circumference={circumference}
+          dashOffset={dashOffset}
+          prefersReducedMotion={prefersReducedMotion}
+        />
 
-                <div
-                  className="
-                    flex
-                    h-16
-                    w-16
-                    items-center
-                    justify-center
-                    rounded-full
-                    border
-                    border-pink-500/20
-                    bg-pink-500/10
-                    text-3xl
-                  "
-                >
-                  🏆
-                </div>
-              </div>
+        <NextAchievementCard
+          nextAchievement={nextAchievement}
+          nextAchievementProgress={nextAchievementProgress}
+          theme={theme}
+          isDark={isDark}
+          accentStyles={accentStyles}
+          prefersReducedMotion={prefersReducedMotion}
+          onOpen={setSelectedAchievement}
+        />
 
-              <div className="mt-5 flex items-center gap-3">
-                <div
-                  className="
-                    h-3
-                    flex-1
-                    overflow-hidden
-                    rounded-full
-                    bg-zinc-800
-                    shadow-inner
-                  "
-                >
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{
-                      width: `${completionPercentage}%`,
-                    }}
-                    transition={{
-                      duration: 0.8,
-                      ease: "easeOut",
-                    }}
-                    className="
-                      h-full
-                      rounded-full
-                      bg-gradient-to-r
-                      from-pink-600
-                      to-pink-400
-                      shadow-[0_0_14px_rgba(244,114,182,0.45)]
-                    "
-                  />
-                </div>
-
-                <span className="min-w-10 text-right text-sm font-bold text-pink-300">
-                  {completionPercentage}%
-                </span>
-              </div>
+        <section className="mx-auto mt-8 max-w-2xl">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className={`text-sm font-semibold ${theme.muted}`}>
+                {section === "personali"
+                  ? "Archivio personale"
+                  : "Archivio della squadra"}
+              </p>
+              <h2
+                className={`mt-1 text-2xl font-black tracking-[-0.05em] ${theme.text}`}
+              >
+                Bacheca completa
+              </h2>
             </div>
+
+            <AchievementFilters
+              filters={filters}
+              activeFilter={activeFilter}
+              setActiveFilter={setActiveFilter}
+              theme={theme}
+            />
           </div>
 
-          {/* Lista Achievement */}
-          <div className="flex flex-col gap-4">
-            {achievements.map((achievement, index) => {
-              const currentProgress = Math.min(
-                achievement.progress,
-                achievement.target,
-              );
+          <motion.div layout className="mt-5 grid gap-3 md:grid-cols-2">
+            <AnimatePresence mode="popLayout">
+              {filteredAchievements.map((achievement, index) => (
+                <AchievementCard
+                  key={`${section}-${achievement.id}`}
+                  achievement={achievement}
+                  index={index}
+                  theme={theme}
+                  isDark={isDark}
+                  accentStyles={accentStyles}
+                  prefersReducedMotion={prefersReducedMotion}
+                  onClick={() => setSelectedAchievement(achievement)}
+                />
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        </section>
+      </main>
 
-              const progressPercentage = Math.min(
-                Math.round((achievement.progress / achievement.target) * 100),
-                100,
-              );
+      <BottomNav />
 
-              return (
-                <motion.div
-                  key={achievement.id}
-                  initial={{
-                    opacity: 0,
-                    y: 16,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.3,
-                  }}
-                  whileHover={{
-                    y: -3,
-                  }}
-                  className={
-                    achievement.unlocked
-                      ? `
-                        relative
-                        overflow-hidden
-                        rounded-3xl
-                        border
-                        border-pink-500/25
-                        bg-gradient-to-r
-                        from-pink-500/10
-                        to-zinc-900/70
-                        p-5
-                        shadow-lg
-                        shadow-pink-500/10
-                      `
-                      : `
-                        relative
-                        overflow-hidden
-                        rounded-3xl
-                        border
-                        border-zinc-800
-                        bg-zinc-900/50
-                        p-5
-                        transition-colors
-                        duration-300
-                        hover:border-pink-500/25
-                      `
-                  }
-                >
-                  {achievement.unlocked && (
-                    <div
-                      className="
-                        pointer-events-none
-                        absolute
-                        -right-12
-                        -top-12
-                        h-28
-                        w-28
-                        rounded-full
-                        bg-pink-500/10
-                        blur-3xl
-                      "
-                    />
-                  )}
+      <AnimatePresence>
+        {selectedAchievement && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/60 p-3 sm:items-center sm:p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setSelectedAchievement(null);
+              }
+            }}
+          >
+            <AchievementDetailModal
+              achievement={selectedAchievement}
+              isUnlocked={selectedAchievement.unlocked}
+              isDark={isDark}
+              theme={theme}
+              prefersReducedMotion={prefersReducedMotion}
+              onClose={() => setSelectedAchievement(null)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-                  <div className="relative flex items-start gap-4">
-                    {/* Icona */}
-                    <div
-                      className={
-                        achievement.unlocked
-                          ? `
-                            flex
-                            h-14
-                            w-14
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-2xl
-                            border
-                            border-pink-500/20
-                            bg-pink-500/10
-                            text-3xl
-                          `
-                          : `
-                            flex
-                            h-14
-                            w-14
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-2xl
-                            border
-                            border-zinc-800
-                            bg-zinc-950/70
-                            text-3xl
-                            grayscale
-                            opacity-50
-                          `
-                      }
-                    >
-                      {achievement.icon}
-                    </div>
-
-                    {/* Contenuto */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p
-                            className={
-                              achievement.unlocked
-                                ? "text-lg font-bold text-white"
-                                : "text-lg font-bold text-zinc-400"
-                            }
-                          >
-                            {achievement.title}
-                          </p>
-
-                          <p className="mt-1 text-sm text-zinc-500">
-                            {achievement.description}
-                          </p>
-                        </div>
-
-                        <span
-                          className={
-                            achievement.unlocked
-                              ? `
-                                shrink-0
-                                rounded-full
-                                border
-                                border-green-400/20
-                                bg-green-400/10
-                                px-2.5
-                                py-1
-                                text-xs
-                                font-semibold
-                                text-green-300
-                              `
-                              : `
-                                shrink-0
-                                rounded-full
-                                border
-                                border-zinc-700
-                                bg-zinc-800/70
-                                px-2.5
-                                py-1
-                                text-xs
-                                font-semibold
-                                text-zinc-500
-                              `
-                          }
-                        >
-                          {achievement.unlocked ? "Completato" : "Bloccato"}
-                        </span>
-                      </div>
-
-                      {/* Barra di avanzamento */}
-                      <div className="mt-4 flex items-center gap-3">
-                        <div
-                          className="
-                            h-2.5
-                            flex-1
-                            overflow-hidden
-                            rounded-full
-                            bg-zinc-800
-                            shadow-inner
-                          "
-                        >
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{
-                              width: `${progressPercentage}%`,
-                            }}
-                            transition={{
-                              duration: 0.7,
-                              delay: 0.15 + index * 0.07,
-                              ease: "easeOut",
-                            }}
-                            className={
-                              achievement.unlocked
-                                ? `
-                                  h-full
-                                  rounded-full
-                                  bg-gradient-to-r
-                                  from-green-500
-                                  to-green-300
-                                `
-                                : `
-                                  h-full
-                                  rounded-full
-                                  bg-gradient-to-r
-                                  from-pink-600
-                                  to-pink-400
-                                `
-                            }
-                          />
-                        </div>
-
-                        <span
-                          className="
-                            min-w-fit
-                            text-xs
-                            font-medium
-                            text-zinc-400
-                          "
-                        >
-                          {currentProgress} / {achievement.target}
-                        </span>
-                      </div>
-
-                      <p className="mt-2 text-xs text-zinc-600">
-                        {achievement.unlocked
-                          ? "Missione completata con successo"
-                          : `${progressPercentage}% completato`}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </main>
-
-        <BottomNav />
-      </div>
+      <AchievementUnlockModal
+        achievement={unlockedAchievement}
+        open={!!unlockedAchievement}
+        onClose={closeAchievement}
+        theme={theme}
+        prefersReducedMotion={prefersReducedMotion}
+      />
     </div>
   );
 }
