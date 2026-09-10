@@ -16,6 +16,8 @@ import ReportPeriodSelector from "../components/report/ReportPeriodSelector";
 import ReportMonthSelector from "../components/report/ReportMonthSelector";
 import ReportShareModal from "../components/report/ReportShareModal";
 
+import { getLocalDateKey } from "../utils/date";
+
 import { useReportData } from "../hooks/useReportData";
 
 export default function CagometroReport() {
@@ -32,8 +34,6 @@ export default function CagometroReport() {
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   const {
@@ -100,23 +100,11 @@ export default function CagometroReport() {
     setSelectedPointId(weekPoints[weekPoints.length - 1]?.id ?? null);
   };
 
-  const copyReport = async () => {
-    const summary = `Cagometro — ${report.label}: ${total} registrazioni, streak di ${report.streak} giorni, miglior periodo: ${bestPoint.date}.`;
-
-    try {
-      await navigator.clipboard.writeText(summary);
-    } catch {
-      // Nel prototipo il feedback viene comunque mostrato.
-    }
-
-    setCopied(true);
-
-    window.setTimeout(() => {
-      setCopied(false);
-    }, 2200);
-  };
-
   const currentMonth = new Date();
+
+  const todayKey = getLocalDateKey();
+
+  const todayTotal = entries?.[todayKey] ?? 0;
 
   const isCurrentMonth =
     selectedMonth.getMonth() === currentMonth.getMonth() &&
@@ -157,18 +145,18 @@ export default function CagometroReport() {
           )}
         </section>
 
-          <ReportHeroCard
-            report={report}
-            total={total}
-            average={average}
-            averageLabel={averageLabel}
-            change={change}
-            difference={difference}
-            isDark={isDark}
-            theme={theme}
-            prefersReducedMotion={prefersReducedMotion}
-            onShare={() => setShareOpen(true)}
-          />
+        <ReportHeroCard
+          report={report}
+          total={total}
+          average={average}
+          averageLabel={averageLabel}
+          change={change}
+          difference={difference}
+          isDark={isDark}
+          theme={theme}
+          prefersReducedMotion={prefersReducedMotion}
+          onShare={() => setShareOpen(true)}
+        />
 
         <ReportChart
           report={report}
@@ -213,17 +201,17 @@ export default function CagometroReport() {
       />
 
       <ReportShareModal
-  open={shareOpen}
-  onClose={() => setShareOpen(false)}
-  report={report}
-  total={total}
-  bestPoint={bestPoint}
-  copied={copied}
-  copyReport={copyReport}
-  theme={theme}
-  prefersReducedMotion={prefersReducedMotion}
-  resolvedTheme={resolvedTheme}
-/>
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        report={report}
+        period={period}
+        total={total}
+        todayTotal={todayTotal}
+        bestPoint={bestPoint}
+        theme={theme}
+        prefersReducedMotion={prefersReducedMotion}
+        resolvedTheme={resolvedTheme}
+      />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   getRecordHistorical,
   getLastNDaysTotal,
   getMonthTotal,
+  getMonthBestStreak,
   getWeeklyChartData,
   getMonthChartData,
 } from "./stats";
@@ -249,6 +250,57 @@ describe("stats", () => {
       expect(
         getMonthTotal(entries, selectedMonth),
       ).toBe(0);
+    });
+  });
+
+  describe("getMonthBestStreak", () => {
+    it("restituisce 0 senza registrazioni nel mese", () => {
+      const entries = {
+        "2026-08-20": 3,
+      };
+
+      const selectedMonth = new Date(2026, 8, 1, 12, 0, 0);
+
+      expect(getMonthBestStreak(entries, selectedMonth)).toBe(0);
+    });
+
+    it("restituisce la streak più lunga dentro il mese", () => {
+      const entries = {
+        "2026-09-01": 1,
+        "2026-09-02": 1,
+        "2026-09-03": 1,
+        "2026-09-10": 1,
+        "2026-09-11": 1,
+      };
+
+      const selectedMonth = new Date(2026, 8, 1, 12, 0, 0);
+
+      expect(getMonthBestStreak(entries, selectedMonth)).toBe(3);
+    });
+
+    it("non considera le streak che attraversano il confine del mese", () => {
+      const entries = {
+        "2026-08-30": 1,
+        "2026-08-31": 1,
+        "2026-09-01": 1,
+        "2026-09-02": 1,
+      };
+
+      const selectedMonth = new Date(2026, 8, 1, 12, 0, 0);
+
+      expect(getMonthBestStreak(entries, selectedMonth)).toBe(2);
+    });
+
+    it("ignora le date con conteggio nullo dentro il mese", () => {
+      const entries = {
+        "2026-09-01": 0,
+        "2026-09-02": 1,
+        "2026-09-03": 1,
+      };
+
+      const selectedMonth = new Date(2026, 8, 1, 12, 0, 0);
+
+      expect(getMonthBestStreak(entries, selectedMonth)).toBe(2);
     });
   });
 

@@ -9,6 +9,7 @@ import {
   getPreviousWeekTotal,
   getPreviousMonthTotal,
   getPreviousYearTotal,
+  getMonthBestStreak,
 } from "../utils/stats";
 
 export function useReportData({
@@ -38,6 +39,11 @@ export function useReportData({
   const currentStreak = useMemo(() => calculateStreak(entries), [entries]);
 
   const bestStreak = useMemo(() => calculateBestStreak(entries), [entries]);
+
+  const monthBestStreak = useMemo(
+    () => getMonthBestStreak(entries, selectedMonth),
+    [entries, selectedMonth],
+  );
 
   const previousWeekTotal = useMemo(
     () => getPreviousWeekTotal(entries),
@@ -123,6 +129,8 @@ export function useReportData({
 
         record: bestStreak,
 
+        bestMonthStreak: monthBestStreak,
+
         activeDays: monthPoints.filter((point) => point.value > 0).length,
 
         bestTime: "-",
@@ -197,6 +205,7 @@ export function useReportData({
     allPoints,
     currentStreak,
     bestStreak,
+    monthBestStreak,
     previousWeekTotal,
     previousMonthTotal,
     previousYearTotal,

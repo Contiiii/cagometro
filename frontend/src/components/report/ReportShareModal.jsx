@@ -1,20 +1,57 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Share2, X } from "lucide-react";
 import { toBlob } from "html-to-image";
 import poopIcon from "../../assets/poop.png";
 
+function withTimeout(promise, ms, message) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 export default function ReportShareModal({
   open,
   onClose,
   report,
+  period,
   total,
+  todayTotal,
   bestPoint,
   theme,
   prefersReducedMotion,
   resolvedTheme,
 }) {
   const cardRef = useRef(null);
+  const todayRegistrations = todayTotal ?? 0;
+  const isWeekReport = period === "week";
+  const isMonthReport = period === "month";
+
+  const summaryTitle = isWeekReport
+    ? "Riepilogo settimanale"
+    : isMonthReport
+      ? "Riepilogo mensile"
+      : "Cagometro report";
+
+  const bestPointLabel = isWeekReport
+    ? "Miglior giorno della settimana"
+    : isMonthReport
+      ? "Miglior giorno del mese"
+      : "Miglior giorno";
+
+  const totalLabel = isWeekReport
+    ? "Registrazioni di oggi"
+    : isMonthReport
+      ? "Registrazioni del mese"
+      : "Totale registrazioni";
+
+  const shareText = isWeekReport
+    ? `Report settimanale · ${todayRegistrations} registrazioni oggi · miglior giorno: ${bestPoint?.date ?? "—"} (${bestPoint?.value ?? 0})`
+    : isMonthReport
+      ? `Report mensile · ${total} registrazioni · streak attuale: ${report.streak} giorni · miglior streak del mese: ${report.bestMonthStreak ?? 0} g · miglior giorno: ${bestPoint?.date ?? "—"} (${bestPoint?.value ?? 0})`
+      : `Report ${report.label} · ${total} registrazioni`;
 
   const isDarkCard = resolvedTheme === "dark";
 
@@ -38,15 +75,26 @@ export default function ReportShareModal({
     ? "border-white/[0.08] bg-white/[0.06]"
     : "border-pink-500/15 bg-pink-500/10";
 
+  const [isSharing, setIsSharing] = useState(false);
+
   async function handleShareCard() {
+    if (isSharing) return;
+
+    setIsSharing(true);
+
     try {
       if (!cardRef.current) return;
 
-      const blob = await toBlob(cardRef.current, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: isDarkCard ? "#18181b" : "#fffaf8",
-      });
+      const blob = await withTimeout(
+        toBlob(cardRef.current, {
+          cacheBust: true,
+          pixelRatio: 2,
+          skipFonts: true,
+          backgroundColor: isDarkCard ? "#18181b" : "#fffaf8",
+        }),
+        20000,
+        "Timeout durante la generazione dell'immagine",
+      );
 
       if (!blob) {
         throw new Error("Impossibile generare l'immagine");
@@ -59,7 +107,7 @@ export default function ReportShareModal({
 
       const shareData = {
         title: "Cagometro Report",
-        text: `Report ${report.label} · ${total} registrazioni`,
+        text: shareText,
         files: [file],
       };
 
@@ -69,7 +117,11 @@ export default function ReportShareModal({
         navigator.canShare &&
         navigator.canShare({ files: [file] })
       ) {
-        await navigator.share(shareData);
+        await withTimeout(
+          navigator.share(shareData),
+          60000,
+          "Timeout durante la condivisione",
+        );
         return;
       }
 
@@ -93,11 +145,16 @@ export default function ReportShareModal({
       try {
         if (!cardRef.current) return;
 
-        const blob = await toBlob(cardRef.current, {
-          cacheBust: true,
-          pixelRatio: 2,
-          backgroundColor: isDarkCard ? "#18181b" : "#fffaf8",
-        });
+        const blob = await withTimeout(
+          toBlob(cardRef.current, {
+            cacheBust: true,
+            pixelRatio: 2,
+            skipFonts: true,
+            backgroundColor: isDarkCard ? "#18181b" : "#fffaf8",
+          }),
+          20000,
+          "Timeout durante la generazione dell'immagine",
+        );
 
         if (!blob) return;
 
@@ -115,6 +172,8 @@ export default function ReportShareModal({
         console.error("Errore anche nel fallback download:", fallbackError);
         alert("Non sono riuscito né a condividere né a scaricare l'immagine.");
       }
+    } finally {
+      setIsSharing(false);
     }
   }
 
@@ -213,7 +272,7 @@ export default function ReportShareModal({
                       <p
                         className={`mt-3 text-[11px] font-bold uppercase tracking-[0.16em] ${exportSubtleClass}`}
                       >
-                        Cagometro report
+                        {summaryTitle}
                       </p>
                     </div>
 
@@ -223,40 +282,52 @@ export default function ReportShareModal({
                       {report.label}
                     </span>
                   </div>
-
                   <div className="relative mt-6">
                     <p className={`text-sm font-bold ${exportMutedClass}`}>
-                      Totale registrazioni
+                      {totalLabel}
                     </p>
 
                     <p
                       className={`mt-1 text-5xl font-black leading-none tracking-[-0.08em] ${exportStrongClass}`}
                     >
-                      {total}
-                    </p>
-
-                    <p
-                      className={`mt-2 text-sm font-semibold ${exportMutedClass}`}
-                    >
-                      streak di {report.streak} giorni
+                      {isWeekReport ? todayRegistrations : total}
                     </p>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-2 gap-3">
+                  <div className={`mt-5 grid gap-3 ${isMonthReport ? "grid-cols-3" : "grid-cols-2"}`}>
                     <div
                       className={`rounded-2xl border p-3 ${exportPanelClass}`}
                     >
                       <p
                         className={`text-[10px] font-bold uppercase tracking-[0.14em] ${exportSubtleClass}`}
                       >
-                        Streak
+                        Streak attiva oggi
                       </p>
+
                       <p
                         className={`mt-1 text-2xl font-black ${exportStrongClass}`}
                       >
-                        {report.streak}
+                        {todayRegistrations > 0 ? report.streak : 0} g
                       </p>
                     </div>
+
+                    {isMonthReport && (
+                      <div
+                        className={`rounded-2xl border p-3 ${exportPanelClass}`}
+                      >
+                        <p
+                          className={`text-[10px] font-bold uppercase tracking-[0.14em] ${exportSubtleClass}`}
+                        >
+                          Miglior streak del mese
+                        </p>
+
+                        <p
+                          className={`mt-1 text-2xl font-black ${exportStrongClass}`}
+                        >
+                          {report.bestMonthStreak ?? 0} g
+                        </p>
+                      </div>
+                    )}
 
                     <div
                       className={`rounded-2xl border p-3 ${exportPanelClass}`}
@@ -264,12 +335,13 @@ export default function ReportShareModal({
                       <p
                         className={`text-[10px] font-bold uppercase tracking-[0.14em] ${exportSubtleClass}`}
                       >
-                        Migliore
+                        Giorno migliore
                       </p>
+
                       <p
                         className={`mt-1 text-2xl font-black ${exportStrongClass}`}
                       >
-                        {bestPoint.value}
+                        {bestPoint?.value ?? 0}
                       </p>
                     </div>
                   </div>
@@ -277,16 +349,14 @@ export default function ReportShareModal({
                   <div
                     className={`mt-5 rounded-2xl border px-4 py-3 ${exportPanelClass}`}
                   >
-                    <p
-                      className={`text-xs leading-relaxed ${exportMutedClass}`}
-                    >
-                      Miglior periodo:{" "}
+                    <p className={`text-xs leading-relaxed ${exportMutedClass}`}>
+                      {bestPointLabel}:{" "}
                       <span className={`font-extrabold ${exportStrongClass}`}>
-                        {bestPoint.date}
+                        {bestPoint?.date ?? "—"}
                       </span>{" "}
                       con{" "}
                       <span className={`font-extrabold ${exportStrongClass}`}>
-                        {bestPoint.value}
+                        {bestPoint?.value ?? 0}
                       </span>{" "}
                       registrazioni.
                     </p>
@@ -300,10 +370,11 @@ export default function ReportShareModal({
                 <button
                   type="button"
                   onClick={handleShareCard}
-                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.28)] transition-all hover:bg-pink-400 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+                  disabled={isSharing}
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.28)] transition-all hover:bg-pink-400 active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
                 >
                   <Share2 className="h-5 w-5" strokeWidth={2.4} />
-                  Condividi immagine
+                  {isSharing ? "Condivisione…" : "Condividi immagine"}
                 </button>
 
                 <button

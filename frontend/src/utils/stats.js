@@ -106,6 +106,30 @@ export function getMonthTotal(entries, date) {
   );
 }
 
+export function getMonthBestStreak(entries, date) {
+  const selectedYear = date.getFullYear();
+  const selectedMonth = date.getMonth();
+
+  const monthEntries = Object.entries(entries).reduce(
+    (monthOnly, [dateKey, count]) => {
+      const currentDate = parseLocalDateKey(dateKey);
+
+      const isSelectedMonth =
+        currentDate.getFullYear() === selectedYear &&
+        currentDate.getMonth() === selectedMonth;
+
+      if (isSelectedMonth) {
+        monthOnly[dateKey] = count;
+      }
+
+      return monthOnly;
+    },
+    {},
+  );
+
+  return calculateBestStreak(monthEntries);
+}
+
 export function getWeeklyChartData(entries) {
   const today = new Date();
   today.setHours(12, 0, 0, 0);

@@ -10,6 +10,13 @@ import StreakCard from "../components/home/StreakCard.jsx";
 import DailyCounter from "../components/home/DailyCounter.jsx";
 import PoopButton from "../components/home/PoopButton.jsx";
 import UndoButton from "../components/home/UndoButton.jsx";
+import ReleaseNotesModal from "../components/ReleaseNotesModal";
+
+import {
+  APP_VERSION,
+  RELEASE_FEATURES,
+} from "../config/releaseNotes";
+
 
 import { useTheme } from "../hooks/useTheme.js";
 import { useEntries } from "../hooks/useEntries.js";
@@ -17,7 +24,22 @@ import { useStats } from "../hooks/useStats.js";
 import { useAchievements } from "../hooks/useAchievements.js";
 import { calculateStreak } from "../utils/stats.js";
 
-export default function CagometroHome() {
+const CURRENT_APP_VERSION = APP_VERSION;
+
+
+export default function Home() {
+  const [releaseNotesOpen, setReleaseNotesOpen] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    const lastSeenVersion = window.localStorage.getItem(
+      "cagometro_last_seen_version",
+    );
+
+    return lastSeenVersion !== CURRENT_APP_VERSION;
+  });
+
   const prefersReducedMotion = useReducedMotion();
   const { resolvedTheme } = useTheme();
 
@@ -147,6 +169,15 @@ export default function CagometroHome() {
       ? "La giornata è ancora tutta da registrare."
       : "Sei in ritmo. Continua così.");
 
+  function closeReleaseNotes() {
+    window.localStorage.setItem(
+      "cagometro_last_seen_version",
+      CURRENT_APP_VERSION,
+    );
+
+    setReleaseNotesOpen(false);
+  }
+
   return (
     <div
       className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
@@ -159,13 +190,12 @@ export default function CagometroHome() {
             {displayDate}
           </p>
           <h1
-  className={`max-w-md text-[clamp(2rem,7vw,3.6rem)] font-black leading-[0.98] tracking-[-0.065em] ${theme.primaryText}`}
->
-  Ogni <span className="text-pink-500">click</span>
-  <br />
-  racconta una storia.
-</h1>
-
+            className={`max-w-md text-[clamp(2rem,7vw,3.6rem)] font-black leading-[0.98] tracking-[-0.065em] ${theme.primaryText}`}
+          >
+            Ogni <span className="text-pink-500">click</span>
+            <br />
+            racconta una storia.
+          </h1>
 
           <CloudBackupWarning />
 
@@ -221,16 +251,24 @@ export default function CagometroHome() {
         </section>
       </main>
 
-
       <AchievementUnlockModal
-  achievement={unlockedAchievement}
-  open={!!unlockedAchievement}
-  onClose={closeAchievement}
-  theme={theme}
-  prefersReducedMotion={prefersReducedMotion}
-/>
+        achievement={unlockedAchievement}
+        open={!!unlockedAchievement}
+        onClose={closeAchievement}
+        theme={theme}
+        prefersReducedMotion={prefersReducedMotion}
+      />
 
       <BottomNav />
+
+      <ReleaseNotesModal
+        open={releaseNotesOpen}
+        onClose={closeReleaseNotes}
+        version={CURRENT_APP_VERSION}
+        features={RELEASE_FEATURES}
+        isDark={isDark}
+        prefersReducedMotion={prefersReducedMotion}
+      />
     </div>
   );
 }

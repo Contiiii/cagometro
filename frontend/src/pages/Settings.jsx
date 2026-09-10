@@ -36,6 +36,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTeam } from "../hooks/useTeam";
 
 import { submitFeedback } from "../services/feedbackService";
+import { APP_VERSION } from "../config/releaseNotes";
 
 const feedbackCategories = [
   { id: "miglioria", label: "Miglioria" },
@@ -96,7 +97,10 @@ export default function CagometroSettings() {
   const { user, login, logout } = useAuth();
   const { team } = useTeam();
 
-  const profileTeam = team?.name ?? null;
+  const profileTeam =
+  team?.name ??
+  team?.team_name ??
+  null;
 
   const profileName = profile?.displayName ?? profile?.display_name ?? "Utente";
 
@@ -105,8 +109,7 @@ export default function CagometroSettings() {
   const profileLevel = profile?.level ?? 1;
   const profileXp = profile?.xp ?? 0;
 
-const profileInitial =
-  profileName.trim().slice(0, 1).toUpperCase() || "U";
+  const profileInitial = profileName.trim().slice(0, 1).toUpperCase() || "U";
 
   const [themeMode, setThemeMode] = useState("system");
   const [systemPrefersDark, setSystemPrefersDark] = useState(true);
@@ -123,9 +126,9 @@ const profileInitial =
   const [compactStats, setCompactStats] = useState(false);
   const cloudEnabled = Boolean(user);
 
- const syncState = cloudEnabled
-  ? "Sincronizzazione automatica attiva"
-  : "Sincronizzazione non disponibile";
+  const syncState = cloudEnabled
+    ? "Sincronizzazione automatica attiva"
+    : "Sincronizzazione non disponibile";
 
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [dangerModal, setDangerModal] = useState(null);
@@ -207,14 +210,12 @@ const profileInitial =
     });
   }, [activeSection]);
 
-const completedSetupCount = [
-  profileName !== "Utente",
-  Boolean(user?.email),
-].filter(Boolean).length;
+  const completedSetupCount = [
+    profileName !== "Utente",
+    Boolean(user?.email),
+  ].filter(Boolean).length;
 
-const overallSetupProgress = Math.round(
-  (completedSetupCount / 2) * 100,
-);
+  const overallSetupProgress = Math.round((completedSetupCount / 2) * 100);
 
   const showToast = (message) => {
     setToast(message);
@@ -312,7 +313,7 @@ const overallSetupProgress = Math.round(
 
     try {
       await logout();
-      navigate("/");  
+      navigate("/");
       showToast("Ti sei disconnesso");
     } catch (error) {
       console.error("Errore durante il logout:", error);
@@ -352,19 +353,25 @@ const overallSetupProgress = Math.round(
           </div>
 
           <div
-            role="status"
-            aria-label="Sincronizzazione automatica attiva"
-            title="Sincronizzazione automatica attiva"
-            className={`relative grid h-11 w-11 place-items-center rounded-2xl border ${theme.soft}`}
-          >
-            <Cloud
-              className="h-5 w-5"
-              strokeWidth={2.2}
-              style={{ color: accentColor }}
-            />
+  role="status"
+  aria-label={syncState}
+  title={syncState}
+  className={`relative grid h-11 w-11 place-items-center rounded-2xl border ${theme.soft}`}
+>
+  <Cloud
+    className="h-5 w-5"
+    strokeWidth={2.2}
+    style={{
+      color: cloudEnabled ? accentColor : "#f59e0b",
+    }}
+  />
 
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-500" />
-          </div>
+  <span
+    className={`absolute right-2 top-2 h-2 w-2 rounded-full ${
+      cloudEnabled ? "bg-emerald-500" : "bg-amber-500"
+    }`}
+  />
+</div>
         </div>
       </header>
 
@@ -423,8 +430,8 @@ const overallSetupProgress = Math.round(
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <StatusBadge active={cloudEnabled}>
-  {cloudEnabled ? "Cloud attivo" : "Cloud non disponibile"}
-</StatusBadge>
+                    {cloudEnabled ? "Cloud attivo" : "Cloud non disponibile"}
+                  </StatusBadge>
 
                   <span
                     className={`rounded-full border px-3 py-1 text-xs font-black ${theme.soft}`}
@@ -485,14 +492,13 @@ const overallSetupProgress = Math.round(
                   Assetto dell’account
                 </p>
 
-<p
-  className={`mt-1 text-xs font-medium leading-relaxed ${theme.muted}`}
->
-  {overallSetupProgress === 100
-    ? "Profilo pronto. Le informazioni principali sono complete."
-    : "Completa le informazioni principali per preparare il profilo."}
-</p>
-
+                <p
+                  className={`mt-1 text-xs font-medium leading-relaxed ${theme.muted}`}
+                >
+                  {overallSetupProgress === 100
+                    ? "Profilo pronto. Le informazioni principali sono complete."
+                    : "Completa le informazioni principali per preparare il profilo."}
+                </p>
               </div>
 
               <span
@@ -545,7 +551,7 @@ const overallSetupProgress = Math.round(
 
                   return (
                     <button
-                    type="button"
+                      type="button"
                       key={section.id}
                       ref={(node) => {
                         if (node) {
@@ -676,11 +682,11 @@ const overallSetupProgress = Math.round(
 
               {activeSection === "system" && (
                 <SystemPanel
-  theme={theme}
-  accentColor={accentColor}
-  syncState={syncState}
-  cloudEnabled={cloudEnabled}
-/>
+                  theme={theme}
+                  accentColor={accentColor}
+                  syncState={syncState}
+                  cloudEnabled={cloudEnabled}
+                />
               )}
 
               {activeSection === "privacy" && (
@@ -688,14 +694,14 @@ const overallSetupProgress = Math.round(
               )}
 
               {activeSection === "account" && (
-<AccountPanel
-  theme={theme}
-  accentColor={accentColor}
-  themeMode={themeMode}
-  accent={accent}
-  onDanger={setDangerModal}
-  onFeedback={openFeedback}
-/>
+                <AccountPanel
+                  theme={theme}
+                  accentColor={accentColor}
+                  themeMode={themeMode}
+                  accent={accent}
+                  onDanger={setDangerModal}
+                  onFeedback={openFeedback}
+                />
               )}
             </motion.section>
           </AnimatePresence>
@@ -1201,8 +1207,16 @@ function AccountPanel({
         </p>
 
         <div className="mt-3 grid gap-2">
-          <InfoRow label="Versione installata" value="1.8.2" theme={theme} />
-          <InfoRow label="Build" value="240906-beta" theme={theme} />
+          <InfoRow
+  label="Versione installata"
+  value="1.8.2"
+  theme={theme}
+/>
+          <InfoRow
+  label="Versione installata"
+  value={APP_VERSION}
+  theme={theme}
+/>
           <InfoRow
             label="Tema attivo"
             value={
@@ -1584,11 +1598,7 @@ function StatusBadge({ children, active = true }) {
   );
 }
 
-function SystemPanel({
-  theme,
-  accentColor,
-  cloudEnabled,
-}) {
+function SystemPanel({ theme, accentColor, cloudEnabled,syncState }) {
   return (
     <PanelFrame
       eyebrow="Sistema"
@@ -1616,19 +1626,26 @@ function SystemPanel({
           </span>
 
           <div className="min-w-0">
-            <p className={`text-sm font-black ${theme.text}`}>Cloud attivo</p>
+            <p className={`text-sm font-black ${theme.text}`}>
+              {cloudEnabled ? "Cloud attivo" : "Cloud non disponibile"}
+            </p>
 
-            <span
-  className={`relative inline-flex h-3 w-3 rounded-full ${
-    cloudEnabled ? "bg-emerald-500" : "bg-amber-500"
-  }`}
-/>
+            <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
+              {syncState}
+            </p>
           </div>
         </div>
 
         <span className="relative flex h-3 w-3 shrink-0">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
-          <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+          {cloudEnabled && (
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
+          )}
+
+          <span
+            className={`relative inline-flex h-3 w-3 rounded-full ${
+              cloudEnabled ? "bg-emerald-500" : "bg-amber-500"
+            }`}
+          />
         </span>
       </div>
 
