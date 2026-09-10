@@ -1,10 +1,5 @@
 import { useMemo } from "react";
-import {
-  ChevronRight,
-  Crown,
-  Medal,
-  Trophy,
-} from "lucide-react";
+import { ChevronRight, Crown, Medal, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 
 const avatarGradients = [
@@ -104,9 +99,7 @@ export default function TeamLeaderboard({
           La classifica
         </h2>
 
-        <div
-          className={`flex rounded-xl border p-1 ${theme.softSurface}`}
-        >
+        <div className={`flex rounded-xl border p-1 ${theme.softSurface}`}>
           <RankingButton
             active={rankingMode === "week"}
             onClick={() => onRankingChange("week")}
@@ -137,9 +130,7 @@ export default function TeamLeaderboard({
               strokeWidth={1.8}
             />
 
-            <p
-              className={`mt-3 text-sm font-bold ${theme.primaryText}`}
-            >
+            <p className={`mt-3 text-sm font-bold ${theme.primaryText}`}>
               Nessun punteggio disponibile
             </p>
 
@@ -150,8 +141,7 @@ export default function TeamLeaderboard({
         ) : (
           ranking.map((member, index) => {
             const position = index + 1;
-            const isCurrentUser =
-              member.user_id === currentUserId;
+            const isCurrentUser = member.user_id === currentUserId;
 
             const membership = members.find(
               (item) => item.user_id === member.user_id,
@@ -160,30 +150,20 @@ export default function TeamLeaderboard({
             const isOwner = membership?.role === "owner";
 
             const avatarGradient =
-              member.avatar ||
-              getAvatarGradient(member.user_id);
+              member.avatar || getAvatarGradient(member.user_id);
 
-            const weeklyTotal = Number(
-              member.weekly_total || 0,
-            );
+            const weeklyTotal = Number(member.weekly_total || 0);
 
-            const lifetimeTotal = Number(
-              member.lifetime_total || 0,
-            );
+            const lifetimeTotal = Number(member.lifetime_total || 0);
 
-            const metric =
-              rankingMode === "week"
-                ? weeklyTotal
-                : lifetimeTotal;
+            const metric = rankingMode === "week" ? weeklyTotal : lifetimeTotal;
 
             return (
               <motion.button
                 layout
                 key={member.user_id}
                 type="button"
-                onClick={() =>
-                  onSelectMember?.(member.user_id)
-                }
+                onClick={() => onSelectMember?.(member.user_id)}
                 initial={
                   prefersReducedMotion
                     ? false
@@ -239,8 +219,7 @@ export default function TeamLeaderboard({
                       strokeWidth={2.2}
                       aria-label="Primo posto"
                     />
-                  ) : position === 2 ||
-                    position === 3 ? (
+                  ) : position === 2 || position === 3 ? (
                     <Medal
                       className="h-4 w-4"
                       strokeWidth={2.2}
@@ -254,9 +233,7 @@ export default function TeamLeaderboard({
                 <div
                   className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${avatarGradient} text-xs font-black text-white`}
                 >
-                  {getInitials(
-                    member.display_name || "Utente",
-                  )}
+                  {getInitials(member.display_name || "Utente")}
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -282,17 +259,18 @@ export default function TeamLeaderboard({
                     )}
                   </div>
 
-                  <p
-                    className={`mt-1 text-xs font-medium ${theme.muted}`}
-                  >
-                    {rankingMode === "week"
-                      ? `Storico: ${lifetimeTotal.toLocaleString(
-                          "it-IT",
-                        )}`
-                      : `Settimana: ${weeklyTotal.toLocaleString(
-                          "it-IT",
-                        )}`}
-                  </p>
+                  <div
+  className={`mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium ${theme.muted}`}
+>
+  <span className="whitespace-nowrap">
+    🔥 {Number(member.current_streak || 0).toLocaleString("it-IT")}{" "}
+    {Number(member.current_streak || 0) === 1 ? "giorno" : "giorni"}
+  </span>
+
+  <span className="whitespace-nowrap">
+    ⭐ {Number(member.xp || 0).toLocaleString("it-IT")} XP
+  </span>
+</div>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
@@ -316,13 +294,7 @@ export default function TeamLeaderboard({
   );
 }
 
-function RankingButton({
-  active,
-  onClick,
-  isDark,
-  theme,
-  children,
-}) {
+function RankingButton({ active, onClick, isDark, theme, children }) {
   return (
     <button
       type="button"

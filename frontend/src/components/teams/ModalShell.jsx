@@ -29,7 +29,7 @@ export default function ModalShell({
         aria-modal="true"
         aria-labelledby={labelledBy}
         aria-describedby={describedBy}
-        className={`w-full ${maxWidth} overflow-hidden rounded-[2rem] border shadow-2xl ${theme.sheet}`}
+        className={`max-h-[calc(100dvh-3rem)] w-full ${maxWidth} overflow-x-hidden overflow-y-auto overscroll-contain rounded-[2rem] border shadow-2xl ${theme.sheet}`}
         initial={
           prefersReducedMotion
             ? false
