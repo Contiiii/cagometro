@@ -4,8 +4,7 @@ import { EntriesContext } from "./entries-context";
 
 import { useAuth } from "../hooks/useAuth";
 
-import { createTeamActivity }
-  from "../services/teamService";
+import { createTeamActivity } from "../services/teamService";
 
 import {
   getEntries,
@@ -51,7 +50,6 @@ export function EntriesProvider({ children }) {
       }
 
       try {
-
         await Promise.all(
           changes.map((change) =>
             saveEntry({
@@ -189,19 +187,16 @@ export function EntriesProvider({ children }) {
     });
   }
 
-  async function syncEntry(date, count) {
+  async function syncEntry(date, count, logActivity = false) {
     try {
-
       await saveEntry({
-  userId: user.id,
-  date,
-  count,
-});
-
-await createTeamActivity(
-  "entry_created",
-  1,
-);
+        userId: user.id,
+        date,
+        count,
+      });
+      if (logActivity) {
+        await createTeamActivity("entry_created", 1);
+      }
 
       await flushPendingChanges();
 
@@ -229,7 +224,7 @@ await createTeamActivity(
     if (user) {
       saveUserEntries(user.id, newEntries);
 
-      await syncEntry(today, newEntries[today]);
+      await syncEntry(today, newEntries[today], true);
     }
 
     return newEntries;
