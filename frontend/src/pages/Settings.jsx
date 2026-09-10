@@ -254,6 +254,7 @@ const overallSetupProgress = Math.round(
 
     try {
       await logout();
+      navigate("/");  
       showToast("Ti sei disconnesso");
     } catch (error) {
       console.error("Errore durante il logout:", error);

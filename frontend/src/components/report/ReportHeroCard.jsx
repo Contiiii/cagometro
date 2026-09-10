@@ -1,5 +1,8 @@
-import { TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 
 export default function ReportHeroCard({
   report,
@@ -13,6 +16,8 @@ export default function ReportHeroCard({
   prefersReducedMotion,
   onShare,
 }) {
+  const isNegative = change < 0;
+  const isDecrease = difference < 0;
   return (
     <motion.section
       key={report.label}
@@ -51,11 +56,28 @@ export default function ReportHeroCard({
         </div>
 
         <div className="flex flex-col items-end gap-2">
-          <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/[0.10] px-3 py-2 text-xs font-extrabold text-emerald-500">
-            <TrendingUp className="h-4 w-4" strokeWidth={2.4} />
-            {change > 0 ? "+" : ""}
-            {change}%
-          </span>
+          <span
+  className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-extrabold ${
+    isNegative
+      ? "bg-red-500/[0.10] text-red-500"
+      : "bg-emerald-500/[0.10] text-emerald-500"
+  }`}
+>
+  {isNegative ? (
+    <TrendingDown
+      className="h-4 w-4"
+      strokeWidth={2.4}
+    />
+  ) : (
+    <TrendingUp
+      className="h-4 w-4"
+      strokeWidth={2.4}
+    />
+  )}
+
+  {!isNegative && change > 0 ? "+" : ""}
+  {change}%
+</span>
 
           <button
             type="button"
@@ -76,8 +98,17 @@ export default function ReportHeroCard({
           className={`max-w-[48ch] text-base font-bold leading-relaxed ${theme.text}`}
         >
           Hai registrato{" "}
-          <span className="text-pink-500">{difference} attività in più</span>{" "}
-          rispetto a {report.previousLabel}.
+<span
+  className={
+    isDecrease
+      ? "text-red-500"
+      : "text-pink-500"
+  }
+>
+  {Math.abs(difference)} attività{" "}
+  {isDecrease ? "in meno" : "in più"}
+</span>{" "}
+rispetto a {report.previousLabel}.
         </p>
       </div>
     </motion.section>
