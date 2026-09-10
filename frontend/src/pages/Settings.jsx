@@ -7,12 +7,15 @@ import {
   Cloud,
   Download,
   Info,
+  Lightbulb,
+  LogIn,
   LogOut,
   Moon,
   Palette,
   Pencil,
   RefreshCw,
   Save,
+  Send,
   Shield,
   Smartphone,
   Sparkles,
@@ -31,6 +34,15 @@ import { useProfile } from "../hooks/useProfile";
 import { useAuth } from "../hooks/useAuth";
 
 import { useTeam } from "../hooks/useTeam";
+
+import { submitFeedback } from "../services/feedbackService";
+
+const feedbackCategories = [
+  { id: "miglioria", label: "Miglioria" },
+  { id: "aggiornamento", label: "Aggiornamento" },
+  { id: "bug", label: "Bug" },
+  { id: "altro", label: "Altro" },
+];
 
 const accentOptions = [
   { id: "pink", label: "Rosa classico", color: "#ec4899" },
@@ -81,7 +93,7 @@ export default function CagometroSettings() {
   const prefersReducedMotion = useReducedMotion();
   const navigate = useNavigate();
   const { profile, updateProfile } = useProfile();
-  const { user, logout } = useAuth();
+  const { user, login, logout } = useAuth();
   const { team } = useTeam();
 
   const profileTeam = team?.name ?? null;
@@ -119,6 +131,11 @@ const profileInitial =
   const [dangerModal, setDangerModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackCategory, setFeedbackCategory] = useState("altro");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackName, setFeedbackName] = useState("");
+  const [feedbackSending, setFeedbackSending] = useState(false);
 
   const mobileTabsRef = useRef(null);
   const mobileTabButtonsRef = useRef({});
@@ -217,6 +234,48 @@ const overallSetupProgress = Math.round(
     setProfileEditorOpen(true);
   };
 
+  const openFeedback = () => {
+    setFeedbackCategory("altro");
+    setFeedbackMessage("");
+    setFeedbackName(profileName !== "Utente" ? profileName : "");
+    setFeedbackOpen(true);
+  };
+
+  async function sendFeedback() {
+    const trimmedName = feedbackName.trim();
+    const trimmedMessage = feedbackMessage.trim();
+
+    if (!trimmedName) {
+      showToast("Scrivi il tuo nome");
+      return;
+    }
+
+    if (!trimmedMessage) {
+      showToast("Scrivi prima un messaggio");
+      return;
+    }
+
+    try {
+      setFeedbackSending(true);
+
+      await submitFeedback({
+        category: feedbackCategory,
+        message: trimmedMessage,
+        name: trimmedName,
+        userId: user?.id ?? null,
+      });
+
+      setFeedbackOpen(false);
+      setFeedbackMessage("");
+      showToast("Segnalazione inviata. Grazie!");
+    } catch (error) {
+      console.error("Errore durante l'invio della segnalazione:", error);
+      showToast("Non è stato possibile inviare la segnalazione");
+    } finally {
+      setFeedbackSending(false);
+    }
+  }
+
   async function saveProfile() {
     const trimmedName = draftProfile.name.trim();
 
@@ -249,11 +308,14 @@ const overallSetupProgress = Math.round(
       return;
     }
 
+    setDangerModal(null);
+
     try {
       await logout();
+      navigate("/");  
+      showToast("Ti sei disconnesso");
     } catch (error) {
       console.error("Errore durante il logout:", error);
-      setDangerModal(null);
       showToast("Non è stato possibile disconnettersi");
     }
   }
@@ -373,15 +435,28 @@ const overallSetupProgress = Math.round(
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={openProfileEditor}
-              className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 sm:w-auto ${theme.soft}`}
-              style={{ "--tw-ring-color": accentColor }}
-            >
-              <Pencil className="h-4 w-4" strokeWidth={2.3} />
-              Modifica profilo
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={openProfileEditor}
+                className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 sm:w-auto ${theme.soft}`}
+                style={{ "--tw-ring-color": accentColor }}
+              >
+                <Pencil className="h-4 w-4" strokeWidth={2.3} />
+                Modifica profilo
+              </button>
+
+              {!user && (
+                <button
+                  type="button"
+                  onClick={login}
+                  className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 sm:w-auto ${theme.soft}`}
+                >
+                  <LogIn className="h-4 w-4" strokeWidth={2.3} />
+                  Accedi con Google
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -619,6 +694,7 @@ const overallSetupProgress = Math.round(
   themeMode={themeMode}
   accent={accent}
   onDanger={setDangerModal}
+  onFeedback={openFeedback}
 />
               )}
             </motion.section>
@@ -712,6 +788,76 @@ const overallSetupProgress = Math.round(
                 className="min-h-12 rounded-2xl bg-rose-500 px-4 text-sm font-extrabold text-white"
               >
                 Conferma
+              </button>
+            </div>
+          </ModalShell>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {feedbackOpen && (
+          <ModalShell
+            title="Segnala un'idea"
+            theme={theme}
+            onClose={() => setFeedbackOpen(false)}
+            prefersReducedMotion={prefersReducedMotion}
+          >
+            <div className="grid gap-3">
+              <div className="flex flex-wrap gap-2">
+                {feedbackCategories.map((category) => {
+                  const active = feedbackCategory === category.id;
+
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => setFeedbackCategory(category.id)}
+                      className={`min-h-9 rounded-full border px-3.5 py-1.5 text-xs font-extrabold transition ${
+                        active ? "border-transparent text-white" : theme.soft
+                      }`}
+                      style={
+                        active
+                          ? { backgroundColor: accentColor }
+                          : { "--tw-ring-color": accentColor }
+                      }
+                    >
+                      {category.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <label className="grid gap-2">
+                <span className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Messaggio
+                </span>
+
+                <textarea
+                  value={feedbackMessage}
+                  onChange={(event) => setFeedbackMessage(event.target.value)}
+                  placeholder="Miglioria, aggiornamento, bug… dimmi tutto."
+                  rows={5}
+                  className="min-h-32 resize-y rounded-2xl border border-zinc-300/70 bg-white/80 p-4 text-sm font-medium text-zinc-900 outline-none transition focus-visible:ring-2 focus-visible:ring-pink-500"
+                  style={{ "--tw-ring-color": accentColor }}
+                />
+              </label>
+
+              <Field
+                label="Nome"
+                value={feedbackName}
+                onChange={setFeedbackName}
+                accentColor={accentColor}
+              />
+
+              <button
+                type="button"
+                onClick={sendFeedback}
+                disabled={feedbackSending}
+                className="mt-1 flex min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(0,0,0,0.16)] disabled:opacity-60"
+                style={{ backgroundColor: accentColor }}
+              >
+                <Send className="h-4 w-4" strokeWidth={2.3} />
+                {feedbackSending ? "Invio…" : "Invia segnalazione"}
               </button>
             </div>
           </ModalShell>
@@ -1017,7 +1163,14 @@ function PrivacyPanel({ theme, accentColor }) {
   );
 }
 
-function AccountPanel({ theme, accentColor, themeMode, accent, onDanger }) {
+function AccountPanel({
+  theme,
+  accentColor,
+  themeMode,
+  accent,
+  onDanger,
+  onFeedback,
+}) {
   const accentLabel =
     accentOptions.find((item) => item.id === accent)?.label ?? "Rosa classico";
 
@@ -1030,13 +1183,13 @@ function AccountPanel({ theme, accentColor, themeMode, accent, onDanger }) {
     >
       <div className="grid gap-3">
         <ActionRow
-          icon={Info}
-          title="Assistenza e feedback"
-          description="Centro assistenza e segnalazione problemi."
-          actionLabel="Prossimamente"
+          icon={Lightbulb}
+          title="Segnala un'idea"
+          description="Migliorie, aggiornamenti o qualsiasi cosa vuoi farmi sapere."
+          actionLabel="Scrivi"
+          onClick={onFeedback}
           theme={theme}
           accentColor={accentColor}
-          disabled
         />
       </div>
 
@@ -1386,7 +1539,7 @@ function ModalShell({ title, theme, onClose, prefersReducedMotion, children }) {
             : { opacity: 0, y: 20, scale: 0.98 }
         }
         transition={{ type: "spring", stiffness: 380, damping: 30 }}
-        className={`w-full max-w-md rounded-[2rem] border p-6 shadow-2xl sm:p-7 ${theme.modal}`}
+        className={`max-h-[calc(100dvh-3rem)] w-full max-w-md overflow-y-auto rounded-[2rem] border p-6 shadow-2xl sm:p-7 ${theme.modal}`}
       >
         <div className="flex items-start justify-between gap-5">
           <div>

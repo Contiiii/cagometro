@@ -19,12 +19,12 @@ export default class ErrorBoundary extends Component {
     console.error("Errore catturato da ErrorBoundary:", error, errorInfo);
   }
 
-  handleGoHome = () => {
-    window.location.href = "/";
+  handleReset = () => {
+    this.setState({ hasError: false });
   };
 
-  handleReload = () => {
-    window.location.reload();
+  handleGoHome = () => {
+    window.location.href = "/";
   };
 
   render() {
@@ -58,17 +58,17 @@ export default class ErrorBoundary extends Component {
             <button
               onClick={this.handleReset}
               className="
-      rounded-xl
-      border
-      border-zinc-700
-      bg-zinc-900
-      px-5
-      py-3
-      font-semibold
-      text-white
-      transition
-      hover:border-pink-500/50
-    "
+                rounded-xl
+                border
+                border-zinc-700
+                bg-zinc-900
+                px-5
+                py-3
+                font-semibold
+                text-white
+                transition
+                hover:border-pink-500/50
+              "
             >
               Riprova
             </button>
@@ -76,15 +76,15 @@ export default class ErrorBoundary extends Component {
             <button
               onClick={this.handleGoHome}
               className="
-      rounded-xl
-      bg-pink-500
-      px-5
-      py-3
-      font-semibold
-      text-white
-      transition
-      hover:bg-pink-400
-    "
+                rounded-xl
+                bg-pink-500
+                px-5
+                py-3
+                font-semibold
+                text-white
+                transition
+                hover:bg-pink-400
+              "
             >
               Torna alla Home
             </button>

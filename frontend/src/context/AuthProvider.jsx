@@ -57,10 +57,7 @@ export function AuthProvider({ children }) {
 
   async function logout() {
     const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      console.error("Errore durante il logout:", error);
-    }
+    if (error) throw new Error(error.message);
   }
 
   const user = session?.user ?? null;
