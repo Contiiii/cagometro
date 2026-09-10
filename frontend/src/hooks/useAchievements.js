@@ -1,9 +1,8 @@
 import { useState } from "react";
 
-import {
-  getShownAchievements,
-  saveShownAchievements,
-} from "../utils/storage";
+import toast from "react-hot-toast";
+
+import { getShownAchievements, saveShownAchievements } from "../utils/storage";
 
 import {
   ACHIEVEMENTS,
@@ -11,41 +10,23 @@ import {
 } from "../config/achievements.js";
 
 export function useAchievements() {
-  const [
-    achievementQueue,
-    setAchievementQueue,
-  ] = useState([]);
+  const [achievementQueue, setAchievementQueue] = useState([]);
 
-  const unlockedAchievement =
-    achievementQueue[0] ?? null;
+  const unlockedAchievement = achievementQueue[0] ?? null;
 
-  function checkAchievements(
-    total,
-    currentStreak,
-  ) {
-    const shownAchievements =
-      getShownAchievements();
+  function checkAchievements(total, currentStreak) {
+    const shownAchievements = getShownAchievements();
+    const newAchievements = ACHIEVEMENTS.filter((achievement) => {
+      const progress = getAchievementProgress(achievement, {
+        total,
+        streak: currentStreak,
+      });
 
-    const newAchievements =
-      ACHIEVEMENTS.filter(
-        (achievement) => {
-          const progress =
-            getAchievementProgress(
-              achievement,
-              {
-                total,
-                streak: currentStreak,
-              },
-            );
-
-          return (
-            progress >= achievement.target &&
-            !shownAchievements.includes(
-              achievement.id,
-            )
-          );
-        },
+      return (
+        progress >= achievement.target &&
+        !shownAchievements.includes(achievement.id)
       );
+    });
 
     if (newAchievements.length === 0) {
       return;
@@ -54,69 +35,51 @@ export function useAchievements() {
     const updatedShownAchievements = [
       ...new Set([
         ...shownAchievements,
-        ...newAchievements.map(
-          (achievement) => achievement.id,
-        ),
+        ...newAchievements.map((achievement) => achievement.id),
       ]),
     ];
 
-    saveShownAchievements(
-      updatedShownAchievements,
-    );
+    saveShownAchievements(updatedShownAchievements);
 
-setAchievementQueue(
-  (currentQueue) => [
-    ...currentQueue,
-    ...newAchievements,
-  ],
-);
-    
-  }
+    setAchievementQueue((currentQueue) => [
+      ...currentQueue,
+      ...newAchievements,
+    ]);
 
-  function resetLockedAchievements(
-    total,
-    currentStreak,
-  ) {
-    const shownAchievements =
-      getShownAchievements();
-
-    const stillUnlockedIds =
-      ACHIEVEMENTS.filter(
-        (achievement) => {
-          const progress =
-            getAchievementProgress(
-              achievement,
-              {
-                total,
-                streak: currentStreak,
-              },
-            );
-
-          return (
-            progress >= achievement.target
-          );
+    newAchievements.forEach((achievement) => {
+      toast.success(`🏆 ${achievement.title}`, {
+        duration: 4000,
+        style: {
+          background: "#18181b",
+          color: "#fff",
+          border: "1px solid rgba(244,114,182,.3)",
+          borderRadius: "16px",
+          padding: "12px 16px",
         },
-      ).map(
-        (achievement) => achievement.id,
-      );
-
-    const updatedShownAchievements =
-      shownAchievements.filter(
-        (achievementId) =>
-          stillUnlockedIds.includes(
-            achievementId,
-          ),
-      );
-
-    saveShownAchievements(
-      updatedShownAchievements,
-    );
+      });
+    });
   }
-function closeAchievement() {
-    setAchievementQueue(
-      (currentQueue) =>
-        currentQueue.slice(1),
+
+  function resetLockedAchievements(total, currentStreak) {
+    const shownAchievements = getShownAchievements();
+
+    const stillUnlockedIds = ACHIEVEMENTS.filter((achievement) => {
+      const progress = getAchievementProgress(achievement, {
+        total,
+        streak: currentStreak,
+      });
+
+      return progress >= achievement.target;
+    }).map((achievement) => achievement.id);
+
+    const updatedShownAchievements = shownAchievements.filter((achievementId) =>
+      stillUnlockedIds.includes(achievementId),
     );
+
+    saveShownAchievements(updatedShownAchievements);
+  }
+  function closeAchievement() {
+    setAchievementQueue((currentQueue) => currentQueue.slice(1));
   }
 
   return {
