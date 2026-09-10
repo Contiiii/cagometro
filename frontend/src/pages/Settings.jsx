@@ -7,6 +7,7 @@ import {
   Cloud,
   Download,
   Info,
+  LogIn,
   LogOut,
   Moon,
   Palette,
@@ -81,7 +82,7 @@ export default function CagometroSettings() {
   const prefersReducedMotion = useReducedMotion();
   const navigate = useNavigate();
   const { profile, updateProfile } = useProfile();
-  const { user, logout } = useAuth();
+  const { user, login, logout } = useAuth();
   const { team } = useTeam();
 
   const profileTeam = team?.name ?? null;
@@ -249,11 +250,13 @@ const overallSetupProgress = Math.round(
       return;
     }
 
+    setDangerModal(null);
+
     try {
       await logout();
+      showToast("Ti sei disconnesso");
     } catch (error) {
       console.error("Errore durante il logout:", error);
-      setDangerModal(null);
       showToast("Non è stato possibile disconnettersi");
     }
   }
@@ -373,15 +376,28 @@ const overallSetupProgress = Math.round(
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={openProfileEditor}
-              className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 sm:w-auto ${theme.soft}`}
-              style={{ "--tw-ring-color": accentColor }}
-            >
-              <Pencil className="h-4 w-4" strokeWidth={2.3} />
-              Modifica profilo
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={openProfileEditor}
+                className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 sm:w-auto ${theme.soft}`}
+                style={{ "--tw-ring-color": accentColor }}
+              >
+                <Pencil className="h-4 w-4" strokeWidth={2.3} />
+                Modifica profilo
+              </button>
+
+              {!user && (
+                <button
+                  type="button"
+                  onClick={login}
+                  className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 sm:w-auto ${theme.soft}`}
+                >
+                  <LogIn className="h-4 w-4" strokeWidth={2.3} />
+                  Accedi con Google
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">

@@ -6,6 +6,7 @@ import poopIcon from "../assets/poop.png";
 
 import { useTheme } from "../hooks/useTheme";
 import { useProfile } from "../hooks/useProfile";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Header({
   eyebrow = "Cagometro",
@@ -18,6 +19,8 @@ export default function Header({
   const { resolvedTheme, setTheme } = useTheme();
 
   const { profile } = useProfile();
+
+  const { user, login } = useAuth();
 
   const isDark = resolvedTheme === "dark";
 
@@ -82,7 +85,7 @@ export default function Header({
           aria-label="Vai alla Home"
         >
           <div
-  className="
+            className="
     grid
     h-10
     w-10
@@ -93,15 +96,15 @@ export default function Header({
     shadow-[0_8px_20px_rgba(236,72,153,0.28)]
     overflow-hidden
   "
-  aria-hidden="true"
->
-  <img
-    src={poopIcon}
-    alt=""
-    className="h-6 w-6 object-contain select-none"
-    draggable={false}
-  />
-</div>
+            aria-hidden="true"
+          >
+            <img
+              src={poopIcon}
+              alt=""
+              className="h-6 w-6 object-contain select-none"
+              draggable={false}
+            />
+          </div>
 
           <div className="min-w-0">
             <p
@@ -211,7 +214,21 @@ export default function Header({
             </motion.span>
           </button>
 
-          {showSettings && (
+          {showSettings && !user && (
+            <button
+              type="button"
+              onClick={login}
+              className={`h-11 rounded-2xl border px-4 text-sm font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
+                isDark
+                  ? "border-pink-500/20 bg-pink-500/10 text-pink-300"
+                  : "border-pink-500/20 bg-pink-500/10 text-pink-600"
+              }`}
+            >
+              Accedi
+            </button>
+          )}
+
+          {showSettings && user && (
             <button
               type="button"
               onClick={handleAccountClick}
