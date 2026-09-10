@@ -1,20 +1,10 @@
 import { supabase } from "../lib/supabase";
 
-
-
-export async function createTeam({
-  name,
-  description,
-  avatarEmoji,
-  privacy,
-  accent,
-}) {
+export async function createTeam({ name, description, avatarEmoji }) {
   const { data, error } = await supabase.rpc("create_team", {
     team_name: name,
     team_description: description,
     team_avatar_emoji: avatarEmoji,
-    team_privacy: privacy,
-    team_accent: accent,
   });
 
   if (error) {
@@ -23,7 +13,6 @@ export async function createTeam({
 
   return data;
 }
-
 
 export async function getMyTeam() {
   const { data, error } = await supabase.rpc("get_my_team");
@@ -129,17 +118,11 @@ export async function regenerateInviteCode() {
   return data;
 }
 
-export async function getTeamActivity(
-  limit = 20,
-  offset = 0,
-) {
-  const { data, error } = await supabase.rpc(
-    "get_team_activity",
-    {
-      p_limit: limit,
-      p_offset: offset,
-    },
-  );
+export async function getTeamActivity(limit = 20, offset = 0) {
+  const { data, error } = await supabase.rpc("get_team_activity", {
+    p_limit: limit,
+    p_offset: offset,
+  });
 
   if (error) {
     throw error;
@@ -153,14 +136,11 @@ export async function createTeamActivity(
   points = null,
   metadata = null,
 ) {
-  const { data, error } = await supabase.rpc(
-    "create_team_activity",
-    {
-      p_activity_type: activityType,
-      p_points: points,
-      p_metadata: metadata,
-    },
-  );
+  const { data, error } = await supabase.rpc("create_team_activity", {
+    p_activity_type: activityType,
+    p_points: points,
+    p_metadata: metadata,
+  });
 
   if (error) {
     throw error;
@@ -168,5 +148,3 @@ export async function createTeamActivity(
 
   return data;
 }
-
-

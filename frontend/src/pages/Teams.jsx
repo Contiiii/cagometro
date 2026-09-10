@@ -217,16 +217,23 @@ export default function CagometroTeams() {
     toast.success("Sei entrato nella squadra");
   }
 
-  function handleLeaveTeam() {
-    if (team?.role === "owner") {
-      toast.error("Trasferisci la proprietà prima di lasciare la squadra");
-      return;
-    }
+  const isOwner = team?.role === "owner";
 
+  const activeMembers = members.filter(
+    (member) => !member.left_at && !member.removed_at,
+  );
+
+  const isLastMember = isOwner && activeMembers.length === 1;
+
+  function handleLeaveTeam() {
     openConfirm({
-      title: "Lascia squadra",
-      description: "Vuoi davvero lasciare la squadra?",
-      confirmText: "Lascia",
+      title: isLastMember ? "Sciogli squadra" : "Lascia squadra",
+
+      description: isLastMember
+        ? "Sei l'unico membro della squadra. Abbandonandola la squadra verrà eliminata definitivamente."
+        : "Vuoi davvero lasciare la squadra?",
+
+      confirmText: isLastMember ? "Sciogli squadra" : "Lascia",
       variant: "danger",
       onConfirm: async () => {
         try {
@@ -247,7 +254,11 @@ export default function CagometroTeams() {
             refreshActivity(),
           ]);
 
-          toast.success("Hai lasciato la squadra");
+          toast.success(
+            isLastMember
+              ? "Squadra sciolta con successo"
+              : "Hai lasciato la squadra",
+          );
         } catch (error) {
           console.error("Errore durante l'uscita dalla squadra:", error);
           throw error;

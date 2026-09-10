@@ -178,7 +178,7 @@ export default function CreateTeamModal({
               damping: 30,
               duration: prefersReducedMotion ? 0 : undefined,
             }}
-            className={`relative w-full max-w-lg overflow-hidden rounded-[2rem] border shadow-2xl ${theme.panel}`}
+            className={`relative max-h-[calc(100dvh-3rem)] w-full max-w-lg overflow-x-hidden overflow-y-auto overscroll-contain rounded-[2rem] border shadow-2xl ${theme.panel}`}
           >
             <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-pink-500/[0.10] blur-3xl" />
             <div className="pointer-events-none absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-amber-400/[0.08] blur-3xl" />
