@@ -1,9 +1,9 @@
 import { useId, useMemo, useRef, useState } from "react";
 import { Check, UsersRound, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import useModalFocusTrap from "../../hooks/useModalFocusTrap";
+import useModalFocusTrap from "../../../hooks/useModalFocusTrap";
 
-import { useTeamUI } from "../../hooks/useTeamUI";
+import { useTeamUI } from "../../../hooks/useTeamUI";
 
 export default function CreateTeamModal({
   open,

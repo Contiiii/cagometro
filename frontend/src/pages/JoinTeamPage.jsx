@@ -1,19 +1,31 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import toast from "react-hot-toast";
 
-import {
-  getTeamInvitePreview,
-  joinTeam,
-  createTeamActivity,
-} from "../services/teamService";
+import { getTeamInvitePreview } from "../services/teamService";
 import { useTeam } from "../hooks/useTeam";
+import { useTeamActions } from "../hooks/useTeamActions";
+import { notify } from "../utils/teamNotify";
 
 export default function JoinTeamPage() {
   const { code } = useParams();
   const navigate = useNavigate();
 
-  const { refreshDashboard } = useTeam();
+  const {
+    refreshDashboard,
+    refreshTeam,
+    refreshMembers,
+    refreshLeaderboard,
+    refreshActivity,
+  } = useTeam();
+
+  const { handleJoinTeam } = useTeamActions({
+    notify,
+    refreshDashboard,
+    refreshTeam,
+    refreshMembers,
+    refreshLeaderboard,
+    refreshActivity,
+  });
 
   const [inviteTeam, setInviteTeam] = useState(null);
   const [previewStatus, setPreviewStatus] = useState("loading");
@@ -100,7 +112,7 @@ export default function JoinTeamPage() {
     setErrorMessage("");
 
     try {
-      await joinTeam(inviteCode);
+      await handleJoinTeam(inviteCode, inviteTeam.name);
     } catch (error) {
       console.error("Errore ingresso nella squadra:", error);
 
@@ -114,37 +126,7 @@ export default function JoinTeamPage() {
       return;
     }
 
-    toast.success(`Sei entrato in ${inviteTeam.name}.`);
-
     setJoinStatus("success");
-
-    try {
-      await createTeamActivity("member_joined");
-    } catch (error) {
-      console.error(
-        "Ingresso riuscito, ma registrazione attività fallita:",
-        error,
-      );
-    }
-
-    try {
-      const result = await refreshDashboard();
-
-      if (result?.hasErrors) {
-        toast.error(
-          "Sei entrato, ma alcuni dati non sono stati aggiornati.",
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Ingresso riuscito, ma aggiornamento dati Team non riuscito:",
-        error,
-      );
-
-      toast.error(
-        "Sei entrato, ma l’aggiornamento dei dati non è riuscito.",
-      );
-    }
 
     navigate("/teams", {
       replace: true,

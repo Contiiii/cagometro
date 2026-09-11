@@ -1,0 +1,1 @@
+export const TEAM_WEEKLY_GOAL = 140;

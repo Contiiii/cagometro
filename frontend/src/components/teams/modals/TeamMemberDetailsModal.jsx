@@ -3,15 +3,15 @@ import { motion } from "framer-motion";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
-import Panel from "../ui/Panel";
+import Panel from "../../ui/Panel";
 
-import { useTeamUI } from "../../hooks/useTeamUI";
-import { useTeamSelection } from "../../hooks/useTeamSelection";
+import { useTeamUI } from "../../../hooks/useTeamUI";
+import { useTeamSelection } from "../../../hooks/useTeamSelection";
 
-import { useAuth } from "../../hooks/useAuth";
-import { useTeam } from "../../hooks/useTeam";
+import { useAuth } from "../../../hooks/useAuth";
+import { useTeam } from "../../../hooks/useTeam";
 
-import { getAvatarGradient, getInitials } from "../../utils/avatar";
+import { getAvatarGradient, getInitials } from "../../../utils/avatar";
 
 export default function TeamMemberDetailsModal({ onClose }) {
   const { theme, isDark, prefersReducedMotion } = useTeamUI();

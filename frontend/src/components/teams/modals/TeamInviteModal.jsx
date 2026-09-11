@@ -8,10 +8,10 @@ import {
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
-import Panel from "../ui/Panel";
+import Panel from "../../ui/Panel";
 
-import { useTeamUI } from "../../hooks/useTeamUI";
-import useTeamInvite from "../../hooks/useTeamInvite";
+import { useTeamUI } from "../../../hooks/useTeamUI";
+import useTeamInvite from "../../../hooks/useTeamInvite";
 
 export default function TeamInviteModal({
   onClose,

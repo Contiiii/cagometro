@@ -6,7 +6,7 @@
 
 Una web app personale per registrare le visite al trono, mantenere viva la streak e conquistare gloriosi achievement da bagno.
 
-![Status](https://img.shields.io/badge/status-v1.0.0-84cc16?style=for-the-badge)
+APP_VERSION
 ![Mission](https://img.shields.io/badge/missione-sopravvivere%20al%20WC-facc15?style=for-the-badge)
 ![PWA](https://img.shields.io/badge/PWA-installabile-pink?style=for-the-badge)
 ![Tests](https://img.shields.io/badge/tests-passing-22c55e?style=adge)
@@ -35,14 +35,24 @@ Niente complicazioni cosmiche: un trono, moltissimi dati discutibili e la possib
 - ☁️ Login Google e backup cloud tramite Supabase
 - 📲 PWA installabile con funzionamento offline
 - 🔄 Sincronizzazione automatica dei dati alla riconnessione
+- 👥 Creazione e gestione delle squadre
+- 🔗 Inviti tramite codice e link condivisibile
+- 🥇 Classifica settimanale e storica
+- 🔥 Streak e XP visualizzati per ogni membro
+- 📡 Activity feed aggiornato in tempo reale
+- 👑 Trasferimento della proprietà della squadra
+- 🔒 Attivazione e disattivazione degli inviti
+- 🆕 Modale con le novità mostrata una volta per versione
 
 ## 🗺️ Pagine
 
 ```text
-/              Home        — Centro operativo del regno
-/report        Report      — Statistiche e grafici
-/achievement  Traguardi   — Badge e progresso
-/settings      Settings    — Account e sincronizzazione
+/               Home         Centro operativo del regno
+/report         Report       Statistiche e grafici
+/achievements   Traguardi    Badge e progresso
+/teams          Squadre      Classifica, membri e attività
+/join/:code     Invito       Ingresso in una squadra
+/settings       Impostazioni Account e configurazione
 ```
 
 ### Home
@@ -74,6 +84,23 @@ Badge gloriosi da conquistare:
 - 🏆 **Veterano** — Raggiungi 100 registrazioni totali
 - 📅 **Costante** — Ottieni una streak di 7 giorni
 - 👑 **Leggenda** — Ottieni una streak di 30 giorni
+
+### Squadre
+
+Le squadre permettono di condividere progressi e statistiche con altri utenti:
+
+- creazione di una nuova squadra;
+- ingresso tramite codice o link invito;
+- limite massimo di membri;
+- classifica settimanale e storica;
+- visualizzazione di streak e XP;
+- feed delle attività recenti;
+- gestione dei membri;
+- trasferimento della proprietà;
+- attivazione e disattivazione degli inviti;
+- rigenerazione protetta del codice invito;
+- uscita dalla squadra;
+- scioglimento automatico quando l'owner è l'unico membro.
 
 ### Settings
 
@@ -117,21 +144,24 @@ Badge gloriosi da conquistare:
 ```text
 cagometro/
 ├── frontend/
-│   ├── public/               # Icone PWA e screenshot
+│   ├── public/
 │   ├── src/
-│   │   ├── components/       # Componenti UI riutilizzabili
-│   │   ├── pages/            # Pagine (route)
-│   │   ├── hooks/            # Custom hooks React
-│   │   ├── contexts/          # Context providers (auth, entries)
-│   │   ├── services/         # Chiamate API Supabase
-│   │   ├── utils/            # Logica pura (date, stats, storage)
-│   │   ├── config/           # Configurazioni (achievements)
-│   │   ├── lib/              # Client Supabase
-│   │   ├── assets/           # Immagini e risorse
-│   │   ├── App.jsx           # Router principale
-│   │   └── main.jsx          # Entry point e providers
-│   ├── vite.config.js        # Configurazione Vite + PWA
-│   └── package.json
+│   │   ├── components/
+│   │   ├── config/
+│   │   ├── context/
+│   │   ├── hooks/
+│   │   ├── lib/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── supabase/
+│   │   ├── migrations/
+│   │   └── config.toml
+│   ├── .env.example
+│   ├── package.json
+│   └── vite.config.js
 ├── README.md
 └── .gitignore
 ```
@@ -202,6 +232,342 @@ npm test
 - totali ultimi N giorni e per mese;
 - generazione dati per grafici settimanali e mensili;
 - progresso achievement per registrazioni totali e streak.
+
+## ⚙️ Requisiti
+
+Per eseguire Cagometro localmente servono:
+
+- Node.js
+- npm
+- Git
+
+Docker Desktop è richiesto soltanto per alcune operazioni locali di Supabase, tra cui:
+
+```bash
+supabase db pull
+supabase db diff
+supabase db reset
+supabase start
+```
+
+Docker non è necessario per avviare normalmente il frontend.
+
+## 📦 Installazione
+
+Clona il repository:
+
+```bash
+git clone URL_DEL_REPOSITORY
+cd cagometro/frontend
+```
+
+Installa le dipendenze:
+
+```bash
+npm install
+```
+
+## 🔐 Variabili d'ambiente
+
+Crea il file locale `.env` partendo dal modello incluso nel repository.
+
+### PowerShell
+
+```powershell
+Copy-Item .env.example .env
+```
+
+### macOS e Linux
+
+```bash
+cp .env.example .env
+```
+
+Il file `.env.example` contiene:
+
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+```
+
+Inserisci nel file `.env` i valori del progetto Supabase:
+
+```env
+VITE_SUPABASE_URL=https://example.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+```
+
+Il file `.env` non deve essere aggiunto a Git.
+
+Non committare mai:
+
+- password del database;
+- secret key;
+- service role key;
+- connection string privata;
+- token personali.
+
+## 🧑‍💻 Avvio locale
+
+Avvia il server di sviluppo:
+
+```bash
+npm run dev
+```
+
+Vite mostrerà l'indirizzo locale dell'applicazione, generalmente:
+
+```text
+http://localhost:5173
+```
+
+## ✅ Controllo qualità
+
+### Lint
+
+```bash
+npm run lint
+```
+
+### Test
+
+```bash
+npm test
+```
+
+In alternativa, per eseguire una singola sessione Vitest:
+
+```bash
+npx vitest run
+```
+
+### Build di produzione
+
+```bash
+npm run build
+```
+
+### Anteprima della build
+
+```bash
+npm run preview
+```
+
+Prima di ogni deploy è consigliato eseguire:
+
+```bash
+npm run lint
+npx vitest run
+npm run build
+```
+
+## 🗄️ Configurazione Supabase
+
+Cagometro utilizza Supabase per:
+
+- autenticazione Google;
+- profili;
+- registrazioni;
+- squadre;
+- membri delle squadre;
+- classifiche;
+- attività delle squadre;
+- feedback.
+
+### Installazione e accesso alla CLI
+
+Effettua il login:
+
+```bash
+supabase login
+```
+
+Collega il repository al progetto remoto:
+
+```bash
+supabase link
+```
+
+In alternativa:
+
+```bash
+supabase link --project-ref PROJECT_REF
+```
+
+Controlla lo stato delle migration:
+
+```bash
+supabase migration list
+```
+
+## 🧱 Migration database
+
+Le migration sono salvate in:
+
+```text
+supabase/migrations/
+```
+
+La cartella `supabase` deve essere versionata con Git.
+
+Le migration descrivono elementi come:
+
+- tabelle;
+- colonne;
+- funzioni RPC;
+- policy RLS;
+- trigger;
+- indici;
+- vincoli;
+- modifiche allo schema.
+
+### Recuperare modifiche dal database remoto
+
+Avvia Docker Desktop, quindi esegui:
+
+```bash
+supabase db pull
+```
+
+Controlla sempre il file SQL generato:
+
+```bash
+git diff -- supabase
+```
+
+### Creare una migration manualmente
+
+```bash
+supabase migration new nome_modifica
+```
+
+Esempio:
+
+```bash
+supabase migration new add_team_invite_rate_limit
+```
+
+Inserisci nel file generato soltanto il SQL necessario alla modifica.
+
+### Applicare migration pendenti
+
+```bash
+supabase db push
+```
+
+Prima di eseguire `db push`, controlla attentamente tutte le migration ancora da applicare.
+
+## 🛡️ Sicurezza e RLS
+
+Row Level Security è attiva sulle tabelle applicative:
+
+- `entries`
+- `feedback`
+- `profiles`
+- `teams`
+- `team_members`
+- `team_activity`
+
+Le operazioni sensibili utilizzano `auth.uid()` per identificare l'utente autenticato.
+
+Le RPC non devono fidarsi di un `user_id` o `team_id` arbitrario inviato dal frontend.
+
+### Protezione delle registrazioni
+
+Ogni utente può accedere soltanto alle proprie registrazioni.
+
+La tabella `entries` include vincoli equivalenti a:
+
+```sql
+unique (user_id, date)
+```
+
+```sql
+check (count >= 0)
+```
+
+```sql
+check (count <= 100)
+```
+
+### Protezione delle squadre
+
+Il database impedisce:
+
+- più squadre attive per lo stesso utente;
+- più owner attivi nella stessa squadra;
+- codici invito duplicati;
+- ingresso tramite inviti disabilitati;
+- ingresso in una seconda squadra;
+- trasferimento della proprietà a utenti esterni;
+- rimozione dell'owner;
+- rigenerazione eccessivamente frequente del codice invito.
+
+Il feed attività utilizza un indice composto su:
+
+```sql
+team_activity (team_id, created_at desc)
+```
+
+## 🏷️ Versione e note di rilascio
+
+La versione dell'app e le novità mostrate all'utente sono centralizzate in:
+
+```text
+src/config/releaseNotes.js
+```
+
+Per pubblicare una nuova versione, aggiorna:
+
+```js
+export const APP_VERSION = "1.9.0";
+```
+
+e modifica:
+
+```js
+export const RELEASE_FEATURES = [
+  // novità della versione
+];
+```
+
+La modale delle novità viene mostrata una sola volta per versione tramite `localStorage`.
+
+## 🚀 Deploy
+
+Il frontend può essere distribuito su Vercel.
+
+Nel pannello del progetto devono essere configurate queste variabili:
+
+```env
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+```
+
+Dopo aver modificato le variabili d'ambiente, esegui un nuovo deploy.
+
+Prima del deploy:
+
+```bash
+npm run lint
+npx vitest run
+npm run build
+```
+
+Dopo il deploy verifica almeno:
+
+- autenticazione Google;
+- registrazione e annullamento;
+- sincronizzazione cloud;
+- report;
+- pagina `/achievements`;
+- creazione squadra;
+- ingresso tramite `/join/:code`;
+- classifica Team;
+- attività Team;
+- rigenerazione codice invito;
+- tema chiaro e scuro;
+- installazione PWA.
 
 ## 🚀 Sviluppo
 

@@ -1,7 +1,7 @@
 import { AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
-import ModalShell from "../teams/ModalShell";
+import ModalShell from "../teams/modals/ModalShell";
 import Panel from "../ui/Panel";
 
 export default function ReportDetailsModal({

@@ -3,11 +3,9 @@ import toast from "react-hot-toast";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
-import Panel from "../ui/Panel";
+import Panel from "../../ui/Panel";
 
-import { useTeamUI } from "../../hooks/useTeamUI";
-
-import { updateTeam } from "../../services/teamService";
+import { useTeamUI } from "../../../hooks/useTeamUI";
 
 const TEAM_EMOJIS = [
   "🏆",
@@ -25,7 +23,7 @@ const TEAM_EMOJIS = [
 export default function EditTeamModal({
   onClose,
   team,
-  onSaved,
+  onSave,
   restoreFocusRef,
 }) {
   const { theme, isDark, prefersReducedMotion } = useTeamUI();
@@ -64,19 +62,16 @@ export default function EditTeamModal({
     try {
       setSaving(true);
 
-      await updateTeam({
+      await onSave({
         name: normalizedName,
         description: normalizedDescription,
         avatarEmoji: emoji,
       });
 
-      await onSaved?.();
-
       toast.success("Squadra aggiornata");
       onClose();
     } catch (error) {
-      console.error("Errore durante l'aggiornamento della squadra:", error);
-
+      // L'errore della mutazione è già stato loggato dall'hook.
       toast.error(
         error?.message || "Impossibile aggiornare la squadra",
       );

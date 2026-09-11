@@ -3,9 +3,9 @@ import { ChevronRight } from "lucide-react";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
-import Panel from "../ui/Panel";
+import Panel from "../../ui/Panel";
 
-import { useTeamUI } from "../../hooks/useTeamUI";
+import { useTeamUI } from "../../../hooks/useTeamUI";
 
 export default function TeamSettingsModal({
   team,

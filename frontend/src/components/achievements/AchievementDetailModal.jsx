@@ -1,7 +1,7 @@
 import { Check, LockKeyhole, X } from "lucide-react";
 import { motion } from "framer-motion";
 
-import ModalShell from "../teams/ModalShell";
+import ModalShell from "../teams/modals/ModalShell";
 
 export default function AchievementDetailModal({
   achievement,

@@ -3,11 +3,11 @@ import { Crown } from "lucide-react";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
-import Panel from "../ui/Panel";
+import Panel from "../../ui/Panel";
 
-import { useTeamUI } from "../../hooks/useTeamUI";
+import { useTeamUI } from "../../../hooks/useTeamUI";
 
-import { getAvatarGradient, getInitials } from "../../utils/avatar";
+import { getAvatarGradient, getInitials } from "../../../utils/avatar";
 
 export default function TeamMembersModal({
   team,

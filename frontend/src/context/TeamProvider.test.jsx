@@ -457,8 +457,9 @@ describe("TeamProvider", () => {
     });
 
     expect(console.error).toHaveBeenCalledWith(
-      "Errore aggiornamento realtime Team:",
+      expect.stringContaining("Errore aggiornamento realtime Team:"),
       expect.any(Error),
+      expect.any(Object),
     );
   });
 

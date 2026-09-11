@@ -11,13 +11,13 @@ import {
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
-import IconTile from "../ui/IconTile";
-import Panel from "../ui/Panel";
+import IconTile from "../../ui/IconTile";
+import Panel from "../../ui/Panel";
 
-import { useTeamUI } from "../../hooks/useTeamUI";
-import useTeamInvite from "../../hooks/useTeamInvite";
+import { useTeamUI } from "../../../hooks/useTeamUI";
+import useTeamInvite from "../../../hooks/useTeamInvite";
 
-const WEEKLY_GOAL = 140;
+import { TEAM_WEEKLY_GOAL } from "../../../config/team";
 
 export default function TeamOnboardingModal({
   onClose,
@@ -206,7 +206,7 @@ export default function TeamOnboardingModal({
               <p className={`mt-1 text-xs leading-relaxed ${theme.muted}`}>
                 Tutta la squadra punta a{" "}
                 <span className={`font-bold ${theme.primaryText}`}>
-                  {WEEKLY_GOAL.toLocaleString("it-IT")} registrazioni
+                  {TEAM_WEEKLY_GOAL.toLocaleString("it-IT")} registrazioni
                 </span>{" "}
                 in una settimana. La barra del traguardo resta sempre in
                 cima alla pagina.

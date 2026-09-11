@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { supabase } from "../lib/supabase";
 
+import { reportError } from "../utils/reportError";
+
 import { useAuth } from "../hooks/useAuth";
 
 import { TeamContext } from "./team-context";
@@ -141,10 +143,11 @@ export function TeamProvider({ children }) {
         } else {
           setMembers([]);
 
-          console.error(
-            "Errore caricamento membri Team:",
-            membersResult.reason,
-          );
+          reportError(membersResult.reason, {
+            feature: "team-members-load",
+            userId: user?.id ?? null,
+            message: "Errore caricamento membri Team:",
+          });
         }
 
         if (leaderboardResult.status === "fulfilled") {
@@ -152,10 +155,11 @@ export function TeamProvider({ children }) {
         } else {
           setLeaderboard([]);
 
-          console.error(
-            "Errore caricamento classifica Team:",
-            leaderboardResult.reason,
-          );
+          reportError(leaderboardResult.reason, {
+            feature: "team-leaderboard-load",
+            userId: user?.id ?? null,
+            message: "Errore caricamento classifica Team:",
+          });
         }
 
         if (activityResult.status === "fulfilled") {
@@ -163,10 +167,11 @@ export function TeamProvider({ children }) {
         } else {
           setActivity([]);
 
-          console.error(
-            "Errore caricamento attività Team:",
-            activityResult.reason,
-          );
+          reportError(activityResult.reason, {
+            feature: "team-activity-load",
+            userId: user?.id ?? null,
+            message: "Errore caricamento attività Team:",
+          });
         }
 
         const failedSections = [
@@ -200,7 +205,7 @@ export function TeamProvider({ children }) {
         }
       }
     },
-    [clearTeamData, user?.id],
+    [clearTeamData, user],
   );
 
   useEffect(() => {
@@ -214,7 +219,11 @@ export function TeamProvider({ children }) {
     const timeoutId = window.setTimeout(() => {
       refreshDashboard(requestedUserId).catch((error) => {
         if (!cancelled) {
-          console.error("Impossibile caricare la dashboard Team:", error);
+          reportError(error, {
+            feature: "team-dashboard-load",
+            userId: user?.id ?? null,
+            message: "Impossibile caricare la dashboard Team:",
+          });
         }
       });
     }, 0);
@@ -269,21 +278,30 @@ export function TeamProvider({ children }) {
 
           results.forEach((result) => {
             if (result.status === "rejected") {
-              console.error(
-                "Errore aggiornamento realtime Team:",
-                result.reason,
-              );
+            reportError(result.reason, {
+              feature: "team-realtime-refresh",
+              userId: user?.id ?? null,
+              message: "Errore aggiornamento realtime Team:",
+            });
             }
           });
         },
       )
       .subscribe((status, error) => {
         if (error) {
-          console.error("Errore Team Realtime:", error);
+          reportError(error, {
+            feature: "team-realtime",
+            userId: user?.id ?? null,
+            message: "Errore Team Realtime:",
+          });
         }
 
         if (status === "CHANNEL_ERROR") {
-          console.error("Canale Team Realtime non disponibile");
+          reportError(null, {
+            feature: "team-realtime-channel",
+            userId: user?.id ?? null,
+            message: "Canale Team Realtime non disponibile",
+          });
         }
       });
 

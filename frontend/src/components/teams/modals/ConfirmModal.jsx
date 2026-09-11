@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 
 import ModalShell from "./ModalShell";
 
-import { useTeamUI } from "../../hooks/useTeamUI";
+import { useTeamUI } from "../../../hooks/useTeamUI";
 
 export default function ConfirmModal({
   open,
