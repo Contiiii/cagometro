@@ -3,12 +3,14 @@ import { Check, UsersRound, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import useModalFocusTrap from "../../hooks/useModalFocusTrap";
 
+import { useTeamUI } from "../../context/TeamUIContext";
+
 export default function CreateTeamModal({
   open,
   onClose,
   onCreate,
-  isDark = true,
 }) {
+  const { isDark } = useTeamUI();
   const prefersReducedMotion = useReducedMotion();
 
   const titleId = useId();
@@ -16,6 +18,12 @@ export default function CreateTeamModal({
 
   const dialogRef = useRef(null);
   const nameInputRef = useRef(null);
+
+  const [teamName, setTeamName] = useState("");
+  const [description, setDescription] = useState("");
+  const [accent, setAccent] = useState("pink");
+  const [submitting, setSubmitting] = useState(false);
+  const [justCreated, setJustCreated] = useState(false);
 
   useModalFocusTrap({
     dialogRef,
@@ -25,12 +33,6 @@ export default function CreateTeamModal({
     prefersReducedMotion,
   });
 
-  const [teamName, setTeamName] = useState("");
-  const [description, setDescription] = useState("");
-  const [accent, setAccent] = useState("pink");
-  const [submitting, setSubmitting] = useState(false);
-  const [justCreated, setJustCreated] = useState(false);
-
   const theme = isDark
     ? {
         panel: "border-white/[0.09] bg-[#17171b]",
@@ -38,7 +40,7 @@ export default function CreateTeamModal({
         softer: "bg-white/[0.045]",
         text: "text-zinc-50",
         muted: "text-zinc-400",
-        subtle: "text-zinc-500",
+        subtle: "text-zinc-400",
         overlay: "bg-zinc-950/65",
         input:
           "border-white/[0.10] bg-white/[0.04] text-zinc-50 placeholder:text-zinc-500",

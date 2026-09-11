@@ -18,6 +18,9 @@ import {
   getWeeklyChartData,
   getMonthChartData,
   getYearlyChartData,
+  getPreviousWeekTotal,
+  getPreviousMonthTotal,
+  getPreviousYearTotal,
 } from "./stats";
 
 describe("stats", () => {
@@ -83,6 +86,47 @@ describe("stats", () => {
 
       expect(calculateStreak(entries)).toBe(0);
     });
+
+    it("attraversa il cambio di mese", () => {
+      vi.setSystemTime(
+        new Date(2026, 0, 1, 12, 0, 0),
+      );
+
+      const entries = {
+        "2026-01-01": 1,
+        "2025-12-31": 1,
+        "2025-12-30": 1,
+      };
+
+      expect(calculateStreak(entries)).toBe(3);
+    });
+
+    it("attraversa il cambio di anno", () => {
+      vi.setSystemTime(
+        new Date(2026, 0, 1, 12, 0, 0),
+      );
+
+      const entries = {
+        "2026-01-01": 1,
+        "2025-12-31": 2,
+        "2025-12-30": 1,
+      };
+
+      expect(calculateStreak(entries)).toBe(3);
+    });
+
+    it("funziona a mezzanotte", () => {
+      vi.setSystemTime(
+        new Date(2026, 8, 6, 0, 0, 0),
+      );
+
+      const entries = {
+        "2026-09-06": 1,
+        "2026-09-05": 1,
+      };
+
+      expect(calculateStreak(entries)).toBe(2);
+    });
   });
 
   describe("calculateBestStreak", () => {
@@ -128,6 +172,28 @@ describe("stats", () => {
       };
 
       expect(calculateBestStreak(entries)).toBe(1);
+    });
+
+    it("attraversa il cambio di anno", () => {
+      const entries = {
+        "2025-12-30": 1,
+        "2025-12-31": 1,
+        "2026-01-01": 1,
+        "2026-01-02": 1,
+      };
+
+      expect(calculateBestStreak(entries)).toBe(4);
+    });
+
+    it("attraversa il cambio di mese", () => {
+      const entries = {
+        "2026-01-30": 1,
+        "2026-01-31": 1,
+        "2026-02-01": 1,
+        "2026-02-02": 1,
+      };
+
+      expect(calculateBestStreak(entries)).toBe(4);
     });
   });
 
@@ -189,6 +255,21 @@ describe("stats", () => {
       };
 
       expect(getLastNDaysTotal(entries, 1)).toBe(7);
+    });
+
+    it("attraversa il cambio di mese", () => {
+      vi.setSystemTime(
+        new Date(2026, 0, 1, 12, 0, 0),
+      );
+
+      const entries = {
+        "2026-01-01": 1,
+        "2025-12-31": 1,
+        "2025-12-30": 1,
+        "2025-12-29": 1,
+      };
+
+      expect(getLastNDaysTotal(entries, 4)).toBe(4);
     });
   });
 
@@ -252,6 +333,27 @@ describe("stats", () => {
         getMonthTotal(entries, selectedMonth),
       ).toBe(0);
     });
+
+    it("conta il 29 febbraio in anno bisestile", () => {
+      const entries = {
+        "2024-02-15": 3,
+        "2024-02-29": 5,
+        "2024-03-01": 10,
+      };
+
+      const selectedMonth = new Date(
+        2024,
+        1,
+        1,
+        12,
+        0,
+        0,
+      );
+
+      expect(
+        getMonthTotal(entries, selectedMonth),
+      ).toBe(8);
+    });
   });
 
   describe("getMonthBestStreak", () => {
@@ -277,6 +379,18 @@ describe("stats", () => {
       const selectedMonth = new Date(2026, 8, 1, 12, 0, 0);
 
       expect(getMonthBestStreak(entries, selectedMonth)).toBe(3);
+    });
+
+    it("gestisce febbraio in anno bisestile", () => {
+      const entries = {
+        "2024-02-28": 1,
+        "2024-02-29": 1,
+        "2024-03-01": 1,
+      };
+
+      const selectedMonth = new Date(2024, 1, 1, 12, 0, 0);
+
+      expect(getMonthBestStreak(entries, selectedMonth)).toBe(2);
     });
 
     it("non considera le streak che attraversano il confine del mese", () => {
@@ -352,6 +466,32 @@ describe("stats", () => {
       expect(
         result.every((item) => item.count === 0),
       ).toBe(true);
+    });
+
+    it("gestisce una settimana che attraversa due mesi", () => {
+      vi.setSystemTime(
+        new Date(2026, 8, 2, 12, 0, 0),
+      );
+
+      const result = getWeeklyChartData({});
+
+      expect(result[0].date).toBe("2026-08-31");
+      expect(result[0].day).toBe("Lun");
+      expect(result[1].date).toBe("2026-09-01");
+      expect(result[1].day).toBe("Mar");
+    });
+
+    it("gestisce una settimana che attraversa due anni", () => {
+      vi.setSystemTime(
+        new Date(2026, 0, 1, 12, 0, 0),
+      );
+
+      const result = getWeeklyChartData({});
+
+      expect(result[0].date).toBe("2025-12-29");
+      expect(result[0].day).toBe("Lun");
+      expect(result[3].date).toBe("2026-01-01");
+      expect(result[3].day).toBe("Gio");
     });
   });
 
@@ -459,6 +599,24 @@ describe("stats", () => {
       expect(result).toHaveLength(30);
     });
 
+    it("restituisce 31 giorni per gennaio", () => {
+      const selectedMonth = new Date(
+        2026,
+        0,
+        1,
+        12,
+        0,
+        0,
+      );
+
+      const result = getMonthChartData(
+        {},
+        selectedMonth,
+      );
+
+      expect(result).toHaveLength(31);
+    });
+
     it("associa i count ai giorni corretti", () => {
       const entries = {
         "2026-09-01": 3,
@@ -490,6 +648,127 @@ describe("stats", () => {
         date: "2026-09-15",
         count: 7,
       });
+    });
+  });
+
+  describe("getPreviousWeekTotal", () => {
+    it("restituisce 0 senza registrazioni", () => {
+      expect(getPreviousWeekTotal({})).toBe(0);
+    });
+
+    it("somma i sette giorni della settimana precedente", () => {
+      const entries = {
+        "2026-09-06": 100,
+        "2026-08-30": 7,
+        "2026-08-29": 6,
+        "2026-08-28": 5,
+        "2026-08-27": 4,
+        "2026-08-26": 3,
+        "2026-08-25": 2,
+        "2026-08-24": 1,
+      };
+
+      expect(getPreviousWeekTotal(entries)).toBe(28);
+    });
+
+    it("attraversa il cambio di mese", () => {
+      vi.setSystemTime(
+        new Date(2026, 0, 5, 12, 0, 0),
+      );
+
+      const entries = {
+        "2026-01-05": 1,
+        "2026-01-04": 2,
+        "2026-01-03": 3,
+        "2026-01-02": 4,
+        "2026-01-01": 5,
+        "2025-12-31": 6,
+        "2025-12-30": 7,
+        "2025-12-29": 8,
+      };
+
+      expect(getPreviousWeekTotal(entries)).toBe(35);
+    });
+
+    it("funziona a mezzanotte", () => {
+      vi.setSystemTime(
+        new Date(2026, 8, 7, 0, 0, 0),
+      );
+
+      const entries = {
+        "2026-08-31": 1,
+        "2026-09-01": 2,
+        "2026-09-02": 3,
+        "2026-09-03": 4,
+        "2026-09-04": 5,
+        "2026-09-05": 6,
+        "2026-09-06": 7,
+      };
+
+      expect(getPreviousWeekTotal(entries)).toBe(28);
+    });
+  });
+
+  describe("getPreviousMonthTotal", () => {
+    it("restituisce 0 senza registrazioni", () => {
+      const date = new Date(2026, 1, 1, 12, 0, 0);
+
+      expect(getPreviousMonthTotal({}, date)).toBe(0);
+    });
+
+    it("somma solo le registrazioni del mese precedente", () => {
+      const entries = {
+        "2026-08-01": 5,
+        "2026-08-15": 3,
+        "2026-09-01": 10,
+      };
+
+      const date = new Date(2026, 8, 1, 12, 0, 0);
+
+      expect(getPreviousMonthTotal(entries, date)).toBe(8);
+    });
+
+    it("attraversa il cambio di anno", () => {
+      const entries = {
+        "2025-12-01": 4,
+        "2025-12-15": 6,
+        "2026-01-01": 10,
+      };
+
+      const date = new Date(2026, 0, 1, 12, 0, 0);
+
+      expect(getPreviousMonthTotal(entries, date)).toBe(10);
+    });
+  });
+
+  describe("getPreviousYearTotal", () => {
+    it("restituisce 0 senza registrazioni", () => {
+      expect(getPreviousYearTotal({})).toBe(0);
+    });
+
+    it("somma solo le registrazioni dell'anno precedente", () => {
+      const entries = {
+        "2025-01-01": 5,
+        "2025-06-15": 3,
+        "2026-01-01": 10,
+        "2026-09-06": 2,
+      };
+
+      expect(getPreviousYearTotal(entries)).toBe(8);
+    });
+
+    it("attraversa il confine anno a mezzanotte", () => {
+      vi.setSystemTime(
+        new Date(2026, 0, 1, 0, 0, 0),
+      );
+
+      const entries = {
+        "2025-12-31": 7,
+        "2025-06-15": 3,
+        "2026-01-01": 10,
+      };
+
+      expect(getPreviousYearTotal(entries)).toBe(10);
     });
   });
 });

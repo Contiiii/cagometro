@@ -12,7 +12,12 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { useTeamUI } from "../../context/TeamUIContext";
+
 import { getAvatarGradient, getInitials } from "../../utils/avatar";
+
+import Card from "../ui/Card";
+import IconTile from "../ui/IconTile";
 
 function getActivityIcon(type) {
   const icons = {
@@ -118,10 +123,9 @@ function formatActivityTime(createdAt) {
 
 export default function TeamActivityFeed({
   activity = [],
-  theme,
-  isDark,
-  prefersReducedMotion,
 }) {
+  const { theme, isDark, prefersReducedMotion } = useTeamUI();
+
   const [showAllActivities, setShowAllActivities] =
     useState(false);
 
@@ -138,14 +142,18 @@ export default function TeamActivityFeed({
           Attività recente
         </h2>
 
-        <span className="flex items-center gap-1.5 pb-1 text-xs font-bold text-emerald-500">
+        <span className="flex items-center gap-1.5 pb-1 text-xs font-bold text-emerald-600 dark:text-emerald-500">
           <Wifi className="h-4 w-4" strokeWidth={2.2} />
           Live
         </span>
       </div>
 
-      <div
-        className={`mt-4 overflow-hidden rounded-[1.75rem] border ${theme.surface}`}
+      <Card
+        aria-live="polite"
+        theme={theme}
+        radius="panel"
+        padding="none"
+        className="mt-4"
       >
         {visibleActivities.length === 0 ? (
           <div className="px-5 py-10 text-center">
@@ -208,13 +216,12 @@ export default function TeamActivityFeed({
                   }`}
                 >
                   <div className="relative shrink-0">
-                    <div
-                      className={`grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br ${avatarGradient} text-[11px] font-black text-white`}
-                    >
-                      {getInitials(
-                        item.display_name || "Utente",
-                      )}
-                    </div>
+                    <IconTile
+                size="md"
+                className={`bg-gradient-to-br ${avatarGradient} text-[11px] font-black text-white`}
+              >
+                {getInitials(item.display_name || "Utente")}
+              </IconTile>
 
                     <span
                       className={`absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-lg ${getActivityStyle(
@@ -258,6 +265,7 @@ export default function TeamActivityFeed({
             onClick={() =>
               setShowAllActivities((current) => !current)
             }
+            aria-expanded={showAllActivities}
             className={`flex min-h-14 w-full items-center justify-center gap-2 border-t text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${
               isDark
                 ? "border-white/[0.07] hover:bg-white/[0.045]"
@@ -278,7 +286,7 @@ export default function TeamActivityFeed({
             />
           </button>
         )}
-      </div>
+      </Card>
     </section>
   );
 }

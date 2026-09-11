@@ -1,22 +1,24 @@
 import { Settings, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 
+import Card from "../ui/Card";
+
+import { useTeamUI } from "../../context/TeamUIContext";
+
 export default function TeamHeroCard({
   team,
   membersCount,
   totalLifetime,
   currentUserPosition,
-   invitesEnabled,
-  theme,
-  isDark,
+  invitesEnabled,
   onOpenSettings,
   onOpenInvite,
 }) {
+  const { theme, isDark } = useTeamUI();
+
   return (
     <section className="mx-auto max-w-3xl">
       <div className="relative">
-        <div
-          className={`relative overflow-hidden rounded-[2rem] border ${theme.surface}`}
-        >
+        <Card theme={theme} padding="none">
           <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-pink-500/[0.08] blur-3xl" />
           <div className="pointer-events-none absolute -left-10 bottom-0 h-24 w-24 rounded-full bg-amber-400/[0.06] blur-3xl" />
 
@@ -35,7 +37,7 @@ export default function TeamHeroCard({
                   </h1>
 
                   {team?.role === "owner" && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-pink-500/10 px-2.5 py-1 text-[10px] font-extrabold text-pink-500 sm:text-[11px]">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-pink-500/10 px-2.5 py-1 text-[10px] font-extrabold text-pink-600 dark:text-pink-300 sm:text-[11px]">
                       <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.4} />
                       ADMIN
                     </span>
@@ -123,7 +125,7 @@ export default function TeamHeroCard({
               theme={theme}
             />
           </div>
-        </div>
+        </Card>
       </div>
     </section>
   );

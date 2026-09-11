@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 
 import ModalShell from "./ModalShell";
 
+import { useTeamUI } from "../../context/TeamUIContext";
+
 export default function ConfirmModal({
   open,
   onClose,
@@ -11,10 +13,10 @@ export default function ConfirmModal({
   description,
   confirmText = "Conferma",
   onConfirm,
-  theme,
   isDanger = false,
-  prefersReducedMotion,
 }) {
+  const { theme, prefersReducedMotion } = useTeamUI();
+
   const [loading, setLoading] = useState(false);
 
   const titleId = useId();

@@ -3,6 +3,11 @@ import { ChevronRight, Crown, Medal, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { getAvatarGradient, getInitials } from "../../utils/avatar";
+import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamSelection } from "../../hooks/useTeamSelection";
+
+import Card from "../ui/Card";
+import IconTile from "../ui/IconTile";
 
 function getRankStyle(rank, isDark) {
   if (rank === 1) {
@@ -62,11 +67,9 @@ export default function TeamLeaderboard({
   currentUserId,
   rankingMode,
   onRankingChange,
-  onSelectMember,
-  theme,
-  isDark,
-  prefersReducedMotion,
 }) {
+  const { theme, isDark, prefersReducedMotion } = useTeamUI();
+  const { selectMember } = useTeamSelection();
   const ranking = useMemo(() => {
     return [...leaderboard].sort((a, b) => {
       const aScore =
@@ -120,9 +123,7 @@ export default function TeamLeaderboard({
         </div>
       </div>
 
-      <div
-        className={`mt-4 overflow-hidden rounded-[1.75rem] border ${theme.surface}`}
-      >
+      <Card theme={theme} radius="panel" padding="none" className="mt-4">
         {ranking.length === 0 ? (
           <div className="px-5 py-10 text-center">
             <Trophy
@@ -164,7 +165,7 @@ export default function TeamLeaderboard({
                 layout
                 key={member.user_id}
                 type="button"
-                onClick={() => onSelectMember?.(member.user_id)}
+                onClick={() => selectMember(member.user_id)}
                 initial={
                   prefersReducedMotion
                     ? false
@@ -208,8 +209,9 @@ export default function TeamLeaderboard({
                     : ""
                 }`}
               >
-                <span
-                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl border text-xs font-black ${getRankStyle(
+                <IconTile
+                  size="xs"
+                  className={`border text-xs font-black ${getRankStyle(
                     position,
                     isDark,
                   )}`}
@@ -229,13 +231,14 @@ export default function TeamLeaderboard({
                   ) : (
                     position
                   )}
-                </span>
+                </IconTile>
 
-                <div
-                  className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${avatarGradient} text-xs font-black text-white`}
+                <IconTile
+                  size="lg"
+                  className={`bg-gradient-to-br ${avatarGradient} text-xs font-black text-white`}
                 >
                   {getInitials(member.display_name || "Utente")}
-                </div>
+                </IconTile>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -246,7 +249,7 @@ export default function TeamLeaderboard({
                     </span>
 
                     {isCurrentUser && (
-                      <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-500">
+                      <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-600 dark:text-pink-300">
                         TU
                       </span>
                     )}
@@ -303,7 +306,7 @@ export default function TeamLeaderboard({
             );
           })
         )}
-      </div>
+      </Card>
     </section>
   );
 }

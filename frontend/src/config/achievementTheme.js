@@ -25,6 +25,7 @@ export function getAchievementAccentStyles(isDark) {
     pink: {
       solid: "bg-pink-500 text-white",
       soft: "bg-pink-500/10 text-pink-500",
+      text: "text-pink-500",
       line: "bg-pink-500",
       ring: "stroke-pink-500",
       border: "border-pink-500/20",
@@ -33,6 +34,7 @@ export function getAchievementAccentStyles(isDark) {
     amber: {
       solid: "bg-amber-500 text-zinc-950",
       soft: "bg-amber-400/15 text-amber-500",
+      text: "text-amber-500",
       line: "bg-amber-500",
       ring: "stroke-amber-500",
       border: "border-amber-500/20",
@@ -41,6 +43,7 @@ export function getAchievementAccentStyles(isDark) {
     emerald: {
       solid: "bg-emerald-500 text-white",
       soft: "bg-emerald-500/10 text-emerald-500",
+      text: "text-emerald-500",
       line: "bg-emerald-500",
       ring: "stroke-emerald-500",
       border: "border-emerald-500/20",
@@ -54,6 +57,10 @@ export function getAchievementAccentStyles(isDark) {
       soft: isDark
         ? "bg-zinc-800 text-zinc-400"
         : "bg-zinc-900/10 text-zinc-500",
+
+      text: isDark
+        ? "text-zinc-400"
+        : "text-zinc-500",
 
       line: "bg-zinc-500",
       ring: "stroke-zinc-500",

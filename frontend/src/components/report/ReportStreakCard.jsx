@@ -1,6 +1,8 @@
 import { Flame } from "lucide-react";
 import { motion } from "framer-motion";
 
+import Card from "../ui/Card";
+
 export default function ReportStreakCard({
   streak,
   record,
@@ -10,8 +12,13 @@ export default function ReportStreakCard({
   isDark,
 }) {
   return (
-    <article
-      className={`relative overflow-hidden rounded-[1.75rem] border p-5 ${theme.softSurface}`}
+    <Card
+      as="article"
+      theme={theme}
+      tone="softSurface"
+      radius="panel"
+      padding="none"
+      className="p-5"
     >
       <div className="pointer-events-none absolute -bottom-12 -right-10 h-40 w-40 rounded-full bg-amber-400/[0.09] blur-2xl" />
 
@@ -70,6 +77,6 @@ export default function ReportStreakCard({
           ? "Hai appena eguagliato il tuo record. Evento raro."
           : `Ancora ${daysToRecord} giorni per raggiungere il record di ${record}.`}
       </p>
-    </article>
+    </Card>
   );
 }

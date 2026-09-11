@@ -6,6 +6,7 @@ import CloudBackupWarning from "../components/CloudBackupWarning";
 
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
+import Card from "../components/ui/Card";
 import StreakCard from "../components/home/StreakCard";
 import DailyCounter from "../components/home/DailyCounter";
 import PoopButton from "../components/home/PoopButton";
@@ -211,8 +212,10 @@ export default function Home() {
           <StreakCard streak={streak} bestStreak={bestStreak} theme={theme} />
         </section>
 
-        <section
-          className={`relative mx-auto mt-5 max-w-2xl overflow-hidden rounded-[2rem] border p-5 sm:mt-7 sm:p-7 ${theme.surface}`}
+        <Card
+          as="section"
+          theme={theme}
+          className="mx-auto mt-5 max-w-2xl sm:mt-7"
         >
           <div className="pointer-events-none absolute -right-12 top-2 h-36 w-36 rounded-full bg-pink-500/[0.07] blur-3xl" />
           <div className="pointer-events-none absolute -left-16 bottom-0 h-32 w-32 rounded-full bg-amber-400/[0.05] blur-3xl" />
@@ -257,7 +260,7 @@ export default function Home() {
               prefersReducedMotion={prefersReducedMotion}
             />
           </div>
-        </section>
+        </Card>
       </main>
 
       <AchievementUnlockModal

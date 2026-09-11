@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, useReducedMotion } from "framer-motion";
 
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
@@ -178,27 +178,14 @@ export default function Achievements() {
 
       <AnimatePresence>
         {selectedAchievement && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/60 p-3 sm:items-center sm:p-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                setSelectedAchievement(null);
-              }
-            }}
-          >
-            <AchievementDetailModal
-              achievement={selectedAchievement}
-              isUnlocked={selectedAchievement.unlocked}
-              isDark={isDark}
-              theme={theme}
-              prefersReducedMotion={prefersReducedMotion}
-              onClose={() => setSelectedAchievement(null)}
-            />
-          </motion.div>
+          <AchievementDetailModal
+            achievement={selectedAchievement}
+            isUnlocked={selectedAchievement.unlocked}
+            isDark={isDark}
+            theme={theme}
+            prefersReducedMotion={prefersReducedMotion}
+            onClose={() => setSelectedAchievement(null)}
+          />
         )}
       </AnimatePresence>
 

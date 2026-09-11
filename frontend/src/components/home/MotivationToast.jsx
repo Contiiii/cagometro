@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
+import IconTile from "../ui/IconTile";
+
 const TOAST_DURATION_MS = 2500;
 
 export default function MotivationToast({
@@ -49,13 +51,16 @@ export default function MotivationToast({
             }
             className="flex w-full max-w-sm items-start gap-3 rounded-2xl border border-white/10 bg-zinc-950/85 px-5 py-4 text-left shadow-2xl backdrop-blur-md"
           >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-pink-500/25 bg-pink-500/15">
+            <IconTile
+              size="sm"
+              className="border border-pink-500/25 bg-pink-500/15"
+            >
               <Sparkles
                 className="h-4 w-4 text-pink-400"
                 strokeWidth={2.3}
                 aria-hidden="true"
               />
-            </span>
+            </IconTile>
 
             <div className="min-w-0 flex-1">
               <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-pink-400">

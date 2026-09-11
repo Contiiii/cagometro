@@ -1,4 +1,4 @@
-import { useMemo, useState, lazy, Suspense } from "react";
+import { useMemo, useRef, useState, lazy, Suspense } from "react";
 import { Link, Plus, Wifi } from "lucide-react";
 import { AnimatePresence, useReducedMotion } from "framer-motion";
 import { useTheme } from "../hooks/useTheme";
@@ -7,10 +7,15 @@ import { useAuth } from "../hooks/useAuth";
 
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
+import Card from "../components/ui/Card";
+import IconTile from "../components/ui/IconTile";
 import TeamLeaderboard from "../components/teams/TeamLeaderboard";
 import TeamActivityFeed from "../components/teams/TeamActivityFeed";
 import TeamHeroCard from "../components/teams/TeamHeroCard";
 import TeamWeeklyGoal from "../components/teams/TeamWeeklyGoal";
+import TeamAdminCard from "../components/teams/TeamAdminCard";
+import { TeamUIProvider } from "../context/TeamUIContext";
+import { TeamSelectionProvider } from "../context/TeamSelectionProvider";
 
 import toast from "react-hot-toast";
 
@@ -40,6 +45,9 @@ const TeamSettingsModal = lazy(
 );
 const TeamMembersModal = lazy(
   () => import("../components/teams/TeamMembersModal"),
+);
+const TransferOwnershipModal = lazy(
+  () => import("../components/teams/TransferOwnershipModal"),
 );
 const TeamMemberDetailsModal = lazy(
   () => import("../components/teams/TeamMemberDetailsModal"),
@@ -87,8 +95,11 @@ export default function CagometroTeams() {
   const [leaving, setLeaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
+
+  const settingsTriggerRef = useRef(null);
 
   function openConfirm(config) {
     setConfirmConfig(config);
@@ -175,7 +186,7 @@ export default function CagometroTeams() {
         surface: "bg-zinc-900/80 border-white/[0.08]",
         softSurface: "bg-white/[0.035] border-white/[0.07]",
         muted: "text-zinc-400",
-        subtle: "text-zinc-500",
+        subtle: "text-zinc-400",
         primaryText: "text-zinc-50",
         header: "bg-[#0c0c0f]/80 border-white/[0.07]",
         nav: "bg-zinc-950/80 border-white/[0.09]",
@@ -206,11 +217,25 @@ export default function CagometroTeams() {
         focusOffset: "focus-visible:ring-offset-[#f8f5f3]",
       };
 
+  function notify(message, variant = "success") {
+    if (variant === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
+
+    const liveRegion = document.getElementById("team-live-region");
+
+    if (liveRegion) {
+      liveRegion.textContent = message;
+    }
+  }
+
   async function handleCreateTeam(payload) {
     const name = payload.name?.trim();
 
     if (!name) {
-      toast.error("Inserisci un nome squadra");
+      notify("Inserisci un nome squadra", "error");
       throw new Error("Nome squadra mancante");
     }
 
@@ -226,10 +251,13 @@ export default function CagometroTeams() {
       // Solo team e members (leaderboard e activity non esistono ancora)
       await Promise.all([refreshTeam(), refreshMembers()]);
 
-      toast.success("Squadra creata");
+      notify("Squadra creata");
     } catch (error) {
       console.error("Errore durante la creazione della squadra:", error);
-      toast.error(error?.message || "Non è stato possibile creare la squadra");
+      notify(
+        error?.message || "Non è stato possibile creare la squadra",
+        "error",
+      );
       throw error;
     }
   }
@@ -241,7 +269,7 @@ export default function CagometroTeams() {
     // Team, members e leaderboard (activity opzionale)
     await Promise.all([refreshTeam(), refreshMembers(), refreshLeaderboard()]);
 
-    toast.success("Sei entrato nella squadra");
+    notify("Sei entrato nella squadra");
   }
 
   const isOwner = useMemo(() => team?.role === "owner", [team?.role]);
@@ -272,11 +300,12 @@ export default function CagometroTeams() {
           setInviteOpen(false);
           setSettingsOpen(false);
           setMembersOpen(false);
+          setTransferOpen(false);
 
           // Solo team (stai uscendo, non serve refresh completo)
           await refreshTeam();
 
-          toast.success(
+          notify(
             isLastMember
               ? "Squadra sciolta con successo"
               : "Hai lasciato la squadra",
@@ -313,11 +342,12 @@ export default function CagometroTeams() {
             refreshActivity(),
           ]);
 
-          toast.success(`${member.display_name} è ora il proprietario`);
+          notify(`${member.display_name} è ora il proprietario`);
 
           setMembersOpen(false);
           setSettingsOpen(false);
           setSelectedMember(null);
+          setTransferOpen(false);
         } catch (error) {
           console.error(error);
           throw error;
@@ -348,7 +378,7 @@ export default function CagometroTeams() {
             refreshActivity(),
           ]);
 
-          toast.success(`${member.display_name} è stato rimosso`);
+          notify(`${member.display_name} è stato rimosso`);
           if (selectedMember === member.user_id) {
             setSelectedMember(null);
           }
@@ -373,7 +403,7 @@ export default function CagometroTeams() {
         await regenerateInviteCode();
         await refreshTeam(); // Solo team (cambia solo invite_code)
 
-        toast.success("Nuovo codice invito generato");
+        notify("Nuovo codice invito generato");
       },
     });
   }
@@ -390,7 +420,7 @@ export default function CagometroTeams() {
       await toggleTeamInvites(nextEnabled);
       await refreshTeam(); // Solo team (cambia solo invites_enabled)
 
-      toast.success(
+      notify(
         nextEnabled
           ? "Inviti riabilitati: il codice è di nuovo attivo"
           : "Inviti disabilitati",
@@ -400,288 +430,309 @@ export default function CagometroTeams() {
 
       setInvitesEnabled(previousEnabled);
 
-      toast.error("Non è stato possibile aggiornare lo stato degli inviti");
+      notify("Non è stato possibile aggiornare lo stato degli inviti", "error");
     } finally {
       setInvitesToggling(false);
     }
   }
+  const teamUI = {
+    theme,
+    isDark,
+    prefersReducedMotion,
+  };
 
   if (!team) {
     return (
-      <div
-        className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
-      >
-        <Header eyebrow="Cagometro" title="Squadre" />
+      <TeamUIProvider value={teamUI}>
+        <div
+          className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
+        >
+          <div
+            id="team-live-region"
+            aria-live="polite"
+            aria-atomic="true"
+            className="sr-only"
+          />
+          <Header eyebrow="Cagometro" title="Squadre" />
 
-        <main className="mx-auto flex min-h-[calc(100vh-72px)] max-w-2xl items-center px-5 pb-36 pt-8 sm:px-8">
-          <section
-            className={`relative w-full overflow-hidden rounded-[2rem] border p-6 sm:p-10 ${theme.surface}`}
-          >
-            <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-pink-500/[0.10] blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-amber-400/[0.07] blur-3xl" />
+          <main className="mx-auto flex min-h-[calc(100vh-72px)] max-w-2xl items-center px-5 pb-36 pt-8 sm:px-8">
+            <Card as="section" theme={theme} padding="lg" className="w-full">
+              <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-pink-500/[0.10] blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-amber-400/[0.07] blur-3xl" />
 
-            <div className="relative">
-              <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-[1.4rem] bg-pink-500 shadow-[0_12px_30px_rgba(236,72,153,0.25)]">
-                <img
-                  src={poopIcon}
-                  alt="Icona squadra"
-                  className="h-10 w-10 object-contain"
+              <div className="relative">
+                <IconTile size="3xl" className="overflow-hidden bg-pink-500 shadow-[0_12px_30px_rgba(236,72,153,0.25)]">
+                  <img
+                    src={poopIcon}
+                    alt="Icona squadra"
+                    className="h-10 w-10 object-contain"
+                  />
+                </IconTile>
+
+                <p className={`mt-8 text-sm font-semibold ${theme.muted}`}>
+                  La squadra è il posto dove le tue statistiche diventano una
+                  storia condivisa.
+                </p>
+
+                <div className={`mt-6 grid gap-3 text-sm ${theme.muted}`}>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
+                      <span className="text-[10px] font-bold">✓</span>
+                    </div>
+                    <span>Confronta i progressi con gli amici</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
+                      <span className="text-[10px] font-bold">✓</span>
+                    </div>
+                    <span>Sblocca traguardi e sali in classifica</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
+                      <span className="text-[10px] font-bold">✓</span>
+                    </div>
+                    <span>Crea o unisciti in pochi secondi</span>
+                  </div>
+                </div>
+
+                <div className="mt-9 grid gap-4 sm:grid-cols-2">
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setCreateOpen(true)}
+                      className="w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.24)] transition-transform hover:bg-pink-400 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+                    >
+                      <Plus className="h-5 w-5" strokeWidth={2.5} />
+                      Crea una squadra
+                    </button>
+                  </div>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setJoinOpen(true)}
+                      className={`w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 ${theme.secondary} ${theme.focusOffset}`}
+                    >
+                      <Link className="h-5 w-5" strokeWidth={2.2} />
+                      Entra con un codice
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  className={`mt-7 flex items-center gap-2 text-xs font-semibold ${theme.muted}`}
+                >
+                  <Wifi
+                    className="h-4 w-4 text-emerald-500"
+                    strokeWidth={2.2}
+                  />
+                  Aggiornamento in tempo reale
+                </div>
+              </div>
+            </Card>
+          </main>
+
+          <BottomNav />
+
+          <AnimatePresence>
+            {joinOpen && (
+              <Suspense fallback={null}>
+                <JoinTeamModal
+                  onClose={() => setJoinOpen(false)}
+                  onJoin={handleJoinTeam}
                 />
-              </div>
+              </Suspense>
+            )}
+          </AnimatePresence>
 
-              <p className={`mt-8 text-sm font-semibold ${theme.muted}`}>
-                La squadra è il posto dove le tue statistiche diventano una
-                storia condivisa.
-              </p>
+          <Suspense fallback={null}>
+            <CreateTeamModal
+              open={createOpen}
+              onClose={() => setCreateOpen(false)}
+              onCreate={handleCreateTeam}
+            />
+          </Suspense>
+        </div>
+      </TeamUIProvider>
+    );
+  }
 
-              <div className={`mt-6 grid gap-3 text-sm ${theme.muted}`}>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
-                    <span className="text-[10px] font-bold">✓</span>
-                  </div>
-                  <span>Confronta i progressi con gli amici</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
-                    <span className="text-[10px] font-bold">✓</span>
-                  </div>
-                  <span>Sblocca traguardi e sali in classifica</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
-                    <span className="text-[10px] font-bold">✓</span>
-                  </div>
-                  <span>Crea o unisciti in pochi secondi</span>
-                </div>
-              </div>
+  return (
+    <TeamUIProvider value={teamUI}>
+      <TeamSelectionProvider
+        value={{
+          selectedData,
+          selectedPosition,
+          selectedMembership,
+          selectMember: setSelectedMember,
+        }}
+      >
+        <div
+          className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
+        >
+        <div
+          id="team-live-region"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        />
+        <Header eyebrow="Squadra attiva" title={team?.team_name || "Squadra"} />
 
-              <div className="mt-9 grid gap-4 sm:grid-cols-2">
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setCreateOpen(true)}
-                    className="w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.24)] transition-transform hover:bg-pink-400 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
-                  >
-                    <Plus className="h-5 w-5" strokeWidth={2.5} />
-                    Crea una squadra
-                  </button>
-                </div>
+        <main className="mx-auto w-full max-w-5xl px-5 pb-36 pt-7 sm:px-8 sm:pt-10">
+          <TeamHeroCard
+            team={team}
+            membersCount={members.length}
+            totalLifetime={totalLifetime}
+            currentUserPosition={currentUserPosition}
+            invitesEnabled={Boolean(inviteCode) && invitesEnabled}
+            onOpenSettings={() => {
+              settingsTriggerRef.current = document.activeElement;
+              setSettingsOpen(true);
+            }}
+            onOpenInvite={() => setInviteOpen(true)}
+          />
 
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setJoinOpen(true)}
-                    className={`w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 ${theme.secondary} ${theme.focusOffset}`}
-                  >
-                    <Link className="h-5 w-5" strokeWidth={2.2} />
-                    Entra con un codice
-                  </button>
-                </div>
-              </div>
+          <TeamWeeklyGoal
+            totalWeekly={totalWeekly}
+            weeklyGoal={weeklyGoal}
+          />
 
-              <div
-                className={`mt-7 flex items-center gap-2 text-xs font-semibold ${theme.muted}`}
-              >
-                <Wifi className="h-4 w-4 text-emerald-500" strokeWidth={2.2} />
-                Aggiornamento in tempo reale
-              </div>
-            </div>
-          </section>
+          <TeamLeaderboard
+            leaderboard={leaderboard}
+            members={members}
+            currentUserId={user?.id}
+            rankingMode={rankingMode}
+            onRankingChange={setRankingMode}
+          />
+
+          <TeamAdminCard
+            team={team}
+            leaving={leaving}
+            onManageMembers={() => {
+              setSettingsOpen(false);
+              setMembersOpen(true);
+            }}
+            onOpenTransfer={() => setTransferOpen(true)}
+            onLeave={handleLeaveTeam}
+          />
+
+          <TeamActivityFeed
+            activity={activity}
+          />
         </main>
 
         <BottomNav />
 
         <AnimatePresence>
-          {joinOpen && (
+          {selectedData && (
             <Suspense fallback={null}>
-              <JoinTeamModal
-                onClose={() => setJoinOpen(false)}
-                onJoin={handleJoinTeam}
-                theme={theme}
-                isDark={isDark}
-                prefersReducedMotion={prefersReducedMotion}
+              <TeamMemberDetailsModal
+                onClose={() => setSelectedMember(null)}
+              />
+            </Suspense>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {inviteOpen && (
+            <Suspense fallback={null}>
+              <TeamInviteModal
+                onClose={() => setInviteOpen(false)}
+                team={team}
+              />
+            </Suspense>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {settingsOpen && (
+            <Suspense fallback={null}>
+              <TeamSettingsModal
+                team={team}
+                leaving={leaving}
+                invitesEnabled={invitesEnabled}
+                togglingInvites={invitesToggling}
+                onToggleInvites={handleToggleInvites}
+                onClose={() => setSettingsOpen(false)}
+                onEdit={() => {
+                  setSettingsOpen(false);
+                  setEditOpen(true);
+                }}
+                onManageMembers={() => {
+                  setSettingsOpen(false);
+                  setMembersOpen(true);
+                }}
+                onRegenerateInvite={handleRegenerateInvite}
+                onLeave={handleLeaveTeam}
+              />
+            </Suspense>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {membersOpen && (
+            <Suspense fallback={null}>
+              <TeamMembersModal
+                team={team}
+                members={members}
+                leaderboard={leaderboard}
+                currentUserId={user?.id}
+                onClose={() => setMembersOpen(false)}
+                onTransferOwnership={handleTransferOwnership}
+                onRemoveMember={handleRemoveMember}
+                restoreFocusRef={settingsTriggerRef}
+              />
+            </Suspense>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {transferOpen && (
+            <Suspense fallback={null}>
+              <TransferOwnershipModal
+                members={members}
+                onClose={() => setTransferOpen(false)}
+                onTransferOwnership={handleTransferOwnership}
+              />
+            </Suspense>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {editOpen && (
+            <Suspense fallback={null}>
+              <EditTeamModal
+                onClose={() => setEditOpen(false)}
+                team={team}
+                restoreFocusRef={settingsTriggerRef}
+                onSaved={async () => {
+                  await Promise.all([
+                    refreshTeam(),
+                    refreshMembers(),
+                    refreshLeaderboard(),
+                    refreshActivity(),
+                  ]);
+                }}
               />
             </Suspense>
           )}
         </AnimatePresence>
 
         <Suspense fallback={null}>
-          <CreateTeamModal
-            open={createOpen}
-            onClose={() => setCreateOpen(false)}
-            onCreate={handleCreateTeam}
-            isDark={isDark}
+          <ConfirmModal
+            open={!!confirmConfig}
+            onClose={() => {
+              setConfirmConfig(null);
+            }}
+            title={confirmConfig?.title}
+            description={confirmConfig?.description}
+            confirmText={confirmConfig?.confirmText}
+            onConfirm={confirmConfig?.onConfirm}
+            isDanger={confirmConfig?.variant === "danger"}
           />
         </Suspense>
       </div>
-    );
-  }
-
-  return (
-    <div
-      className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
-    >
-      <Header eyebrow="Squadra attiva" title={team?.team_name || "Squadra"} />
-
-      <main className="mx-auto w-full max-w-5xl px-5 pb-36 pt-7 sm:px-8 sm:pt-10">
-        <TeamHeroCard
-          team={team}
-          membersCount={members.length}
-          totalLifetime={totalLifetime}
-          currentUserPosition={currentUserPosition}
-          invitesEnabled={Boolean(inviteCode) && invitesEnabled}
-          theme={theme}
-          isDark={isDark}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onOpenInvite={() => setInviteOpen(true)}
-        />
-
-        <TeamWeeklyGoal
-          totalWeekly={totalWeekly}
-          weeklyGoal={weeklyGoal}
-          theme={theme}
-          isDark={isDark}
-          prefersReducedMotion={prefersReducedMotion}
-        />
-
-        <TeamLeaderboard
-          leaderboard={leaderboard}
-          members={members}
-          currentUserId={user?.id}
-          rankingMode={rankingMode}
-          onRankingChange={setRankingMode}
-          onSelectMember={setSelectedMember}
-          theme={theme}
-          isDark={isDark}
-          prefersReducedMotion={prefersReducedMotion}
-        />
-
-        <TeamActivityFeed
-          activity={activity}
-          theme={theme}
-          isDark={isDark}
-          prefersReducedMotion={prefersReducedMotion}
-        />
-      </main>
-
-      <BottomNav />
-
-      <AnimatePresence>
-        {selectedData && (
-          <Suspense fallback={null}>
-            <TeamMemberDetailsModal
-              member={selectedData}
-              membership={selectedMembership}
-              position={selectedPosition}
-              currentUserId={user?.id}
-              totalWeekly={totalWeekly}
-              theme={theme}
-              isDark={isDark}
-              prefersReducedMotion={prefersReducedMotion}
-              onClose={() => setSelectedMember(null)}
-            />
-          </Suspense>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {inviteOpen && (
-          <Suspense fallback={null}>
-            <TeamInviteModal
-              onClose={() => setInviteOpen(false)}
-              team={team}
-              theme={theme}
-              isDark={isDark}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-          </Suspense>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {settingsOpen && (
-          <Suspense fallback={null}>
-            <TeamSettingsModal
-              team={team}
-              theme={theme}
-              isDark={isDark}
-              prefersReducedMotion={prefersReducedMotion}
-              leaving={leaving}
-              invitesEnabled={invitesEnabled}
-              togglingInvites={invitesToggling}
-              onToggleInvites={handleToggleInvites}
-              onClose={() => setSettingsOpen(false)}
-              onEdit={() => {
-                setSettingsOpen(false);
-                setEditOpen(true);
-              }}
-              onManageMembers={() => {
-                setSettingsOpen(false);
-                setMembersOpen(true);
-              }}
-              onRegenerateInvite={handleRegenerateInvite}
-              onLeave={handleLeaveTeam}
-            />
-          </Suspense>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {membersOpen && (
-          <Suspense fallback={null}>
-            <TeamMembersModal
-              team={team}
-              members={members}
-              leaderboard={leaderboard}
-              currentUserId={user?.id}
-              theme={theme}
-              isDark={isDark}
-              prefersReducedMotion={prefersReducedMotion}
-              onClose={() => setMembersOpen(false)}
-              onTransferOwnership={handleTransferOwnership}
-              onRemoveMember={handleRemoveMember}
-            />
-          </Suspense>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {editOpen && (
-          <Suspense fallback={null}>
-            <EditTeamModal
-              onClose={() => setEditOpen(false)}
-              team={team}
-              isDark={isDark}
-              theme={theme}
-              prefersReducedMotion={prefersReducedMotion}
-              onSaved={async () => {
-                await Promise.all([
-                  refreshTeam(),
-                  refreshMembers(),
-                  refreshLeaderboard(),
-                  refreshActivity(),
-                ]);
-              }}
-            />
-          </Suspense>
-        )}
-      </AnimatePresence>
-
-      <Suspense fallback={null}>
-        <ConfirmModal
-          open={!!confirmConfig}
-          onClose={() => {
-            setConfirmConfig(null);
-          }}
-          title={confirmConfig?.title}
-          description={confirmConfig?.description}
-          confirmText={confirmConfig?.confirmText}
-          onConfirm={confirmConfig?.onConfirm}
-          prefersReducedMotion={prefersReducedMotion}
-          theme={theme}
-          isDanger={confirmConfig?.variant === "danger"}
-        />
-      </Suspense>
-    </div>
+      </TeamSelectionProvider>
+    </TeamUIProvider>
   );
 }

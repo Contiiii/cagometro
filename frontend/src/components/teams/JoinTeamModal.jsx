@@ -1,19 +1,22 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { UsersRound } from "lucide-react";
 import toast from "react-hot-toast";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
 
+import { useTeamUI } from "../../context/TeamUIContext";
+
 export default function JoinTeamModal({
   onClose,
   onJoin,
-  theme,
-  isDark,
-  prefersReducedMotion,
 }) {
+  const { theme, isDark, prefersReducedMotion } = useTeamUI();
+
   const [joinCode, setJoinCode] = useState("");
   const [joining, setJoining] = useState(false);
+
+  const titleId = useId();
 
   function handleClose() {
     if (!joining) {
@@ -56,6 +59,7 @@ export default function JoinTeamModal({
       theme={theme}
       prefersReducedMotion={prefersReducedMotion}
       onClose={handleClose}
+      labelledBy={titleId}
     >
       <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-5">
@@ -65,6 +69,7 @@ export default function JoinTeamModal({
             </p>
 
             <h2
+              id={titleId}
               className={`mt-1 text-2xl font-black tracking-tight ${theme.primaryText}`}
             >
               Hai un codice?

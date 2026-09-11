@@ -1,7 +1,7 @@
-import { useRef } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import useModalFocusTrap from "../../hooks/useModalFocusTrap";
+
+import ModalShell from "../teams/ModalShell";
 
 export default function ReportDetailsModal({
   open,
@@ -11,49 +11,19 @@ export default function ReportDetailsModal({
   theme,
   prefersReducedMotion,
 }) {
-  const dialogRef = useRef(null);
-
-  useModalFocusTrap({ dialogRef, open, onClose, prefersReducedMotion });
-
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/60 p-3 sm:items-center sm:p-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              onClose();
-            }
-          }}
+        <ModalShell
+          theme={theme}
+          prefersReducedMotion={prefersReducedMotion}
+          onClose={onClose}
+          labelledBy="report-detail-title"
+          maxWidth="max-w-md"
+          maxHeight=""
+          overlayClass="bg-zinc-950/60"
         >
-          <motion.section
-            ref={dialogRef}
-            role="dialog"
-            aria-modal="true"
-            tabIndex={-1}
-            aria-labelledby="report-detail-title"
-            initial={
-              prefersReducedMotion
-                ? false
-                : { opacity: 0, y: 24 }
-            }
-            animate={{ opacity: 1, y: 0 }}
-            exit={
-              prefersReducedMotion
-                ? { opacity: 0 }
-                : { opacity: 0, y: 20 }
-            }
-            transition={{
-              type: "spring",
-              stiffness: 380,
-              damping: 30,
-            }}
-            className={`w-full max-w-md rounded-[2rem] border p-6 shadow-2xl sm:p-7 ${theme.sheet}`}
-          >
+          <div className="p-6 sm:p-7">
             <div className="flex items-start justify-between gap-5">
               <div>
                 <p className={`text-sm font-semibold ${theme.muted}`}>
@@ -102,8 +72,8 @@ export default function ReportDetailsModal({
                     : `Sotto la media di ${average.toFixed(1)}, ma ogni attività fa volume nel tempo.`}
               </p>
             </div>
-          </motion.section>
-        </motion.div>
+          </div>
+        </ModalShell>
       )}
     </AnimatePresence>
   );

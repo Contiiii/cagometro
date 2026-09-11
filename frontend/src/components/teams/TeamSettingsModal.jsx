@@ -1,13 +1,13 @@
+import { useId } from "react";
 import { ChevronRight } from "lucide-react";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
 
+import { useTeamUI } from "../../context/TeamUIContext";
+
 export default function TeamSettingsModal({
   team,
-  theme,
-  isDark,
-  prefersReducedMotion,
   leaving,
   invitesEnabled,
   togglingInvites,
@@ -18,13 +18,18 @@ export default function TeamSettingsModal({
   onRegenerateInvite,
   onLeave,
 }) {
+  const { theme, isDark, prefersReducedMotion } = useTeamUI();
+
   const isOwner = team?.role === "owner";
+
+  const titleId = useId();
 
   return (
     <ModalShell
       theme={theme}
       prefersReducedMotion={prefersReducedMotion}
       onClose={onClose}
+      labelledBy={titleId}
     >
       <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-5">
@@ -34,6 +39,7 @@ export default function TeamSettingsModal({
             </p>
 
             <h2
+              id={titleId}
               className={`mt-1 text-2xl font-black tracking-tight ${theme.primaryText}`}
             >
               {team?.team_name || "Squadra"}

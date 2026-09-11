@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 
+import Card from "../ui/Card";
+
 export default function ReportChart({
   report,
   selectedPoint,
@@ -11,8 +13,12 @@ export default function ReportChart({
   theme,
 }) {
   return (
-    <section
-      className={`mx-auto mt-5 max-w-3xl overflow-hidden rounded-[1.85rem] border ${theme.surface}`}
+    <Card
+      as="section"
+      theme={theme}
+      radius="chart"
+      padding="none"
+      className="mx-auto mt-5 max-w-3xl"
     >
       <div className="flex items-end justify-between gap-4 px-5 pb-3 pt-5 sm:px-7 sm:pt-7">
         <div>
@@ -132,6 +138,6 @@ export default function ReportChart({
           })}
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

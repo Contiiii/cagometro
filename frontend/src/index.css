@@ -30,3 +30,7 @@ textarea,
 select {
   -webkit-tap-highlight-color: transparent;
 }
+
+[role="dialog"] {
+  overscroll-behavior: contain;
+}

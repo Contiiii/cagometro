@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import toast from "react-hot-toast";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
+
+import { useTeamUI } from "../../context/TeamUIContext";
 
 import { updateTeam } from "../../services/teamService";
 
@@ -22,15 +24,17 @@ const TEAM_EMOJIS = [
 export default function EditTeamModal({
   onClose,
   team,
-  theme,
-  isDark,
-  prefersReducedMotion,
   onSaved,
+  restoreFocusRef,
 }) {
+  const { theme, isDark, prefersReducedMotion } = useTeamUI();
+
   const [name, setName] = useState(team?.team_name || "");
   const [description, setDescription] = useState(team?.description || "");
   const [emoji, setEmoji] = useState(team?.avatar_emoji || "🏆");
   const [saving, setSaving] = useState(false);
+
+  const titleId = useId();
 
   const originalName = (team?.team_name || "").trim();
   const originalDescription = (team?.description || "").trim();
@@ -85,6 +89,8 @@ export default function EditTeamModal({
       theme={theme}
       prefersReducedMotion={prefersReducedMotion}
       onClose={handleClose}
+      restoreFocusRef={restoreFocusRef}
+      labelledBy={titleId}
     >
       <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-4">
@@ -94,6 +100,7 @@ export default function EditTeamModal({
             </p>
 
             <h2
+              id={titleId}
               className={`mt-1 text-2xl font-black ${theme.primaryText}`}
             >
               Identità squadra

@@ -1,21 +1,41 @@
+import { useId, useMemo } from "react";
 import { motion } from "framer-motion";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
 
+import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamSelection } from "../../hooks/useTeamSelection";
+
+import { useAuth } from "../../hooks/useAuth";
+import { useTeam } from "../../hooks/useTeam";
+
 import { getAvatarGradient, getInitials } from "../../utils/avatar";
 
-export default function TeamMemberDetailsModal({
-  member,
-  membership,
-  position,
-  currentUserId,
-  totalWeekly,
-  theme,
-  isDark,
-  prefersReducedMotion,
-  onClose,
-}) {
+export default function TeamMemberDetailsModal({ onClose }) {
+  const { theme, isDark, prefersReducedMotion } = useTeamUI();
+
+  const { user } = useAuth();
+  const { leaderboard = [] } = useTeam();
+  const {
+    selectedData: member,
+    selectedPosition: position,
+    selectedMembership: membership,
+  } = useTeamSelection();
+
+  const currentUserId = user?.id;
+
+  const totalWeekly = useMemo(
+    () =>
+      leaderboard.reduce(
+        (total, entry) => total + Number(entry.weekly_total || 0),
+        0,
+      ),
+    [leaderboard],
+  );
+
+  const titleId = useId();
+
   if (!member) {
     return null;
   }
@@ -38,6 +58,7 @@ export default function TeamMemberDetailsModal({
       theme={theme}
       prefersReducedMotion={prefersReducedMotion}
       onClose={onClose}
+      labelledBy={titleId}
     >
       <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-5">
@@ -51,13 +72,14 @@ export default function TeamMemberDetailsModal({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2
+                  id={titleId}
                   className={`truncate text-xl font-black tracking-tight ${theme.primaryText}`}
                 >
                   {member.display_name || "Utente"}
                 </h2>
 
                 {isCurrentUser && (
-                  <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-500">
+                  <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-600 dark:text-pink-300">
                     TU
                   </span>
                 )}

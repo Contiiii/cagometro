@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 import { EntriesContext } from "./entries-context";
 
@@ -42,6 +42,20 @@ export function EntriesProvider({ children }) {
   const [pendingChanges, setPendingChanges] = useState([]);
 
   const [today, setToday] = useState(() => getLocalDateKey());
+
+  const entriesRef = useRef(entries);
+
+  useEffect(() => {
+    entriesRef.current = entries;
+  }, [entries]);
+
+  const mutationQueueRef = useRef(Promise.resolve());
+
+  function enqueueMutation(mutator) {
+    const next = mutationQueueRef.current.then(mutator);
+    mutationQueueRef.current = next.then(() => undefined, () => undefined);
+    return next;
+  }
 
   useEffect(() => {
     let timerId = null;
@@ -257,48 +271,51 @@ export function EntriesProvider({ children }) {
     }
   }
 
-  async function incrementToday() {
-    const newEntries = {
-      ...entries,
-      [today]: todayCount + 1,
-    };
+  function incrementToday() {
+    return enqueueMutation(async () => {
+      const currentCount = entriesRef.current[today] || 0;
+      const newCount = currentCount + 1;
+      const newEntries = {
+        ...entriesRef.current,
+        [today]: newCount,
+      };
 
-    setEntries((prev) => ({
-      ...prev,
-      [today]: (prev[today] || 0) + 1,
-    }));
+      entriesRef.current = newEntries;
+      setEntries(newEntries);
 
-    if (user) {
-      saveUserEntries(user.id, newEntries);
+      if (user) {
+        saveUserEntries(user.id, newEntries);
+        await syncEntry(today, newCount, true);
+      }
 
-      await syncEntry(today, newEntries[today], true);
-    }
-
-    return newEntries;
+      return newEntries;
+    });
   }
 
-  async function decrementToday() {
-    if (todayCount <= 0) {
-      return entries;
-    }
+  function decrementToday() {
+    return enqueueMutation(async () => {
+      const currentCount = entriesRef.current[today] || 0;
 
-    const newEntries = {
-      ...entries,
-      [today]: todayCount - 1,
-    };
+      if (currentCount <= 0) {
+        return entriesRef.current;
+      }
 
-    setEntries((prev) => ({
-      ...prev,
-      [today]: Math.max(0, (prev[today] || 0) - 1),
-    }));
+      const newCount = currentCount - 1;
+      const newEntries = {
+        ...entriesRef.current,
+        [today]: newCount,
+      };
 
-    if (user) {
-      saveUserEntries(user.id, newEntries);
+      entriesRef.current = newEntries;
+      setEntries(newEntries);
 
-      await syncEntry(today, newEntries[today]);
-    }
+      if (user) {
+        saveUserEntries(user.id, newEntries);
+        await syncEntry(today, newCount);
+      }
 
-    return newEntries;
+      return newEntries;
+    });
   }
 
   return (

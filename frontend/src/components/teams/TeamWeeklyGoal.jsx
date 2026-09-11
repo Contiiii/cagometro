@@ -1,13 +1,17 @@
 import { Flame } from "lucide-react";
 import { motion } from "framer-motion";
 
+import Card from "../ui/Card";
+import IconTile from "../ui/IconTile";
+
+import { useTeamUI } from "../../context/TeamUIContext";
+
 export default function TeamWeeklyGoal({
   totalWeekly,
   weeklyGoal,
-  theme,
-  isDark,
-  prefersReducedMotion,
 }) {
+  const { theme, isDark, prefersReducedMotion } = useTeamUI();
+
   const safeGoal = Math.max(1, Number(weeklyGoal) || 1);
   const safeTotal = Math.max(0, Number(totalWeekly) || 0);
 
@@ -20,26 +24,24 @@ export default function TeamWeeklyGoal({
 
   return (
     <section className="mx-auto mt-5 max-w-3xl">
-      <article
-        className={`rounded-[1.7rem] border p-5 ${theme.surface}`}
-      >
+      <Card as="article" theme={theme} radius="goal" padding="none" className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className={`text-sm font-bold ${theme.primaryText}`}>
               Obiettivo settimanale
             </p>
 
-            <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
+            <p className={`mt-1 text-xs font-medium ${theme.muted}`} aria-live="polite">
               Mancano {remaining} registrazioni al traguardo.
             </p>
           </div>
 
-          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-400/15 text-amber-500">
+          <IconTile size="md" className="bg-amber-400/15 text-amber-500">
             <Flame
               className="h-5 w-5"
               strokeWidth={2.3}
             />
-          </span>
+          </IconTile>
         </div>
 
         <div className="mt-6 flex items-end justify-between gap-4">
@@ -61,6 +63,11 @@ export default function TeamWeeklyGoal({
         </div>
 
         <div
+          role="progressbar"
+          aria-valuenow={weeklyProgress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuetext={`Obiettivo settimanale completato al ${weeklyProgress}%`}
           className={`mt-3 h-2.5 overflow-hidden rounded-full ${
             isDark
               ? "bg-white/[0.08]"
@@ -77,7 +84,7 @@ export default function TeamWeeklyGoal({
             className="h-full rounded-full bg-pink-500"
           />
         </div>
-      </article>
+      </Card>
     </section>
   );
 }

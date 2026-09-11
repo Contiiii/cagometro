@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   Check,
   Clipboard,
@@ -10,14 +10,17 @@ import toast from "react-hot-toast";
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
 
+import { useTeamUI } from "../../context/TeamUIContext";
+
 export default function TeamInviteModal({
   onClose,
   team,
-  theme,
-  isDark,
-  prefersReducedMotion,
 }) {
+  const { theme, isDark, prefersReducedMotion } = useTeamUI();
+
   const [copied, setCopied] = useState(false);
+
+  const titleId = useId();
 
   const inviteCode = team?.invite_code ?? "";
 
@@ -85,6 +88,7 @@ export default function TeamInviteModal({
       theme={theme}
       prefersReducedMotion={prefersReducedMotion}
       onClose={onClose}
+      labelledBy={titleId}
     >
       <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-5">
@@ -94,6 +98,7 @@ export default function TeamInviteModal({
             </p>
 
             <h2
+              id={titleId}
               className={`mt-1 text-2xl font-black tracking-tight ${theme.primaryText}`}
             >
               Porta qualcuno nel team.
@@ -129,7 +134,7 @@ export default function TeamInviteModal({
               type="button"
               onClick={copyInvite}
               disabled={!inviteLink}
-              aria-label="Copia link invito"
+              aria-label={copied ? "Link invito copiato" : "Copia link invito"}
               className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${theme.secondary} ${theme.focusOffset}`}
             >
               {copied ? (

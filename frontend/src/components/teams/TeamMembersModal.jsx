@@ -1,7 +1,10 @@
+import { useId } from "react";
 import { Crown } from "lucide-react";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
+
+import { useTeamUI } from "../../context/TeamUIContext";
 
 import { getAvatarGradient, getInitials } from "../../utils/avatar";
 
@@ -10,18 +13,22 @@ export default function TeamMembersModal({
   members,
   leaderboard,
   currentUserId,
-  theme,
-  isDark,
-  prefersReducedMotion,
   onClose,
   onTransferOwnership,
   onRemoveMember,
+  restoreFocusRef,
 }) {
+  const { theme, isDark, prefersReducedMotion } = useTeamUI();
+
+  const titleId = useId();
+
   return (
     <ModalShell
       theme={theme}
       prefersReducedMotion={prefersReducedMotion}
       onClose={onClose}
+      restoreFocusRef={restoreFocusRef}
+      labelledBy={titleId}
     >
       <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-5">
@@ -31,6 +38,7 @@ export default function TeamMembersModal({
             </p>
 
             <h2
+              id={titleId}
               className={`mt-1 text-2xl font-black tracking-tight ${theme.primaryText}`}
             >
               Membri e ruoli ({members.length})
@@ -44,7 +52,7 @@ export default function TeamMembersModal({
           />
         </div>
 
-        <div className="mt-6 max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+        <div className="mt-6 max-h-[60vh] space-y-3 overflow-y-auto overscroll-contain pr-1">
           {members.map((member) => {
             const isOwner = member.role === "owner";
             const isCurrentUser =
@@ -79,7 +87,7 @@ export default function TeamMembersModal({
                       </p>
 
                       {isCurrentUser && (
-                        <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-500">
+                        <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-600 dark:text-pink-300">
                           TU
                         </span>
                       )}
@@ -120,6 +128,7 @@ export default function TeamMembersModal({
                         onClick={() =>
                           onTransferOwnership(member)
                         }
+                        aria-label={`Rendi proprietario ${member.display_name || "membro"}`}
                         className={`min-h-11 rounded-xl border text-xs font-bold ${theme.secondary}`}
                       >
                         Rendi proprietario
@@ -130,7 +139,8 @@ export default function TeamMembersModal({
                         onClick={() =>
                           onRemoveMember(member)
                         }
-                        className="min-h-11 rounded-xl bg-rose-500/10 text-xs font-bold text-rose-500"
+                        aria-label={`Rimuovi ${member.display_name || "membro"}`}
+                        className="min-h-11 rounded-xl bg-rose-500/10 text-xs font-bold text-rose-600 dark:text-rose-400"
                       >
                         Rimuovi
                       </button>

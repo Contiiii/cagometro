@@ -1,6 +1,8 @@
 import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
+import Card from "../ui/Card";
+
 export default function NextAchievementCard({
   nextAchievement,
   nextAchievementProgress,
@@ -16,9 +18,7 @@ export default function NextAchievementCard({
 
   return (
     <section className="mx-auto mt-5 max-w-2xl sm:mt-7">
-      <div
-        className={`relative overflow-hidden rounded-[2rem] border ${theme.surface}`}
-      >
+      <Card theme={theme} padding="none">
         <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-pink-500/[0.07] blur-3xl" />
 
         <div className="relative p-5 sm:p-7">
@@ -73,7 +73,7 @@ export default function NextAchievementCard({
 
               <span
                 className={`text-sm font-black ${
-                  accentStyles[nextAchievement.accent].soft.split(" ")[1]
+                  accentStyles[nextAchievement.accent].text
                 }`}
               >
                 {nextAchievementProgress}%
@@ -104,7 +104,7 @@ export default function NextAchievementCard({
             </p>
           </div>
         </div>
-      </div>
+      </Card>
     </section>
   );
 }

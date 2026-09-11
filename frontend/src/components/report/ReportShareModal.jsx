@@ -43,6 +43,11 @@ export default function ReportShareModal({
       ? "Miglior giorno del mese"
       : "Miglior giorno";
 
+  const safeBestPoint = bestPoint ?? {
+    date: "—",
+    value: 0,
+  };
+
   const totalLabel = isWeekReport
     ? "Registrazioni di oggi"
     : isMonthReport
@@ -279,7 +284,7 @@ async function handleShareCard() {
                       <p
                         className={`mt-1 text-2xl font-black ${exportStrongClass}`}
                       >
-                        {bestPoint?.value ?? 0}
+                        {safeBestPoint.value}
                       </p>
                     </div>
                   </div>
@@ -292,11 +297,11 @@ async function handleShareCard() {
                     >
                       {bestPointLabel}:{" "}
                       <span className={`font-extrabold ${exportStrongClass}`}>
-                        {bestPoint?.date ?? "—"}
+                        {safeBestPoint.date}
                       </span>{" "}
                       con{" "}
                       <span className={`font-extrabold ${exportStrongClass}`}>
-                        {bestPoint?.value ?? 0}
+                        {safeBestPoint.value}
                       </span>{" "}
                       registrazioni.
                     </p>

@@ -1,16 +1,14 @@
-export default function StreakCard({
-  streak,
-  bestStreak,
-  theme,
-}) {
+import IconTile from "../ui/IconTile";
+
+export default function StreakCard({ streak, bestStreak, theme }) {
   return (
     <div
       className={`mt-6 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${theme.softSurface}`}
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-400/15 text-lg">
+        <IconTile size="sm" className="bg-amber-400/15 text-lg">
           🔥
-        </span>
+        </IconTile>
 
         <div className="min-w-0">
           <p className={`text-sm font-bold ${theme.primaryText}`}>

@@ -97,7 +97,7 @@ export default function ReleaseNotesModal({
               damping: 30,
               duration: prefersReducedMotion ? 0 : undefined,
             }}
-            className={`relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-[2rem] border shadow-2xl ${theme.panel}`}
+            className={`relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-[2rem] border shadow-2xl ${theme.panel}`}
           >
             <div className="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-pink-500/[0.12] blur-3xl" />
 

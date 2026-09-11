@@ -105,7 +105,7 @@ export default function AchievementCard({
 
             <span
               className={`text-xs font-black ${
-                style.soft.split(" ")[1]
+                style.text
               }`}
             >
               +{achievement.xp} XP
@@ -135,7 +135,7 @@ export default function AchievementCard({
 
               <span
                 className={`text-xs font-extrabold ${
-                  style.soft.split(" ")[1]
+                  style.text
                 }`}
               >
                 {progress}%
@@ -166,9 +166,7 @@ export default function AchievementCard({
 
       <div className="mt-3 flex items-center justify-between">
         <span
-          className={`rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.1em] ${style.border} ${style.soft.split(
-            " ",
-          )[1]}`}
+          className={`rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.1em] ${style.border} ${style.text}`}
         >
           {achievement.rarity}
         </span>

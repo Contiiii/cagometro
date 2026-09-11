@@ -38,6 +38,9 @@ import { useTeam } from "../hooks/useTeam";
 
 import { useTheme } from "../hooks/useTheme";
 
+import IconTile from "../components/ui/IconTile";
+import StatCard from "../components/ui/StatCard";
+
 import { submitFeedback } from "../services/feedbackService";
 import { APP_VERSION } from "../config/releaseNotes";
 
@@ -341,11 +344,12 @@ export default function CagometroSettings() {
             </p>
           </div>
 
-          <div
+          <IconTile
+  size="lg"
   role="status"
   aria-label={syncState}
   title={syncState}
-  className={`relative grid h-11 w-11 place-items-center rounded-2xl border ${theme.soft}`}
+  className={`relative border ${theme.soft}`}
 >
   <Cloud
     className="h-5 w-5"
@@ -360,7 +364,7 @@ export default function CagometroSettings() {
       cloudEnabled ? "bg-emerald-500" : "bg-amber-500"
     }`}
   />
-</div>
+</IconTile>
         </div>
       </header>
 
@@ -377,8 +381,9 @@ export default function CagometroSettings() {
 
           <div className="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-center gap-4">
-              <div
-                className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-[1.4rem] text-2xl font-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.16)]"
+              <IconTile
+                size="3xl"
+                className="relative overflow-hidden text-2xl font-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.16)]"
                 style={{ backgroundColor: accentColor }}
               >
                 {profileAvatar ? (
@@ -392,7 +397,7 @@ export default function CagometroSettings() {
                 )}
 
                 <span className="absolute bottom-1.5 right-1.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
-              </div>
+              </IconTile>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -456,15 +461,15 @@ export default function CagometroSettings() {
           </div>
 
           <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <ProfileMetric label="Livello" value={profileLevel} theme={theme} />
+            <StatCard label="Livello" value={profileLevel} theme={theme} />
 
-            <ProfileMetric
+            <StatCard
               label="Esperienza"
               value={`${profileXp} XP`}
               theme={theme}
             />
 
-            <ProfileMetric
+            <StatCard
               label="Squadra"
               value={profileTeam ?? "—"}
               theme={theme}
@@ -567,14 +572,15 @@ export default function CagometroSettings() {
                       }`}
                       style={{ "--tw-ring-color": accentColor }}
                     >
-                      <span
-                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${
+                      <IconTile
+                        size="sm"
+                        className={
                           isActive && !isDisabled
                             ? resolvedDark
                               ? "bg-zinc-900/10"
                               : "bg-white/10"
                             : theme.soft
-                        }`}
+                        }
                       >
                         <Icon
                           className="h-4 w-4"
@@ -585,7 +591,7 @@ export default function CagometroSettings() {
                               : undefined
                           }
                         />
-                      </span>
+                      </IconTile>
 
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-black">
@@ -884,27 +890,6 @@ export default function CagometroSettings() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function ProfileMetric({ label, value, theme, className = "" }) {
-  return (
-    <div
-      className={`min-w-0 rounded-2xl border p-3 ${theme.soft} ${className}`}
-    >
-      <p
-        className={`text-[10px] font-bold uppercase tracking-[0.11em] ${theme.subtle}`}
-      >
-        {label}
-      </p>
-
-      <p
-        className={`mt-1 truncate text-sm font-black ${theme.text}`}
-        title={String(value)}
-      >
-        {value}
-      </p>
     </div>
   );
 }
@@ -1316,8 +1301,9 @@ function SettingToggleRow({
       style={{ "--tw-ring-color": accentColor }}
     >
       <span className="flex min-w-0 items-center gap-3">
-        <span
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+        <IconTile
+          size="md"
+          rounded="rounded-xl"
           style={{ backgroundColor: `${accentColor}15` }}
         >
           <Icon
@@ -1325,7 +1311,7 @@ function SettingToggleRow({
             strokeWidth={2.2}
             style={{ color: accentColor }}
           />
-        </span>
+        </IconTile>
 
         <span className="min-w-0">
           <span className={`block text-sm font-black ${theme.text}`}>
@@ -1383,8 +1369,9 @@ function ActionRow({
       style={{ "--tw-ring-color": accentColor }}
     >
       <span className="flex min-w-0 items-start gap-3">
-        <span
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+        <IconTile
+          size="md"
+          rounded="rounded-xl"
           style={{ backgroundColor: `${accentColor}15` }}
         >
           <Icon
@@ -1392,7 +1379,7 @@ function ActionRow({
             strokeWidth={2.2}
             style={{ color: accentColor }}
           />
-        </span>
+        </IconTile>
 
         <span className="min-w-0 flex-1">
           <span className={`block text-sm font-black ${theme.text}`}>
@@ -1543,7 +1530,7 @@ function ModalShell({ title, theme, onClose, prefersReducedMotion, children }) {
             : { opacity: 0, y: 20, scale: 0.98 }
         }
         transition={{ type: "spring", stiffness: 380, damping: 30 }}
-        className={`max-h-[calc(100dvh-3rem)] w-full max-w-md overflow-y-auto rounded-[2rem] border p-6 shadow-2xl sm:p-7 ${theme.modal}`}
+        className={`max-h-[calc(100dvh-3rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-[2rem] border p-6 shadow-2xl sm:p-7 ${theme.modal}`}
       >
         <div className="flex items-start justify-between gap-5">
           <div>
@@ -1604,8 +1591,8 @@ function SystemPanel({ theme, accentColor, cloudEnabled,syncState }) {
         }}
       >
         <div className="flex min-w-0 items-center gap-3">
-          <span
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl"
+          <IconTile
+            size="lg"
             style={{ backgroundColor: `${accentColor}18` }}
           >
             <Cloud
@@ -1613,7 +1600,7 @@ function SystemPanel({ theme, accentColor, cloudEnabled,syncState }) {
               strokeWidth={2.2}
               style={{ color: accentColor }}
             />
-          </span>
+          </IconTile>
 
           <div className="min-w-0">
             <p className={`text-sm font-black ${theme.text}`}>

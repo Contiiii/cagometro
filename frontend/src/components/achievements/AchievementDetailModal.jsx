@@ -1,7 +1,7 @@
-import { useRef } from "react";
 import { Check, LockKeyhole, X } from "lucide-react";
 import { motion } from "framer-motion";
-import useModalFocusTrap from "../../hooks/useModalFocusTrap";
+
+import ModalShell from "../teams/ModalShell";
 
 export default function AchievementDetailModal({
   achievement,
@@ -11,9 +11,6 @@ export default function AchievementDetailModal({
   prefersReducedMotion,
   onClose,
 }) {
-  const dialogRef = useRef(null);
-
-  useModalFocusTrap({ dialogRef, onClose, prefersReducedMotion });
 
   const icon = achievement.icon;
   const progress = achievement.target
@@ -27,16 +24,19 @@ export default function AchievementDetailModal({
     pink: {
       solid: "bg-pink-500 text-white",
       soft: "bg-pink-500/10 text-pink-500",
+      text: "text-pink-500",
       progress: "bg-pink-500",
     },
     amber: {
       solid: "bg-amber-500 text-zinc-950",
       soft: "bg-amber-400/15 text-amber-500",
+      text: "text-amber-500",
       progress: "bg-amber-500",
     },
     emerald: {
       solid: "bg-emerald-500 text-white",
       soft: "bg-emerald-500/10 text-emerald-500",
+      text: "text-emerald-500",
       progress: "bg-emerald-500",
     },
     zinc: {
@@ -44,6 +44,7 @@ export default function AchievementDetailModal({
       soft: isDark
         ? "bg-zinc-800 text-zinc-400"
         : "bg-zinc-900/10 text-zinc-500",
+      text: isDark ? "text-zinc-400" : "text-zinc-500",
       progress: "bg-zinc-500",
     },
   };
@@ -51,22 +52,15 @@ export default function AchievementDetailModal({
   const accent = styles[achievement.accent];
 
   return (
-    <motion.section
-      ref={dialogRef}
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
-      aria-labelledby="achievement-title"
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
-      transition={{
-        type: "spring",
-        stiffness: 380,
-        damping: 30,
-        duration: prefersReducedMotion ? 0 : undefined,
-      }}
-      className={`w-full max-w-md overflow-hidden rounded-[2rem] border shadow-2xl ${theme.sheet}`}
+    <ModalShell
+      theme={theme}
+      prefersReducedMotion={prefersReducedMotion}
+      onClose={onClose}
+      labelledBy="achievement-title"
+      maxWidth="max-w-md"
+      maxHeight=""
+      overlayClass="bg-zinc-950/60"
+      overflowClass="overflow-hidden"
     >
       <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-5">
@@ -137,7 +131,7 @@ export default function AchievementDetailModal({
                 Progresso attuale
               </span>
               <span
-                className={`text-sm font-black ${accent.soft.split(" ")[1]}`}
+                className={`text-sm font-black ${accent.text}`}
               >
                 {achievement.progress} / {achievement.target}
               </span>
@@ -178,6 +172,6 @@ export default function AchievementDetailModal({
           </div>
         )}
       </div>
-    </motion.section>
+    </ModalShell>
   );
 }

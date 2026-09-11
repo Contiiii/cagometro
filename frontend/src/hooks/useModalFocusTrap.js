@@ -14,6 +14,7 @@ export default function useModalFocusTrap({
   open = true,
   onClose,
   initialFocusRef,
+  restoreFocusRef,
   prefersReducedMotion,
 }) {
   const onCloseRef = useRef(onClose);
@@ -28,12 +29,25 @@ export default function useModalFocusTrap({
     const dialog = dialogRef.current;
     if (!dialog) return;
 
-    const previouslyFocused = document.activeElement;
+    const previouslyFocused = restoreFocusRef?.current ?? document.activeElement;
 
     dialog.focus();
 
     const previousOverflow = document.body.style.overflow;
+    const previousPosition = document.body.style.position;
+    const previousTop = document.body.style.top;
+    const previousWidth = document.body.style.width;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollY = window.scrollY;
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
+
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.body.style.paddingRight =
+      scrollbarWidth > 0 ? `${scrollbarWidth}px` : "";
+    document.body.style.top = `-${scrollY}px`;
 
     const getFocusable = () =>
       Array.from(dialog.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
@@ -88,7 +102,14 @@ export default function useModalFocusTrap({
       window.clearTimeout(timeout);
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
-      previouslyFocused?.focus?.();
+      document.body.style.position = previousPosition;
+      document.body.style.width = previousWidth;
+      document.body.style.paddingRight = previousPaddingRight;
+      document.body.style.top = previousTop;
+      window.scrollTo(0, scrollY);
+      if (previouslyFocused?.isConnected) {
+        previouslyFocused.focus();
+      }
     };
-  }, [dialogRef, open, initialFocusRef, prefersReducedMotion]);
+  }, [dialogRef, open, initialFocusRef, restoreFocusRef, prefersReducedMotion]);
 }

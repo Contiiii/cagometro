@@ -1,3 +1,5 @@
+import Card from "../ui/Card";
+
 export default function ReportSummaryCard({
   period,
   bestLabel,
@@ -44,7 +46,7 @@ export default function ReportSummaryCard({
   const currentStreak = report.streak ?? 0;
 
   return (
-    <article className={`rounded-[1.75rem] border p-5 ${theme.surface}`}>
+    <Card as="article" theme={theme} radius="panel" padding="none" className="p-5">
       <p className={`text-sm font-bold ${theme.text}`}>
         {periodTitle}
       </p>
@@ -114,6 +116,6 @@ export default function ReportSummaryCard({
     </p>
   </div>
 </div>
-    </article>
+    </Card>
   );
 }

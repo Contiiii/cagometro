@@ -1,6 +1,7 @@
 import { Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 
+import Card from "../ui/Card";
 import HeroMetric from "./HeroMetric";
 
 export default function AchievementsHero({
@@ -15,8 +16,10 @@ export default function AchievementsHero({
   prefersReducedMotion,
 }) {
   return (
-    <section
-      className={`relative mx-auto mt-5 max-w-2xl overflow-hidden rounded-[2rem] border p-5 sm:mt-7 sm:p-7 ${theme.surface}`}
+    <Card
+      as="section"
+      theme={theme}
+      className="mx-auto mt-5 max-w-2xl sm:mt-7"
     >
       <div className="pointer-events-none absolute -right-12 top-2 h-36 w-36 rounded-full bg-pink-500/[0.07] blur-3xl" />
 
@@ -116,6 +119,6 @@ export default function AchievementsHero({
           />
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

@@ -10,14 +10,19 @@ export default function ModalShell({
   labelledBy,
   describedBy,
   maxWidth = "max-w-lg",
+  tone = "sheet",
+  overlayClass = "bg-zinc-950/55",
+  maxHeight = "max-h-[calc(100dvh-3rem)]",
+  overflowClass = "overflow-x-hidden overflow-y-auto overscroll-contain",
+  restoreFocusRef,
 }) {
   const dialogRef = useRef(null);
 
-  useModalFocusTrap({ dialogRef, onClose, prefersReducedMotion });
+  useModalFocusTrap({ dialogRef, onClose, prefersReducedMotion, restoreFocusRef });
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/55 p-3 sm:items-center sm:p-6"
+      className={`fixed inset-0 z-50 flex items-end justify-center ${overlayClass} p-3 sm:items-center sm:p-6`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -37,7 +42,7 @@ export default function ModalShell({
         tabIndex={-1}
         aria-labelledby={labelledBy}
         aria-describedby={describedBy}
-        className={`max-h-[calc(100dvh-3rem)] w-full ${maxWidth} overflow-x-hidden overflow-y-auto overscroll-contain rounded-[2rem] border shadow-2xl ${theme.sheet}`}
+        className={`${maxHeight} w-full ${maxWidth} ${overflowClass} rounded-[2rem] border shadow-2xl ${theme[tone]}`}
         initial={
           prefersReducedMotion
             ? false
