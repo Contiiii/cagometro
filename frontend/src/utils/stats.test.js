@@ -17,6 +17,7 @@ import {
   getMonthBestStreak,
   getWeeklyChartData,
   getMonthChartData,
+  getYearlyChartData,
 } from "./stats";
 
 describe("stats", () => {
@@ -311,11 +312,26 @@ describe("stats", () => {
       expect(result).toHaveLength(7);
     });
 
-    it("ordina i giorni dal meno recente a oggi", () => {
+    it("ordina i giorni da lunedì a domenica della settimana corrente", () => {
       const result = getWeeklyChartData({});
 
       expect(result[0].date).toBe("2026-08-31");
+      expect(result[0].day).toBe("Lun");
       expect(result[6].date).toBe("2026-09-06");
+      expect(result[6].day).toBe("Dom");
+    });
+
+    it("parte dal lunedì anche a metà settimana", () => {
+      vi.setSystemTime(new Date(2026, 8, 2, 12, 0, 0));
+
+      const result = getWeeklyChartData({});
+
+      expect(result[0].date).toBe("2026-08-31");
+      expect(result[0].day).toBe("Lun");
+      expect(result[6].date).toBe("2026-09-06");
+      expect(result[6].day).toBe("Dom");
+
+      vi.setSystemTime(new Date(2026, 8, 6, 12, 0, 0));
     });
 
     it("associa il count alla data corretta", () => {
@@ -336,6 +352,55 @@ describe("stats", () => {
       expect(
         result.every((item) => item.count === 0),
       ).toBe(true);
+    });
+  });
+
+  describe("getYearlyChartData", () => {
+    it("restituisce almeno tre anni anche senza registrazioni", () => {
+      const result = getYearlyChartData({});
+
+      expect(result.map((item) => item.year)).toEqual([
+        2024,
+        2025,
+        2026,
+      ]);
+      expect(result.every((item) => item.count === 0)).toBe(true);
+    });
+
+    it("riempie con zero gli anni senza dati", () => {
+      const entries = {
+        "2026-09-06": 4,
+        "2026-01-15": 2,
+      };
+
+      const result = getYearlyChartData(entries);
+
+      expect(result).toHaveLength(3);
+      expect(result[0]).toEqual({ year: 2024, count: 0 });
+      expect(result[1]).toEqual({ year: 2025, count: 0 });
+      expect(result[2]).toEqual({ year: 2026, count: 6 });
+    });
+
+    it("copre tutta la storia se supera i tre anni", () => {
+      const entries = {
+        "2020-03-01": 5,
+        "2023-07-07": 3,
+        "2026-09-06": 2,
+      };
+
+      const result = getYearlyChartData(entries);
+
+      expect(result).toHaveLength(7);
+      expect(result[0]).toEqual({ year: 2020, count: 5 });
+      expect(result[3]).toEqual({ year: 2023, count: 3 });
+      expect(result[6]).toEqual({ year: 2026, count: 2 });
+    });
+
+    it("rispetta un minimo personalizzato", () => {
+      const result = getYearlyChartData({}, 5);
+
+      expect(result).toHaveLength(5);
+      expect(result[0].year).toBe(2022);
     });
   });
 

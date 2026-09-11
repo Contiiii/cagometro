@@ -29,6 +29,13 @@ export const RELEASE_FEATURES = [
     icon: BarChart3,
   },
   {
+    id: "reports",
+    title: "Grafici modificati!",
+    description:
+      "I grafici della settimana e del totale sono stati modificati! ora rappresenteranno rispettivamente dal lunedi alla domenica e almeno 3 grafici anche se nulli!",
+    icon: BarChart3,
+  },
+  {
     id: "settings",
     title: "Nuove impostazioni",
     description:

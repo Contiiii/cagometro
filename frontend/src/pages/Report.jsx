@@ -30,7 +30,9 @@ export default function CagometroReport() {
   const isDark = resolvedTheme === "dark";
 
   const [period, setPeriod] = useState("week");
-  const [selectedPointId, setSelectedPointId] = useState(null);
+  const [selectedPointId, setSelectedPointId] = useState(() =>
+    getLocalDateKey(),
+  );
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -97,7 +99,9 @@ export default function CagometroReport() {
       return;
     }
 
-    setSelectedPointId(weekPoints[weekPoints.length - 1]?.id ?? null);
+    const todayPoint = weekPoints.find((point) => point.id === todayKey);
+
+    setSelectedPointId(todayPoint?.id ?? weekPoints[weekPoints.length - 1]?.id ?? null);
   };
 
   const currentMonth = new Date();

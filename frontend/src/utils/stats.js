@@ -135,26 +135,30 @@ export function getWeeklyChartData(entries) {
   today.setHours(12, 0, 0, 0);
 
   const dayNames = [
-    "Dom",
     "Lun",
     "Mar",
     "Mer",
     "Gio",
     "Ven",
     "Sab",
+    "Dom",
   ];
+
+  const daysFromMonday = (today.getDay() + 6) % 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysFromMonday);
 
   const data = [];
 
-  for (let index = 6; index >= 0; index--) {
-    const date = new Date(today);
+  for (let index = 0; index < 7; index++) {
+    const date = new Date(monday);
 
-    date.setDate(today.getDate() - index);
+    date.setDate(monday.getDate() + index);
 
     const dateString = getLocalDateKey(date);
 
     data.push({
-      day: dayNames[date.getDay()],
+      day: dayNames[(date.getDay() + 6) % 7],
       date: dateString,
       count: entries[dateString] || 0,
     });
@@ -192,17 +196,21 @@ export function getMonthChartData(entries, date) {
 }
 
 export function getPreviousWeekTotal(entries) {
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+
+  const daysFromMonday = (today.getDay() + 6) % 7;
+  const mondayOfPreviousWeek = new Date(today);
+  mondayOfPreviousWeek.setDate(today.getDate() - daysFromMonday - 7);
+
   let total = 0;
 
-  for (let index = 7; index < 14; index++) {
-    const date = new Date();
+  for (let index = 0; index < 7; index++) {
+    const date = new Date(mondayOfPreviousWeek);
 
-    date.setHours(12, 0, 0, 0);
-    date.setDate(date.getDate() - index);
+    date.setDate(mondayOfPreviousWeek.getDate() + index);
 
-    const dateString = getLocalDateKey(date);
-
-    total += entries[dateString] || 0;
+    total += entries[getLocalDateKey(date)] || 0;
   }
 
   return total;
@@ -231,4 +239,34 @@ export function getPreviousYearTotal(entries) {
     },
     0,
   );
+}
+
+export function getYearlyChartData(entries, minYears = 3) {
+  const currentYear = new Date().getFullYear();
+
+  const yearsWithData = Object.keys(entries).reduce((years, dateKey) => {
+    years.add(parseLocalDateKey(dateKey).getFullYear());
+    return years;
+  }, new Set());
+
+  const earliestYear = Math.min(
+    yearsWithData.size > 0 ? Math.min(...yearsWithData) : currentYear,
+    currentYear - (minYears - 1),
+  );
+
+  const counts = {};
+
+  Object.entries(entries).forEach(([dateKey, count]) => {
+    counts[parseLocalDateKey(dateKey).getFullYear()] =
+      (counts[parseLocalDateKey(dateKey).getFullYear()] || 0) +
+      Number(count || 0);
+  });
+
+  const data = [];
+
+  for (let year = earliestYear; year <= currentYear; year++) {
+    data.push({ year, count: counts[year] || 0 });
+  }
+
+  return data;
 }

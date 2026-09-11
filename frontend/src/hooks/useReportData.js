@@ -10,6 +10,7 @@ import {
   getPreviousMonthTotal,
   getPreviousYearTotal,
   getMonthBestStreak,
+  getYearlyChartData,
 } from "../utils/stats";
 
 export function useReportData({
@@ -23,7 +24,7 @@ export function useReportData({
   const weekPoints = useMemo(
     () =>
       weeklyChartData.map((item) => ({
-        id: item.day,
+        id: item.date,
         label: item.day,
         date: item.day,
         value: item.count,
@@ -94,24 +95,16 @@ export function useReportData({
     });
   }, [entries]);
 
-  const allPoints = useMemo(() => {
-    const years = {};
-
-    Object.entries(entries).forEach(([date, value]) => {
-      const year = new Date(date).getFullYear();
-
-      years[year] = (years[year] || 0) + Number(value || 0);
-    });
-
-    return Object.entries(years)
-      .sort(([a], [b]) => Number(a) - Number(b))
-      .map(([year, total]) => ({
-        id: year,
-        label: year,
-        date: year,
-        value: Number(total),
-      }));
-  }, [entries]);
+  const allPoints = useMemo(
+    () =>
+      getYearlyChartData(entries).map((item) => ({
+        id: String(item.year),
+        label: String(item.year),
+        date: String(item.year),
+        value: item.count,
+      })),
+    [entries],
+  );
 
   const report = useMemo(() => {
     if (period === "month") {
