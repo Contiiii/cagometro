@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import { Link, Plus, Wifi } from "lucide-react";
 import { AnimatePresence, useReducedMotion } from "framer-motion";
 import { useTheme } from "../hooks/useTheme";
@@ -7,16 +7,8 @@ import { useAuth } from "../hooks/useAuth";
 
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
-import CreateTeamModal from "../components/teams/CreateTeamModal";
-import ConfirmModal from "../components/teams/ConfirmModal";
-import EditTeamModal from "../components/teams/EditTeamModal";
-import TeamInviteModal from "../components/teams/TeamInviteModal";
-import TeamSettingsModal from "../components/teams/TeamSettingsModal";
-import TeamMembersModal from "../components/teams/TeamMembersModal";
-import TeamMemberDetailsModal from "../components/teams/TeamMemberDetailsModal";
 import TeamLeaderboard from "../components/teams/TeamLeaderboard";
 import TeamActivityFeed from "../components/teams/TeamActivityFeed";
-import JoinTeamModal from "../components/teams/JoinTeamModal";
 import TeamHeroCard from "../components/teams/TeamHeroCard";
 import TeamWeeklyGoal from "../components/teams/TeamWeeklyGoal";
 
@@ -34,6 +26,25 @@ import {
   regenerateInviteCode,
   toggleTeamInvites,
 } from "../services/teamService";
+
+const CreateTeamModal = lazy(
+  () => import("../components/teams/CreateTeamModal"),
+);
+const ConfirmModal = lazy(() => import("../components/teams/ConfirmModal"));
+const EditTeamModal = lazy(() => import("../components/teams/EditTeamModal"));
+const TeamInviteModal = lazy(
+  () => import("../components/teams/TeamInviteModal"),
+);
+const TeamSettingsModal = lazy(
+  () => import("../components/teams/TeamSettingsModal"),
+);
+const TeamMembersModal = lazy(
+  () => import("../components/teams/TeamMembersModal"),
+);
+const TeamMemberDetailsModal = lazy(
+  () => import("../components/teams/TeamMemberDetailsModal"),
+);
+const JoinTeamModal = lazy(() => import("../components/teams/JoinTeamModal"));
 
 export default function CagometroTeams() {
   const prefersReducedMotion = useReducedMotion();
@@ -59,7 +70,9 @@ export default function CagometroTeams() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [invitesToggling, setInvitesToggling] = useState(false);
-  const [invitesEnabled, setInvitesEnabled] = useState(() => team?.invites_enabled !== false);
+  const [invitesEnabled, setInvitesEnabled] = useState(
+    () => team?.invites_enabled !== false,
+  );
   const [previousServerInvitesEnabled, setPreviousServerInvitesEnabled] =
     useState(team?.invites_enabled);
 
@@ -83,10 +96,21 @@ export default function CagometroTeams() {
     setConfirmOpen(true);
   }
 
-  const totalWeekly = leaderboard.reduce(
+ const totalWeekly = useMemo(
+  () => leaderboard.reduce(
     (total, member) => total + Number(member.weekly_total || 0),
     0,
-  );
+  ),
+  [leaderboard],
+);
+
+const totalLifetime = useMemo(
+  () => leaderboard.reduce(
+    (total, member) => total + Number(member.lifetime_total || 0),
+    0,
+  ),
+  [leaderboard],
+);
 
   const weeklyGoal = 140;
 
@@ -230,11 +254,17 @@ export default function CagometroTeams() {
     toast.success("Sei entrato nella squadra");
   }
 
-  const isOwner = team?.role === "owner";
+  const isOwner = useMemo(
+  () => team?.role === "owner",
+  [team?.role],
+);
 
-  const activeMembers = members.filter(
+  const activeMembers = useMemo(
+  () => members.filter(
     (member) => !member.left_at && !member.removed_at,
-  );
+  ),
+  [members],
+);
 
   const isLastMember = isOwner && activeMembers.length === 1;
 
@@ -390,18 +420,11 @@ export default function CagometroTeams() {
 
       setInvitesEnabled(previousEnabled);
 
-      toast.error(
-        "Non è stato possibile aggiornare lo stato degli inviti",
-      );
+      toast.error("Non è stato possibile aggiornare lo stato degli inviti");
     } finally {
       setInvitesToggling(false);
     }
   }
-
-  const totalLifetime = leaderboard.reduce(
-    (total, member) => total + Number(member.lifetime_total || 0),
-    0,
-  );
 
   if (!team) {
     return (
@@ -473,22 +496,26 @@ export default function CagometroTeams() {
 
         <AnimatePresence>
           {joinOpen && (
-            <JoinTeamModal
-              onClose={() => setJoinOpen(false)}
-              onJoin={handleJoinTeam}
-              theme={theme}
-              isDark={isDark}
-              prefersReducedMotion={prefersReducedMotion}
-            />
+            <Suspense fallback={null}>
+              <JoinTeamModal
+                onClose={() => setJoinOpen(false)}
+                onJoin={handleJoinTeam}
+                theme={theme}
+                isDark={isDark}
+                prefersReducedMotion={prefersReducedMotion}
+              />
+            </Suspense>
           )}
         </AnimatePresence>
 
-        <CreateTeamModal
-          open={createOpen}
-          onClose={() => setCreateOpen(false)}
-          onCreate={handleCreateTeam}
-          isDark={isDark}
-        />
+        <Suspense fallback={null}>
+          <CreateTeamModal
+            open={createOpen}
+            onClose={() => setCreateOpen(false)}
+            onCreate={handleCreateTeam}
+            isDark={isDark}
+          />
+        </Suspense>
       </div>
     );
   }
@@ -544,108 +571,122 @@ export default function CagometroTeams() {
 
       <AnimatePresence>
         {selectedData && (
-          <TeamMemberDetailsModal
-            member={selectedData}
-            membership={selectedMembership}
-            position={selectedPosition}
-            currentUserId={user?.id}
-            totalWeekly={totalWeekly}
-            theme={theme}
-            isDark={isDark}
-            prefersReducedMotion={prefersReducedMotion}
-            onClose={() => setSelectedMember(null)}
-          />
+          <Suspense fallback={null}>
+            <TeamMemberDetailsModal
+              member={selectedData}
+              membership={selectedMembership}
+              position={selectedPosition}
+              currentUserId={user?.id}
+              totalWeekly={totalWeekly}
+              theme={theme}
+              isDark={isDark}
+              prefersReducedMotion={prefersReducedMotion}
+              onClose={() => setSelectedMember(null)}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {inviteOpen && (
-          <TeamInviteModal
-            onClose={() => setInviteOpen(false)}
-            team={team}
-            theme={theme}
-            isDark={isDark}
-            prefersReducedMotion={prefersReducedMotion}
-          />
+          <Suspense fallback={null}>
+            <TeamInviteModal
+              onClose={() => setInviteOpen(false)}
+              team={team}
+              theme={theme}
+              isDark={isDark}
+              prefersReducedMotion={prefersReducedMotion}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {settingsOpen && (
-          <TeamSettingsModal
-            team={team}
-            theme={theme}
-            isDark={isDark}
-            prefersReducedMotion={prefersReducedMotion}
-            leaving={leaving}
-            invitesEnabled={invitesEnabled}
-            togglingInvites={invitesToggling}
-            onToggleInvites={handleToggleInvites}
-            onClose={() => setSettingsOpen(false)}
-            onEdit={() => {
-              setSettingsOpen(false);
-              setEditOpen(true);
-            }}
-            onManageMembers={() => {
-              setSettingsOpen(false);
-              setMembersOpen(true);
-            }}
-            onRegenerateInvite={handleRegenerateInvite}
-            onLeave={handleLeaveTeam}
-          />
+          <Suspense fallback={null}>
+            <TeamSettingsModal
+              team={team}
+              theme={theme}
+              isDark={isDark}
+              prefersReducedMotion={prefersReducedMotion}
+              leaving={leaving}
+              invitesEnabled={invitesEnabled}
+              togglingInvites={invitesToggling}
+              onToggleInvites={handleToggleInvites}
+              onClose={() => setSettingsOpen(false)}
+              onEdit={() => {
+                setSettingsOpen(false);
+                setEditOpen(true);
+              }}
+              onManageMembers={() => {
+                setSettingsOpen(false);
+                setMembersOpen(true);
+              }}
+              onRegenerateInvite={handleRegenerateInvite}
+              onLeave={handleLeaveTeam}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {membersOpen && (
-          <TeamMembersModal
-            team={team}
-            members={members}
-            leaderboard={leaderboard}
-            currentUserId={user?.id}
-            theme={theme}
-            isDark={isDark}
-            prefersReducedMotion={prefersReducedMotion}
-            onClose={() => setMembersOpen(false)}
-            onTransferOwnership={handleTransferOwnership}
-            onRemoveMember={handleRemoveMember}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {editOpen && (
-          <EditTeamModal
-            onClose={() => setEditOpen(false)}
-            team={team}
-            isDark={isDark}
-            theme={theme}
-            prefersReducedMotion={prefersReducedMotion}
-            onSaved={async () => {
-              await Promise.all([
-                refreshTeam(),
-                refreshMembers(),
-                refreshLeaderboard(),
-                refreshActivity(),
-              ]);
-            }}
-          />
+          <Suspense fallback={null}>
+            <TeamMembersModal
+              team={team}
+              members={members}
+              leaderboard={leaderboard}
+              currentUserId={user?.id}
+              theme={theme}
+              isDark={isDark}
+              prefersReducedMotion={prefersReducedMotion}
+              onClose={() => setMembersOpen(false)}
+              onTransferOwnership={handleTransferOwnership}
+              onRemoveMember={handleRemoveMember}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
-      <ConfirmModal
-        open={confirmOpen}
-        onClose={() => {
-          setConfirmOpen(false);
-          setConfirmConfig(null);
-        }}
-        title={confirmConfig?.title}
-        description={confirmConfig?.description}
-        confirmText={confirmConfig?.confirmText}
-        onConfirm={confirmConfig?.onConfirm}
-        prefersReducedMotion={prefersReducedMotion}
-        theme={theme}
-        isDanger={confirmConfig?.variant === "danger"}
-      />
+      <AnimatePresence>
+        {editOpen && (
+          <Suspense fallback={null}>
+            <EditTeamModal
+              onClose={() => setEditOpen(false)}
+              team={team}
+              isDark={isDark}
+              theme={theme}
+              prefersReducedMotion={prefersReducedMotion}
+              onSaved={async () => {
+                await Promise.all([
+                  refreshTeam(),
+                  refreshMembers(),
+                  refreshLeaderboard(),
+                  refreshActivity(),
+                ]);
+              }}
+            />
+          </Suspense>
+        )}
+      </AnimatePresence>
+
+      <Suspense fallback={null}>
+        <ConfirmModal
+          open={confirmOpen}
+          onClose={() => {
+            setConfirmOpen(false);
+            setConfirmConfig(null);
+          }}
+          title={confirmConfig?.title}
+          description={confirmConfig?.description}
+          confirmText={confirmConfig?.confirmText}
+          onConfirm={confirmConfig?.onConfirm}
+          prefersReducedMotion={prefersReducedMotion}
+          theme={theme}
+          isDanger={confirmConfig?.variant === "danger"}
+        />
+      </Suspense>
+
     </div>
   );
 }

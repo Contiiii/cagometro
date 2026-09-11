@@ -1,4 +1,4 @@
-import { BarChart3, Settings, UsersRound } from "lucide-react";
+import { BarChart3, UsersRound } from "lucide-react";
 
 export const APP_VERSION = "1.8.3";
 
@@ -41,7 +41,7 @@ export const RELEASE_FEATURES = [
     id: "teams",
     title: "Schermata di accesso da link!",
     description:
-      "Nuova schermata di accesso al teams quando si entra con il link!",
+      "Nuova schermata di accesso al teams quando si entra con il link! e aggiunta opzione per disattivare il codice di invito",
     icon: UsersRound,
   },
   {

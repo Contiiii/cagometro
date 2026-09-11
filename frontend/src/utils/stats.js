@@ -231,7 +231,7 @@ export function getPreviousYearTotal(entries) {
 
   return Object.entries(entries).reduce(
     (total, [dateKey, count]) => {
-      const date = new Date(dateKey);
+      const date = parseLocalDateKey(dateKey);
 
       return date.getFullYear() === previousYear
         ? total + Number(count)
