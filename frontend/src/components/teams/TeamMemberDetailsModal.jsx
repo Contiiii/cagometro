@@ -3,8 +3,9 @@ import { motion } from "framer-motion";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
+import Panel from "../ui/Panel";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 import { useTeamSelection } from "../../hooks/useTeamSelection";
 
 import { useAuth } from "../../hooks/useAuth";
@@ -121,9 +122,7 @@ export default function TeamMemberDetailsModal({ onClose }) {
           />
         </div>
 
-        <div
-          className={`mt-5 rounded-2xl border p-4 ${theme.softSurface}`}
-        >
+        <Panel theme={theme} className="mt-5">
           <div className="flex items-center justify-between gap-3">
             <p className={`text-sm font-bold ${theme.primaryText}`}>
               Contributo settimanale
@@ -153,7 +152,7 @@ export default function TeamMemberDetailsModal({ onClose }) {
               className="h-full rounded-full bg-pink-500"
             />
           </div>
-        </div>
+        </Panel>
       </div>
     </ModalShell>
   );
@@ -161,7 +160,7 @@ export default function TeamMemberDetailsModal({ onClose }) {
 
 function MetricCard({ label, value, theme }) {
   return (
-    <div className={`rounded-2xl border p-3 ${theme.softSurface}`}>
+    <Panel theme={theme} padding="sm">
       <p
         className={`text-[10px] font-bold uppercase tracking-[0.1em] ${theme.subtle}`}
       >
@@ -173,6 +172,6 @@ function MetricCard({ label, value, theme }) {
       >
         {value}
       </p>
-    </div>
+    </Panel>
   );
 }

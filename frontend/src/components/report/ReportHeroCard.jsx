@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 import Card from "../ui/Card";
+import Section from "../ui/Section";
 
 export default function ReportHeroCard({
   report,
@@ -18,13 +19,13 @@ export default function ReportHeroCard({
   const isNegative = change < 0;
   const isDecrease = difference < 0;
   return (
-    <motion.section
+    <Section
+      as={motion.section}
       key={report.label}
       initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
       transition={{ duration: prefersReducedMotion ? 0 : 0.22 }}
-      className="mx-auto mt-5 max-w-3xl"
     >
       <Card theme={theme}>
       <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-pink-500/[0.07] blur-3xl" />
@@ -112,6 +113,6 @@ rispetto a {report.previousLabel}.
         </p>
       </div>
     </Card>
-    </motion.section>
+    </Section>
   );
 }

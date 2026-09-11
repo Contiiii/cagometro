@@ -52,6 +52,9 @@ const TransferOwnershipModal = lazy(
 const TeamMemberDetailsModal = lazy(
   () => import("../components/teams/TeamMemberDetailsModal"),
 );
+const TeamOnboardingModal = lazy(
+  () => import("../components/teams/TeamOnboardingModal"),
+);
 const JoinTeamModal = lazy(() => import("../components/teams/JoinTeamModal"));
 
 export default function CagometroTeams() {
@@ -65,6 +68,7 @@ export default function CagometroTeams() {
     members = [],
     leaderboard = [],
     activity = [],
+    refreshDashboard,
     refreshTeam,
     refreshMembers,
     refreshLeaderboard,
@@ -98,6 +102,7 @@ export default function CagometroTeams() {
   const [transferOpen, setTransferOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   const settingsTriggerRef = useRef(null);
 
@@ -244,14 +249,39 @@ export default function CagometroTeams() {
         name,
         description: payload.description?.trim() || null,
         avatarEmoji: "🏆",
-        privacy: payload.privacy,
-        accent: payload.accent,
       });
 
-      // Solo team e members (leaderboard e activity non esistono ancora)
-      await Promise.all([refreshTeam(), refreshMembers()]);
+      // Nota: privacy/accent non vengono inviati perché la RPC create_team
+      // non li supporta (campi visivi, gestione separata).
+      const refreshResults = await Promise.allSettled([
+        refreshTeam(),
+        refreshMembers(),
+      ]);
 
-      notify("Squadra creata");
+      const hasRefreshFailure = refreshResults.some(
+        (result) => result.status === "rejected",
+      );
+
+      if (hasRefreshFailure) {
+        console.error(
+          "Squadra creata, ma aggiornamento dati fallito:",
+          refreshResults
+            .filter((result) => result.status === "rejected")
+            .map((result) => result.reason),
+        );
+      }
+
+      if (!localStorage.getItem("cagometro.teamOnboardingSeen")) {
+        localStorage.setItem("cagometro.teamOnboardingSeen", "1");
+        setOnboardingOpen(true);
+      }
+
+      notify(
+        hasRefreshFailure
+          ? "Squadra creata, ma alcuni dati non sono stati aggiornati"
+          : "Squadra creata",
+        hasRefreshFailure ? "error" : "success",
+      );
     } catch (error) {
       console.error("Errore durante la creazione della squadra:", error);
       notify(
@@ -264,12 +294,38 @@ export default function CagometroTeams() {
 
   async function handleJoinTeam(code) {
     await joinTeam(code);
-    await createTeamActivity("member_joined");
-
-    // Team, members e leaderboard (activity opzionale)
-    await Promise.all([refreshTeam(), refreshMembers(), refreshLeaderboard()]);
 
     notify("Sei entrato nella squadra");
+
+    try {
+      await createTeamActivity("member_joined");
+    } catch (error) {
+      console.error(
+        "Ingresso riuscito, ma registrazione attività fallita:",
+        error,
+      );
+    }
+
+    try {
+      const result = await refreshDashboard();
+
+      if (result?.hasErrors) {
+        notify(
+          "Ingresso riuscito, ma alcuni dati non sono stati aggiornati",
+          "error",
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Ingresso riuscito, ma aggiornamento dashboard fallito:",
+        error,
+      );
+
+      notify(
+        "Sei entrato nella squadra. Ricarica la pagina per aggiornare i dati.",
+        "error",
+      );
+    }
   }
 
   const isOwner = useMemo(() => team?.role === "owner", [team?.role]);
@@ -293,7 +349,21 @@ export default function CagometroTeams() {
         try {
           setLeaving(true);
 
-          await createTeamActivity("member_left");
+          // Il log member_left non è atomico con leave_team(): viene eseguito
+          // prima dell'uscita perché create_team_activity richiede una
+          // membership attiva. Se leaveTeam() fallisce dopo questo log può
+          // restare un evento member_left non corrispondente. Soluzione
+          // definitiva: spostare il log dentro la RPC leave_team() nella
+          // stessa transazione (nessuna modifica DB in questa task).
+          try {
+            await createTeamActivity("member_left");
+          } catch (error) {
+            console.error(
+              "Registrazione attività member_left fallita:",
+              error,
+            );
+          }
+
           await leaveTeam();
 
           setSelectedMember(null);
@@ -301,9 +371,34 @@ export default function CagometroTeams() {
           setSettingsOpen(false);
           setMembersOpen(false);
           setTransferOpen(false);
+          setOnboardingOpen(false);
 
-          // Solo team (stai uscendo, non serve refresh completo)
-          await refreshTeam();
+          try {
+            const result = await refreshDashboard();
+
+            if (result?.hasErrors) {
+              notify(
+                isLastMember
+                  ? "Squadra sciolta, ma alcuni dati non sono stati aggiornati"
+                  : "Sei uscito, ma alcuni dati non sono stati aggiornati",
+                "error",
+              );
+              return;
+            }
+          } catch (error) {
+            console.error(
+              "Uscita riuscita, ma aggiornamento dati fallito:",
+              error,
+            );
+
+            notify(
+              isLastMember
+                ? "Squadra sciolta. Ricarica la pagina per aggiornare i dati."
+                : "Sei uscito. Ricarica la pagina per aggiornare i dati.",
+              "error",
+            );
+            return;
+          }
 
           notify(
             isLastMember
@@ -330,26 +425,50 @@ export default function CagometroTeams() {
         try {
           await transferOwnership(member.user_id);
 
-          await createTeamActivity("ownership_transferred", null, {
-            target_user_id: member.user_id,
-            target_display_name: member.display_name,
-          });
+          try {
+            await createTeamActivity("ownership_transferred", null, {
+              target_user_id: member.user_id,
+              target_display_name: member.display_name,
+            });
+          } catch (error) {
+            console.error(
+              "Proprietà trasferita, ma registrazione attività fallita:",
+              error,
+            );
+          }
 
-          // Team (ruolo cambiato), members, activity
-          await Promise.all([
+          const refreshResults = await Promise.allSettled([
             refreshTeam(),
             refreshMembers(),
             refreshActivity(),
           ]);
 
-          notify(`${member.display_name} è ora il proprietario`);
+          const hasRefreshFailure = refreshResults.some(
+            (result) => result.status === "rejected",
+          );
+
+          if (hasRefreshFailure) {
+            console.error(
+              "Proprietà trasferita, ma aggiornamento dati fallito:",
+              refreshResults
+                .filter((result) => result.status === "rejected")
+                .map((result) => result.reason),
+            );
+          }
+
+          notify(
+            hasRefreshFailure
+              ? `${member.display_name} è ora il proprietario, ma alcuni dati non sono stati aggiornati`
+              : `${member.display_name} è ora il proprietario`,
+            hasRefreshFailure ? "error" : "success",
+          );
 
           setMembersOpen(false);
           setSettingsOpen(false);
           setSelectedMember(null);
           setTransferOpen(false);
         } catch (error) {
-          console.error(error);
+          console.error("Trasferimento proprietà fallito:", error);
           throw error;
         }
       },
@@ -366,24 +485,49 @@ export default function CagometroTeams() {
         try {
           await removeTeamMember(member.user_id);
 
-          await createTeamActivity("member_removed", null, {
-            target_user_id: member.user_id,
-            target_display_name: member.display_name,
-          });
+          try {
+            await createTeamActivity("member_removed", null, {
+              target_user_id: member.user_id,
+              target_display_name: member.display_name,
+            });
+          } catch (error) {
+            console.error(
+              "Membro rimosso, ma registrazione attività fallita:",
+              error,
+            );
+          }
 
-          // Members, leaderboard, activity (team non cambia)
-          await Promise.all([
+          const refreshResults = await Promise.allSettled([
             refreshMembers(),
             refreshLeaderboard(),
             refreshActivity(),
           ]);
 
-          notify(`${member.display_name} è stato rimosso`);
+          const hasRefreshFailure = refreshResults.some(
+            (result) => result.status === "rejected",
+          );
+
+          if (hasRefreshFailure) {
+            console.error(
+              "Membro rimosso, ma aggiornamento dati fallito:",
+              refreshResults
+                .filter((result) => result.status === "rejected")
+                .map((result) => result.reason),
+            );
+          }
+
+          notify(
+            hasRefreshFailure
+              ? `${member.display_name} è stato rimosso, ma alcuni dati non sono stati aggiornati`
+              : `${member.display_name} è stato rimosso`,
+            hasRefreshFailure ? "error" : "success",
+          );
+
           if (selectedMember === member.user_id) {
             setSelectedMember(null);
           }
         } catch (error) {
-          console.error(error);
+          console.error("Rimozione membro fallita:", error);
           throw error;
         }
       },
@@ -400,10 +544,31 @@ export default function CagometroTeams() {
       confirmText: "Rigenera",
       variant: "warning",
       onConfirm: async () => {
-        await regenerateInviteCode();
-        await refreshTeam(); // Solo team (cambia solo invite_code)
+        try {
+          await regenerateInviteCode();
+        } catch (error) {
+          console.error(
+            "Errore durante la rigenerazione del codice invito:",
+            error,
+          );
+          throw error;
+        }
 
-        notify("Nuovo codice invito generato");
+        try {
+          await refreshTeam();
+
+          notify("Nuovo codice invito generato");
+        } catch (error) {
+          console.error(
+            "Codice rigenerato, ma aggiornamento dati fallito:",
+            error,
+          );
+
+          notify(
+            "Codice rigenerato. Ricarica la pagina per aggiornare i dati.",
+            "error",
+          );
+        }
       },
     });
   }
@@ -417,20 +582,42 @@ export default function CagometroTeams() {
     setInvitesToggling(true);
 
     try {
-      await toggleTeamInvites(nextEnabled);
-      await refreshTeam(); // Solo team (cambia solo invites_enabled)
+      try {
+        await toggleTeamInvites(nextEnabled);
+      } catch (error) {
+        console.error("Errore aggiornamento stato inviti:", error);
 
-      notify(
-        nextEnabled
-          ? "Inviti riabilitati: il codice è di nuovo attivo"
-          : "Inviti disabilitati",
-      );
-    } catch (error) {
-      console.error("Errore aggiornamento stato inviti:", error);
+        setInvitesEnabled(previousEnabled);
 
-      setInvitesEnabled(previousEnabled);
+        notify(
+          "Non è stato possibile aggiornare lo stato degli inviti",
+          "error",
+        );
 
-      notify("Non è stato possibile aggiornare lo stato degli inviti", "error");
+        return;
+      }
+
+      try {
+        await refreshTeam();
+
+        notify(
+          nextEnabled
+            ? "Inviti riabilitati: il codice è di nuovo attivo"
+            : "Inviti disabilitati",
+        );
+      } catch (error) {
+        console.error(
+          "Stato inviti aggiornato, ma dati non aggiornati:",
+          error,
+        );
+
+        notify(
+          nextEnabled
+            ? "Inviti riabilitati, ma alcuni dati non sono stati aggiornati"
+            : "Inviti disabilitati, ma alcuni dati non sono stati aggiornati",
+          "error",
+        );
+      }
     } finally {
       setInvitesToggling(false);
     }
@@ -461,7 +648,10 @@ export default function CagometroTeams() {
               <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-amber-400/[0.07] blur-3xl" />
 
               <div className="relative">
-                <IconTile size="3xl" className="overflow-hidden bg-pink-500 shadow-[0_12px_30px_rgba(236,72,153,0.25)]">
+                <IconTile
+                  size="3xl"
+                  className="overflow-hidden bg-pink-500 shadow-[0_12px_30px_rgba(236,72,153,0.25)]"
+                >
                   <img
                     src={poopIcon}
                     alt="Icona squadra"
@@ -570,168 +760,184 @@ export default function CagometroTeams() {
         <div
           className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
         >
-        <div
-          id="team-live-region"
-          aria-live="polite"
-          aria-atomic="true"
-          className="sr-only"
-        />
-        <Header eyebrow="Squadra attiva" title={team?.team_name || "Squadra"} />
-
-        <main className="mx-auto w-full max-w-5xl px-5 pb-36 pt-7 sm:px-8 sm:pt-10">
-          <TeamHeroCard
-            team={team}
-            membersCount={members.length}
-            totalLifetime={totalLifetime}
-            currentUserPosition={currentUserPosition}
-            invitesEnabled={Boolean(inviteCode) && invitesEnabled}
-            onOpenSettings={() => {
-              settingsTriggerRef.current = document.activeElement;
-              setSettingsOpen(true);
-            }}
-            onOpenInvite={() => setInviteOpen(true)}
+          <div
+            id="team-live-region"
+            aria-live="polite"
+            aria-atomic="true"
+            className="sr-only"
+          />
+          <Header
+            eyebrow="Squadra attiva"
+            title={team?.team_name || "Squadra"}
           />
 
-          <TeamWeeklyGoal
-            totalWeekly={totalWeekly}
-            weeklyGoal={weeklyGoal}
-          />
+          <main className="mx-auto w-full max-w-5xl px-5 pb-36 pt-7 sm:px-8 sm:pt-10">
+            <TeamHeroCard
+              team={team}
+              membersCount={members.length}
+              totalLifetime={totalLifetime}
+              currentUserPosition={currentUserPosition}
+              invitesEnabled={Boolean(inviteCode) && invitesEnabled}
+              onOpenSettings={() => {
+                settingsTriggerRef.current = document.activeElement;
+                setSettingsOpen(true);
+              }}
+              onOpenInvite={() => setInviteOpen(true)}
+            />
 
-          <TeamLeaderboard
-            leaderboard={leaderboard}
-            members={members}
-            currentUserId={user?.id}
-            rankingMode={rankingMode}
-            onRankingChange={setRankingMode}
-          />
+            <TeamWeeklyGoal totalWeekly={totalWeekly} weeklyGoal={weeklyGoal} />
 
-          <TeamAdminCard
-            team={team}
-            leaving={leaving}
-            onManageMembers={() => {
-              setSettingsOpen(false);
-              setMembersOpen(true);
-            }}
-            onOpenTransfer={() => setTransferOpen(true)}
-            onLeave={handleLeaveTeam}
-          />
+            <TeamLeaderboard
+              leaderboard={leaderboard}
+              members={members}
+              currentUserId={user?.id}
+              rankingMode={rankingMode}
+              onRankingChange={setRankingMode}
+            />
 
-          <TeamActivityFeed
-            activity={activity}
-          />
-        </main>
+            <TeamAdminCard
+              team={team}
+              leaving={leaving}
+              onManageMembers={() => {
+                setSettingsOpen(false);
+                setMembersOpen(true);
+              }}
+              onOpenTransfer={() => setTransferOpen(true)}
+              onLeave={handleLeaveTeam}
+            />
 
-        <BottomNav />
+            <TeamActivityFeed activity={activity} />
+          </main>
 
-        <AnimatePresence>
-          {selectedData && (
-            <Suspense fallback={null}>
-              <TeamMemberDetailsModal
-                onClose={() => setSelectedMember(null)}
-              />
-            </Suspense>
-          )}
-        </AnimatePresence>
+          <BottomNav />
 
-        <AnimatePresence>
-          {inviteOpen && (
-            <Suspense fallback={null}>
-              <TeamInviteModal
-                onClose={() => setInviteOpen(false)}
-                team={team}
-              />
-            </Suspense>
-          )}
-        </AnimatePresence>
+          <AnimatePresence>
+            {selectedData && (
+              <Suspense fallback={null}>
+                <TeamMemberDetailsModal
+                  onClose={() => setSelectedMember(null)}
+                />
+              </Suspense>
+            )}
+          </AnimatePresence>
 
-        <AnimatePresence>
-          {settingsOpen && (
-            <Suspense fallback={null}>
-              <TeamSettingsModal
-                team={team}
-                leaving={leaving}
-                invitesEnabled={invitesEnabled}
-                togglingInvites={invitesToggling}
-                onToggleInvites={handleToggleInvites}
-                onClose={() => setSettingsOpen(false)}
-                onEdit={() => {
-                  setSettingsOpen(false);
-                  setEditOpen(true);
-                }}
-                onManageMembers={() => {
-                  setSettingsOpen(false);
-                  setMembersOpen(true);
-                }}
-                onRegenerateInvite={handleRegenerateInvite}
-                onLeave={handleLeaveTeam}
-              />
-            </Suspense>
-          )}
-        </AnimatePresence>
+          <AnimatePresence>
+            {onboardingOpen && (
+              <Suspense fallback={null}>
+                <TeamOnboardingModal
+                  onClose={() => setOnboardingOpen(false)}
+                  team={team}
+                />
+              </Suspense>
+            )}
+          </AnimatePresence>
 
-        <AnimatePresence>
-          {membersOpen && (
-            <Suspense fallback={null}>
-              <TeamMembersModal
-                team={team}
-                members={members}
-                leaderboard={leaderboard}
-                currentUserId={user?.id}
-                onClose={() => setMembersOpen(false)}
-                onTransferOwnership={handleTransferOwnership}
-                onRemoveMember={handleRemoveMember}
-                restoreFocusRef={settingsTriggerRef}
-              />
-            </Suspense>
-          )}
-        </AnimatePresence>
+          <AnimatePresence>
+            {inviteOpen && (
+              <Suspense fallback={null}>
+                <TeamInviteModal
+                  onClose={() => setInviteOpen(false)}
+                  team={team}
+                />
+              </Suspense>
+            )}
+          </AnimatePresence>
 
-        <AnimatePresence>
-          {transferOpen && (
-            <Suspense fallback={null}>
-              <TransferOwnershipModal
-                members={members}
-                onClose={() => setTransferOpen(false)}
-                onTransferOwnership={handleTransferOwnership}
-              />
-            </Suspense>
-          )}
-        </AnimatePresence>
+          <AnimatePresence>
+            {settingsOpen && (
+              <Suspense fallback={null}>
+                <TeamSettingsModal
+                  team={team}
+                  leaving={leaving}
+                  invitesEnabled={invitesEnabled}
+                  togglingInvites={invitesToggling}
+                  onToggleInvites={handleToggleInvites}
+                  onClose={() => setSettingsOpen(false)}
+                  onEdit={() => {
+                    setSettingsOpen(false);
+                    setEditOpen(true);
+                  }}
+                  onManageMembers={() => {
+                    setSettingsOpen(false);
+                    setMembersOpen(true);
+                  }}
+                  onRegenerateInvite={handleRegenerateInvite}
+                  onLeave={handleLeaveTeam}
+                />
+              </Suspense>
+            )}
+          </AnimatePresence>
 
-        <AnimatePresence>
-          {editOpen && (
-            <Suspense fallback={null}>
-              <EditTeamModal
-                onClose={() => setEditOpen(false)}
-                team={team}
-                restoreFocusRef={settingsTriggerRef}
-                onSaved={async () => {
-                  await Promise.all([
-                    refreshTeam(),
-                    refreshMembers(),
-                    refreshLeaderboard(),
-                    refreshActivity(),
-                  ]);
-                }}
-              />
-            </Suspense>
-          )}
-        </AnimatePresence>
+          <AnimatePresence>
+            {membersOpen && (
+              <Suspense fallback={null}>
+                <TeamMembersModal
+                  team={team}
+                  members={members}
+                  leaderboard={leaderboard}
+                  currentUserId={user?.id}
+                  onClose={() => setMembersOpen(false)}
+                  onTransferOwnership={handleTransferOwnership}
+                  onRemoveMember={handleRemoveMember}
+                  restoreFocusRef={settingsTriggerRef}
+                />
+              </Suspense>
+            )}
+          </AnimatePresence>
 
-        <Suspense fallback={null}>
-          <ConfirmModal
-            open={!!confirmConfig}
-            onClose={() => {
-              setConfirmConfig(null);
-            }}
-            title={confirmConfig?.title}
-            description={confirmConfig?.description}
-            confirmText={confirmConfig?.confirmText}
-            onConfirm={confirmConfig?.onConfirm}
-            isDanger={confirmConfig?.variant === "danger"}
-          />
-        </Suspense>
-      </div>
+          <AnimatePresence>
+            {transferOpen && (
+              <Suspense fallback={null}>
+                <TransferOwnershipModal
+                  members={members}
+                  onClose={() => setTransferOpen(false)}
+                  onTransferOwnership={handleTransferOwnership}
+                />
+              </Suspense>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {editOpen && (
+              <Suspense fallback={null}>
+                <EditTeamModal
+                  onClose={() => setEditOpen(false)}
+                  team={team}
+                  restoreFocusRef={settingsTriggerRef}
+                  onSaved={async () => {
+                    try {
+                      await refreshTeam();
+                    } catch (error) {
+                      console.error(
+                        "Squadra aggiornata, ma dati non aggiornati:",
+                        error,
+                      );
+
+                      notify(
+                        "Squadra aggiornata, ma alcuni dati non sono stati aggiornati",
+                        "error",
+                      );
+                    }
+                  }}
+                />
+              </Suspense>
+            )}
+          </AnimatePresence>
+
+          <Suspense fallback={null}>
+            <ConfirmModal
+              open={!!confirmConfig}
+              onClose={() => {
+                setConfirmConfig(null);
+              }}
+              title={confirmConfig?.title}
+              description={confirmConfig?.description}
+              confirmText={confirmConfig?.confirmText}
+              onConfirm={confirmConfig?.onConfirm}
+              isDanger={confirmConfig?.variant === "danger"}
+            />
+          </Suspense>
+        </div>
       </TeamSelectionProvider>
     </TeamUIProvider>
   );

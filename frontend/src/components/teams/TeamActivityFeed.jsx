@@ -12,12 +12,14 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 
 import { getAvatarGradient, getInitials } from "../../utils/avatar";
 
 import Card from "../ui/Card";
 import IconTile from "../ui/IconTile";
+import Section from "../ui/Section";
+import SectionHeader from "../ui/SectionHeader";
 
 function getActivityIcon(type) {
   const icons = {
@@ -134,19 +136,17 @@ export default function TeamActivityFeed({
     : activity.slice(0, 3);
 
   return (
-    <section className="mx-auto mt-8 max-w-3xl">
-      <div className="flex items-end justify-between gap-4">
-        <h2
-          className={`text-2xl font-black tracking-[-0.055em] ${theme.primaryText}`}
-        >
-          Attività recente
-        </h2>
-
-        <span className="flex items-center gap-1.5 pb-1 text-xs font-bold text-emerald-600 dark:text-emerald-500">
-          <Wifi className="h-4 w-4" strokeWidth={2.2} />
-          Live
-        </span>
-      </div>
+    <Section spacing="lg">
+      <SectionHeader
+        title="Attività recente"
+        theme={theme}
+        aside={
+          <span className="flex items-center gap-1.5 pb-1 text-xs font-bold text-emerald-600 dark:text-emerald-500">
+            <Wifi className="h-4 w-4" strokeWidth={2.2} />
+            Live
+          </span>
+        }
+      />
 
       <Card
         aria-live="polite"
@@ -287,6 +287,6 @@ export default function TeamActivityFeed({
           </button>
         )}
       </Card>
-    </section>
+    </Section>
   );
 }

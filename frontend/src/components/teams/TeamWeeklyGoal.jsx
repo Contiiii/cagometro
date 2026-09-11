@@ -3,8 +3,9 @@ import { motion } from "framer-motion";
 
 import Card from "../ui/Card";
 import IconTile from "../ui/IconTile";
+import Section from "../ui/Section";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 
 export default function TeamWeeklyGoal({
   totalWeekly,
@@ -23,7 +24,7 @@ export default function TeamWeeklyGoal({
   const remaining = Math.max(0, safeGoal - safeTotal);
 
   return (
-    <section className="mx-auto mt-5 max-w-3xl">
+    <Section spacing="sm">
       <Card as="article" theme={theme} radius="goal" padding="none" className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -85,6 +86,6 @@ export default function TeamWeeklyGoal({
           />
         </div>
       </Card>
-    </section>
+    </Section>
   );
 }

@@ -2,7 +2,7 @@ import { Settings, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
 
 import Card from "../ui/Card";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 
 export default function TeamHeroCard({
   team,

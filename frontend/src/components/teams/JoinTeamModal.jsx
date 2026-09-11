@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 
 export default function JoinTeamModal({
   onClose,

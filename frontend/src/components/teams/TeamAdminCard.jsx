@@ -1,8 +1,10 @@
 import { ChevronRight, Crown, LogOut, UsersRound } from "lucide-react";
 
 import Card from "../ui/Card";
+import Section from "../ui/Section";
+import SectionHeader from "../ui/SectionHeader";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 
 export default function TeamAdminCard({
   team,
@@ -16,12 +18,8 @@ export default function TeamAdminCard({
   const isOwner = team?.role === "owner";
 
   return (
-    <section className="mx-auto mt-8 max-w-3xl">
-      <h2
-        className={`text-2xl font-black tracking-[-0.055em] ${theme.primaryText}`}
-      >
-        Gestione squadra
-      </h2>
+    <Section spacing="lg">
+      <SectionHeader title="Gestione squadra" theme={theme} />
 
       <Card theme={theme} radius="panel" padding="none" className="mt-4">
         {isOwner && (
@@ -71,7 +69,7 @@ export default function TeamAdminCard({
           <ChevronRight className="h-4 w-4 shrink-0 opacity-60" strokeWidth={2.2} />
         </button>
       </Card>
-    </section>
+    </Section>
   );
 }
 

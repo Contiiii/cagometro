@@ -2,6 +2,7 @@ import { AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
 import ModalShell from "../teams/ModalShell";
+import Panel from "../ui/Panel";
 
 export default function ReportDetailsModal({
   open,
@@ -47,9 +48,7 @@ export default function ReportDetailsModal({
               </button>
             </div>
 
-            <div
-              className={`mt-7 rounded-[1.5rem] border p-5 ${theme.softSurface}`}
-            >
+            <Panel theme={theme} radius="panel" padding="lg" className="mt-7">
               <p
                 className={`text-[11px] font-bold uppercase tracking-[0.13em] ${theme.subtle}`}
               >
@@ -71,7 +70,7 @@ export default function ReportDetailsModal({
                     ? `Sopra la media di ${average.toFixed(1)}: qui hai tenuto un bel ritmo.`
                     : `Sotto la media di ${average.toFixed(1)}, ma ogni attività fa volume nel tempo.`}
               </p>
-            </div>
+            </Panel>
           </div>
         </ModalShell>
       )}

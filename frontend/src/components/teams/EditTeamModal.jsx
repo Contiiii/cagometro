@@ -3,8 +3,9 @@ import toast from "react-hot-toast";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
+import Panel from "../ui/Panel";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 
 import { updateTeam } from "../../services/teamService";
 
@@ -114,9 +115,7 @@ export default function EditTeamModal({
           />
         </div>
 
-        <div
-          className={`mt-6 rounded-[1.5rem] border p-5 ${theme.softSurface}`}
-        >
+        <Panel theme={theme} radius="panel" padding="lg" className="mt-6">
           <div className="flex items-center gap-4">
             <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-pink-500 text-3xl">
               {emoji}
@@ -136,7 +135,7 @@ export default function EditTeamModal({
               </p>
             </div>
           </div>
-        </div>
+        </Panel>
 
         <div className="mt-5">
           <label

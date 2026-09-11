@@ -3,8 +3,9 @@ import { ChevronRight } from "lucide-react";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
+import Panel from "../ui/Panel";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 
 export default function TeamSettingsModal({
   team,
@@ -50,8 +51,11 @@ export default function TeamSettingsModal({
         </div>
 
         {isOwner ? (
-          <div
-            className={`mt-7 overflow-hidden rounded-[1.4rem] border ${theme.softSurface}`}
+          <Panel
+            theme={theme}
+            radius="soft"
+            padding="none"
+            className="mt-7 overflow-hidden"
           >
             <SettingsItem
               label="Modifica identità della squadra"
@@ -83,11 +87,9 @@ export default function TeamSettingsModal({
               theme={theme}
               isDark={isDark}
             />
-          </div>
+          </Panel>
         ) : (
-          <div
-            className={`mt-7 rounded-[1.4rem] border p-4 ${theme.softSurface}`}
-          >
+          <Panel theme={theme} radius="soft" className="mt-7">
             <p className={`text-sm font-bold ${theme.primaryText}`}>
               Sei un membro della squadra
             </p>
@@ -96,7 +98,7 @@ export default function TeamSettingsModal({
               Le funzioni di gestione sono disponibili soltanto al proprietario.
               Puoi comunque abbandonare la squadra.
             </p>
-          </div>
+          </Panel>
         )}
 
         <button

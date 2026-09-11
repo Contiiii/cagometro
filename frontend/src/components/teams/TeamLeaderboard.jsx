@@ -3,11 +3,13 @@ import { ChevronRight, Crown, Medal, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { getAvatarGradient, getInitials } from "../../utils/avatar";
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 import { useTeamSelection } from "../../hooks/useTeamSelection";
 
 import Card from "../ui/Card";
 import IconTile from "../ui/IconTile";
+import Section from "../ui/Section";
+import SectionHeader from "../ui/SectionHeader";
 
 function getRankStyle(rank, isDark) {
   if (rank === 1) {
@@ -94,34 +96,32 @@ export default function TeamLeaderboard({
   }, [leaderboard, rankingMode]);
 
   return (
-    <section className="mx-auto mt-7 max-w-3xl">
-      <div className="flex items-end justify-between gap-4">
-        <h2
-          className={`text-2xl font-black tracking-[-0.055em] ${theme.primaryText}`}
-        >
-          La classifica
-        </h2>
+    <Section spacing="md">
+      <SectionHeader
+        title="La classifica"
+        theme={theme}
+        aside={
+          <div className={`flex rounded-xl border p-1 ${theme.softSurface}`}>
+            <RankingButton
+              active={rankingMode === "week"}
+              onClick={() => onRankingChange("week")}
+              isDark={isDark}
+              theme={theme}
+            >
+              Settimana
+            </RankingButton>
 
-        <div className={`flex rounded-xl border p-1 ${theme.softSurface}`}>
-          <RankingButton
-            active={rankingMode === "week"}
-            onClick={() => onRankingChange("week")}
-            isDark={isDark}
-            theme={theme}
-          >
-            Settimana
-          </RankingButton>
-
-          <RankingButton
-            active={rankingMode === "all"}
-            onClick={() => onRankingChange("all")}
-            isDark={isDark}
-            theme={theme}
-          >
-            Storico
-          </RankingButton>
-        </div>
-      </div>
+            <RankingButton
+              active={rankingMode === "all"}
+              onClick={() => onRankingChange("all")}
+              isDark={isDark}
+              theme={theme}
+            >
+              Storico
+            </RankingButton>
+          </div>
+        }
+      />
 
       <Card theme={theme} radius="panel" padding="none" className="mt-4">
         {ranking.length === 0 ? (
@@ -307,7 +307,7 @@ export default function TeamLeaderboard({
           })
         )}
       </Card>
-    </section>
+    </Section>
   );
 }
 

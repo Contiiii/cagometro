@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 
 import {
   getShownAchievements,
@@ -11,21 +11,10 @@ import {
 } from "../config/achievements.js";
 
 export function useAchievements() {
-  const timerRef = useRef(null);
-
   const [achievementQueue, setAchievementQueue] = useState([]);
 
   const unlockedAchievement =
     achievementQueue[0] ?? null;
-
-  // Cleanup del timer al dismount del componente che usa l'hook
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, []);
 
   function checkAchievements(
     total,

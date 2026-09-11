@@ -4,6 +4,13 @@ export const APP_VERSION = "1.9.0";
 
 export const RELEASE_FEATURES = [
   {
+    id: "teams-0",
+    title: "Aggiunta schermata di login!",
+    description:
+      "E' stata aggiunta una nuova schermata per il login!",
+    icon: UsersRound,
+  },
+  {
     id: "teams-1",
     title: "Nuova classifica!",
     description:
@@ -22,6 +29,13 @@ export const RELEASE_FEATURES = [
     title: "Schermata di accesso da link!",
     description:
       "Nuova schermata di accesso al teams quando si entra con il link! e aggiunta opzione per disattivare il codice di invito",
+    icon: UsersRound,
+  },
+    {
+    id: "teams-4",
+    title: "Nuova card spiegazione quando si crea una squadra!",
+    description:
+      "Nuova schermata che ti spiega come funzionano le squadre non appena ne crei una!",
     icon: UsersRound,
   },
   {

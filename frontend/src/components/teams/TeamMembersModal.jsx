@@ -3,8 +3,9 @@ import { Crown } from "lucide-react";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
+import Panel from "../ui/Panel";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 
 import { getAvatarGradient, getInitials } from "../../utils/avatar";
 
@@ -63,10 +64,7 @@ export default function TeamMembersModal({
             );
 
             return (
-              <div
-                key={member.user_id}
-                className={`rounded-2xl border p-4 ${theme.softSurface}`}
-              >
+              <Panel theme={theme} key={member.user_id}>
                 <div className="flex items-center gap-3">
                   <div
                     className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${getAvatarGradient(
@@ -146,7 +144,7 @@ export default function TeamMembersModal({
                       </button>
                     </div>
                   )}
-              </div>
+              </Panel>
             );
           })}
         </div>

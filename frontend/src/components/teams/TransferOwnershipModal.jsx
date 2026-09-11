@@ -3,8 +3,9 @@ import { Crown } from "lucide-react";
 
 import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
+import Panel from "../ui/Panel";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 
 import { getAvatarGradient, getInitials } from "../../utils/avatar";
 
@@ -61,10 +62,7 @@ export default function TransferOwnershipModal({
         ) : (
           <div className="mt-6 max-h-[60vh] space-y-3 overflow-y-auto overscroll-contain pr-1">
             {candidates.map((member) => (
-              <div
-                key={member.user_id}
-                className={`rounded-2xl border p-4 ${theme.softSurface}`}
-              >
+              <Panel theme={theme} key={member.user_id}>
                 <div className="flex items-center gap-3">
                   <div
                     className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${getAvatarGradient(
@@ -92,7 +90,7 @@ export default function TransferOwnershipModal({
                   <Crown className="h-4 w-4" strokeWidth={2.2} />
                   Rendi proprietario
                 </button>
-              </div>
+              </Panel>
             ))}
           </div>
         )}

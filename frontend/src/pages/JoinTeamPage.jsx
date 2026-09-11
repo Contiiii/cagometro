@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import {
   getTeamInvitePreview,
   joinTeam,
+  createTeamActivity,
 } from "../services/teamService";
 import { useTeam } from "../hooks/useTeam";
 
@@ -12,12 +13,7 @@ export default function JoinTeamPage() {
   const { code } = useParams();
   const navigate = useNavigate();
 
-  const {
-    refreshTeam,
-    refreshMembers,
-    refreshLeaderboard,
-    refreshActivity,
-  } = useTeam();
+  const { refreshDashboard } = useTeam();
 
   const [inviteTeam, setInviteTeam] = useState(null);
   const [previewStatus, setPreviewStatus] = useState("loading");
@@ -122,23 +118,27 @@ export default function JoinTeamPage() {
 
     setJoinStatus("success");
 
-    const refreshResults = await Promise.allSettled([
-      refreshTeam(),
-      refreshMembers(),
-      refreshLeaderboard(),
-      refreshActivity(),
-    ]);
+    try {
+      await createTeamActivity("member_joined");
+    } catch (error) {
+      console.error(
+        "Ingresso riuscito, ma registrazione attività fallita:",
+        error,
+      );
+    }
 
-    const hasRefreshFailure = refreshResults.some(
-      (result) => result.status === "rejected",
-    );
+    try {
+      const result = await refreshDashboard();
 
-    if (hasRefreshFailure) {
+      if (result?.hasErrors) {
+        toast.error(
+          "Sei entrato, ma alcuni dati non sono stati aggiornati.",
+        );
+      }
+    } catch (error) {
       console.error(
         "Ingresso riuscito, ma aggiornamento dati Team non riuscito:",
-        refreshResults
-          .filter((result) => result.status === "rejected")
-          .map((result) => result.reason),
+        error,
       );
 
       toast.error(

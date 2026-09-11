@@ -3,7 +3,7 @@ import { Check, UsersRound, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import useModalFocusTrap from "../../hooks/useModalFocusTrap";
 
-import { useTeamUI } from "../../context/TeamUIContext";
+import { useTeamUI } from "../../hooks/useTeamUI";
 
 export default function CreateTeamModal({
   open,
@@ -108,8 +108,7 @@ export default function CreateTeamModal({
         setAccent("pink");
         onClose();
       }, 900);
-    } catch (error) {
-      console.error("Errore durante la creazione della squadra:", error);
+    } catch {
       setSubmitting(false);
       setJustCreated(false);
     }
