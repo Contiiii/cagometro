@@ -10,12 +10,15 @@ import StreakCard from "../components/home/StreakCard.jsx";
 import DailyCounter from "../components/home/DailyCounter.jsx";
 import PoopButton from "../components/home/PoopButton.jsx";
 import UndoButton from "../components/home/UndoButton.jsx";
+import MotivationToast from "../components/home/MotivationToast.jsx";
 import ReleaseNotesModal from "../components/ReleaseNotesModal";
 
 import {
   APP_VERSION,
   RELEASE_FEATURES,
 } from "../config/releaseNotes";
+
+import { pickRandomPhrase } from "../config/motivation";
 
 
 import { useTheme } from "../hooks/useTheme.js";
@@ -60,6 +63,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
+  const [motivationToast, setMotivationToast] = useState(null);
 
   const registerActivity = async () => {
     if (isRegistering || isUndoing) return;
@@ -71,6 +75,11 @@ export default function Home() {
 
       setBurst((current) => current + 1);
       setMessage("Registrazione aggiunta. Missione compiuta.");
+
+      setMotivationToast((prev) => ({
+        id: (prev?.id ?? 0) + 1,
+        phrase: pickRandomPhrase(prev?.phrase),
+      }));
 
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(50);
@@ -256,6 +265,13 @@ export default function Home() {
         open={!!unlockedAchievement}
         onClose={closeAchievement}
         theme={theme}
+        prefersReducedMotion={prefersReducedMotion}
+      />
+
+      <MotivationToast
+        toast={motivationToast}
+        onClose={() => setMotivationToast(null)}
+        isDark={isDark}
         prefersReducedMotion={prefersReducedMotion}
       />
 

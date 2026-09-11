@@ -56,6 +56,34 @@ function getRankStyle(rank, isDark) {
     : "border-zinc-900/[0.08] bg-zinc-900/[0.04] text-zinc-500";
 }
 
+function getPodiumTitle(position) {
+  if (position === 1) {
+    return {
+      title: "Re del WC",
+      emoji: "👑",
+      className: "text-amber-500",
+    };
+  }
+
+  if (position === 2) {
+    return {
+      title: "Maestro dello Sciacquone",
+      emoji: "🥈",
+      className: "text-zinc-400 dark:text-zinc-300",
+    };
+  }
+
+  if (position === 3) {
+    return {
+      title: "Cavaliere della Tazza",
+      emoji: "🥉",
+      className: "text-orange-500 dark:text-orange-300",
+    };
+  }
+
+  return null;
+}
+
 export default function TeamLeaderboard({
   leaderboard = [],
   members = [],
@@ -141,6 +169,7 @@ export default function TeamLeaderboard({
         ) : (
           ranking.map((member, index) => {
             const position = index + 1;
+            const podiumTitle = getPodiumTitle(position);
             const isCurrentUser = member.user_id === currentUserId;
 
             const membership = members.find(
@@ -191,7 +220,7 @@ export default function TeamLeaderboard({
                         duration: 0.24,
                       }
                 }
-                className={`flex min-h-[76px] w-full items-center gap-3 px-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${
+                className={`flex min-h-[82px] w-full items-center gap-3 px-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${
                   isCurrentUser
                     ? isDark
                       ? "bg-pink-500/[0.10]"
@@ -259,18 +288,31 @@ export default function TeamLeaderboard({
                     )}
                   </div>
 
-                  <div
-  className={`mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium ${theme.muted}`}
->
-  <span className="whitespace-nowrap">
-    🔥 {Number(member.current_streak || 0).toLocaleString("it-IT")}{" "}
-    {Number(member.current_streak || 0) === 1 ? "giorno" : "giorni"}
-  </span>
+                  {podiumTitle && (
+                    <p
+                      className={`mt-0.5 truncate text-[11px] font-extrabold ${podiumTitle.className}`}
+                    >
+                      {podiumTitle.emoji} {podiumTitle.title}
+                    </p>
+                  )}
 
-  <span className="whitespace-nowrap">
-    ⭐ {Number(member.xp || 0).toLocaleString("it-IT")} XP
-  </span>
-</div>
+                  <div
+                    className={`mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium ${theme.muted}`}
+                  >
+                    <span className="whitespace-nowrap">
+                      🔥{" "}
+                      {Number(member.current_streak || 0).toLocaleString(
+                        "it-IT",
+                      )}{" "}
+                      {Number(member.current_streak || 0) === 1
+                        ? "giorno"
+                        : "giorni"}
+                    </span>
+
+                    <span className="whitespace-nowrap">
+                      ⭐ {Number(member.xp || 0).toLocaleString("it-IT")} XP
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">

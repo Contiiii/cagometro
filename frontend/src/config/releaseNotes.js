@@ -36,6 +36,13 @@ export const RELEASE_FEATURES = [
     icon: BarChart3,
   },
   {
+    id: "teams",
+    title: "Nuovo design della classifica!",
+    description:
+      "Ora i primi 3 della classifica del proprio team avranno un titolo speciale!",
+    icon: UsersRound,
+  },
+  {
     id: "settings",
     title: "Nuove impostazioni",
     description:
@@ -43,3 +50,11 @@ export const RELEASE_FEATURES = [
     icon: Settings,
   },
 ];
+
+/*{
+    id: "reports",
+    title: "Nuovo Popup!",
+    description:
+      "Nuovo popup motivazionale ad ogni registrazione!",
+    icon: BarChart3,
+  }, */
