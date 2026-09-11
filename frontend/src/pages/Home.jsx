@@ -2,15 +2,15 @@ import { useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
 import AchievementUnlockModal from "../components/achievements/AchievementUnlockModal";
-import CloudBackupWarning from "../components/CloudBackupWarning.jsx";
+import CloudBackupWarning from "../components/CloudBackupWarning";
 
-import Header from "../components/Header.jsx";
-import BottomNav from "../components/BottomNav.jsx";
-import StreakCard from "../components/home/StreakCard.jsx";
-import DailyCounter from "../components/home/DailyCounter.jsx";
-import PoopButton from "../components/home/PoopButton.jsx";
-import UndoButton from "../components/home/UndoButton.jsx";
-import MotivationToast from "../components/home/MotivationToast.jsx";
+import Header from "../components/Header";
+import BottomNav from "../components/BottomNav";
+import StreakCard from "../components/home/StreakCard";
+import DailyCounter from "../components/home/DailyCounter";
+import PoopButton from "../components/home/PoopButton";
+import UndoButton from "../components/home/UndoButton";
+import MotivationToast from "../components/home/MotivationToast";
 import ReleaseNotesModal from "../components/ReleaseNotesModal";
 
 import {

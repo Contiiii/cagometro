@@ -87,30 +87,30 @@ export default function CagometroTeams() {
   const [leaving, setLeaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
 
   function openConfirm(config) {
     setConfirmConfig(config);
-    setConfirmOpen(true);
   }
 
- const totalWeekly = useMemo(
-  () => leaderboard.reduce(
-    (total, member) => total + Number(member.weekly_total || 0),
-    0,
-  ),
-  [leaderboard],
-);
+  const totalWeekly = useMemo(
+    () =>
+      leaderboard.reduce(
+        (total, member) => total + Number(member.weekly_total || 0),
+        0,
+      ),
+    [leaderboard],
+  );
 
-const totalLifetime = useMemo(
-  () => leaderboard.reduce(
-    (total, member) => total + Number(member.lifetime_total || 0),
-    0,
-  ),
-  [leaderboard],
-);
+  const totalLifetime = useMemo(
+    () =>
+      leaderboard.reduce(
+        (total, member) => total + Number(member.lifetime_total || 0),
+        0,
+      ),
+    [leaderboard],
+  );
 
   const weeklyGoal = 140;
 
@@ -223,19 +223,13 @@ const totalLifetime = useMemo(
         accent: payload.accent,
       });
 
-      await Promise.all([
-        refreshTeam(),
-        refreshMembers(),
-        refreshLeaderboard(),
-        refreshActivity(),
-      ]);
+      // Solo team e members (leaderboard e activity non esistono ancora)
+      await Promise.all([refreshTeam(), refreshMembers()]);
 
       toast.success("Squadra creata");
     } catch (error) {
       console.error("Errore durante la creazione della squadra:", error);
-
       toast.error(error?.message || "Non è stato possibile creare la squadra");
-
       throw error;
     }
   }
@@ -244,38 +238,27 @@ const totalLifetime = useMemo(
     await joinTeam(code);
     await createTeamActivity("member_joined");
 
-    await Promise.all([
-      refreshTeam(),
-      refreshMembers(),
-      refreshLeaderboard(),
-      refreshActivity(),
-    ]);
+    // Team, members e leaderboard (activity opzionale)
+    await Promise.all([refreshTeam(), refreshMembers(), refreshLeaderboard()]);
 
     toast.success("Sei entrato nella squadra");
   }
 
-  const isOwner = useMemo(
-  () => team?.role === "owner",
-  [team?.role],
-);
+  const isOwner = useMemo(() => team?.role === "owner", [team?.role]);
 
   const activeMembers = useMemo(
-  () => members.filter(
-    (member) => !member.left_at && !member.removed_at,
-  ),
-  [members],
-);
+    () => members.filter((member) => !member.left_at && !member.removed_at),
+    [members],
+  );
 
   const isLastMember = isOwner && activeMembers.length === 1;
 
   function handleLeaveTeam() {
     openConfirm({
       title: isLastMember ? "Sciogli squadra" : "Lascia squadra",
-
       description: isLastMember
         ? "Sei l'unico membro della squadra. Abbandonandola la squadra verrà eliminata definitivamente."
         : "Vuoi davvero lasciare la squadra?",
-
       confirmText: isLastMember ? "Sciogli squadra" : "Lascia",
       variant: "danger",
       onConfirm: async () => {
@@ -290,12 +273,8 @@ const totalLifetime = useMemo(
           setSettingsOpen(false);
           setMembersOpen(false);
 
-          await Promise.all([
-            refreshTeam(),
-            refreshMembers(),
-            refreshLeaderboard(),
-            refreshActivity(),
-          ]);
+          // Solo team (stai uscendo, non serve refresh completo)
+          await refreshTeam();
 
           toast.success(
             isLastMember
@@ -327,10 +306,10 @@ const totalLifetime = useMemo(
             target_display_name: member.display_name,
           });
 
+          // Team (ruolo cambiato), members, activity
           await Promise.all([
             refreshTeam(),
             refreshMembers(),
-            refreshLeaderboard(),
             refreshActivity(),
           ]);
 
@@ -362,6 +341,7 @@ const totalLifetime = useMemo(
             target_display_name: member.display_name,
           });
 
+          // Members, leaderboard, activity (team non cambia)
           await Promise.all([
             refreshMembers(),
             refreshLeaderboard(),
@@ -391,7 +371,7 @@ const totalLifetime = useMemo(
       variant: "warning",
       onConfirm: async () => {
         await regenerateInviteCode();
-        await refreshTeam();
+        await refreshTeam(); // Solo team (cambia solo invite_code)
 
         toast.success("Nuovo codice invito generato");
       },
@@ -408,7 +388,7 @@ const totalLifetime = useMemo(
 
     try {
       await toggleTeamInvites(nextEnabled);
-      await refreshTeam();
+      await refreshTeam(); // Solo team (cambia solo invites_enabled)
 
       toast.success(
         nextEnabled
@@ -454,39 +434,56 @@ const totalLifetime = useMemo(
                 storia condivisa.
               </p>
 
-              <h1
-                className={`mt-3 max-w-md text-[clamp(2.2rem,8vw,4rem)] font-black leading-[0.95] tracking-[-0.065em] ${theme.primaryText}`}
-              >
-                Da soli è un dato.
-                <br />
-                Insieme è una <span className="text-pink-500">leggenda.</span>
-              </h1>
+              <div className={`mt-6 grid gap-3 text-sm ${theme.muted}`}>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
+                    <span className="text-[10px] font-bold">✓</span>
+                  </div>
+                  <span>Confronta i progressi con gli amici</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
+                    <span className="text-[10px] font-bold">✓</span>
+                  </div>
+                  <span>Sblocca traguardi e sali in classifica</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
+                    <span className="text-[10px] font-bold">✓</span>
+                  </div>
+                  <span>Crea o unisciti in pochi secondi</span>
+                </div>
+              </div>
 
-              <div className="mt-9 grid gap-3 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setCreateOpen(true)}
-                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.24)] transition-transform hover:bg-pink-400 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
-                >
-                  <Plus className="h-5 w-5" strokeWidth={2.5} />
-                  Crea una squadra
-                </button>
+              <div className="mt-9 grid gap-4 sm:grid-cols-2">
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setCreateOpen(true)}
+                    className="w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.24)] transition-transform hover:bg-pink-400 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+                  >
+                    <Plus className="h-5 w-5" strokeWidth={2.5} />
+                    Crea una squadra
+                  </button>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => setJoinOpen(true)}
-                  className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 ${theme.secondary} ${theme.focusOffset}`}
-                >
-                  <Link className="h-5 w-5" strokeWidth={2.2} />
-                  Entra con un codice
-                </button>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setJoinOpen(true)}
+                    className={`w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 ${theme.secondary} ${theme.focusOffset}`}
+                  >
+                    <Link className="h-5 w-5" strokeWidth={2.2} />
+                    Entra con un codice
+                  </button>
+                </div>
               </div>
 
               <div
                 className={`mt-7 flex items-center gap-2 text-xs font-semibold ${theme.muted}`}
               >
                 <Wifi className="h-4 w-4 text-emerald-500" strokeWidth={2.2} />
-                Le squadre si aggiornano in tempo reale.
+                Aggiornamento in tempo reale
               </div>
             </div>
           </section>
@@ -532,7 +529,7 @@ const totalLifetime = useMemo(
           membersCount={members.length}
           totalLifetime={totalLifetime}
           currentUserPosition={currentUserPosition}
-          inviteEnabled={Boolean(inviteCode) && invitesEnabled}
+          invitesEnabled={Boolean(inviteCode) && invitesEnabled}
           theme={theme}
           isDark={isDark}
           onOpenSettings={() => setSettingsOpen(true)}
@@ -672,9 +669,8 @@ const totalLifetime = useMemo(
 
       <Suspense fallback={null}>
         <ConfirmModal
-          open={confirmOpen}
+          open={!!confirmConfig}
           onClose={() => {
-            setConfirmOpen(false);
             setConfirmConfig(null);
           }}
           title={confirmConfig?.title}
@@ -686,7 +682,6 @@ const totalLifetime = useMemo(
           isDanger={confirmConfig?.variant === "danger"}
         />
       </Suspense>
-
     </div>
   );
 }

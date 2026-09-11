@@ -5,7 +5,7 @@ export default function TeamHeroCard({
   membersCount,
   totalLifetime,
   currentUserPosition,
-  inviteEnabled,
+   invitesEnabled,
   theme,
   isDark,
   onOpenSettings,
@@ -88,7 +88,7 @@ export default function TeamHeroCard({
     type="button"
     onClick={onOpenInvite}
     aria-label="Invita un membro"
-    disabled={!inviteEnabled}
+     disabled={!invitesEnabled}
     className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(236,72,153,0.22)] transition hover:bg-pink-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40 sm:px-4"
   >
     <UserPlus
