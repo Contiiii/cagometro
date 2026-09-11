@@ -180,6 +180,7 @@ export default function CagometroReport() {
           />
 
           <ReportSummaryCard
+            period={period}
             bestLabel={bestLabel}
             bestPoint={bestPoint}
             report={report}

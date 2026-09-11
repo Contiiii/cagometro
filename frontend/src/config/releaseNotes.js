@@ -18,7 +18,14 @@ export const RELEASE_FEATURES = [
     id: "reports",
     title: "Share eport migliorati",
     description:
-      "Nuovo design per lo shere dei report!",
+      "Nuovo design per lo shere dei report! e nuove animazioni per gli achievements",
+    icon: BarChart3,
+  },
+  {
+    id: "reports",
+    title: "periodo in tre righe",
+    description:
+      "Nuovo design per la sezione periodo in tre righe!",
     icon: BarChart3,
   },
   {
