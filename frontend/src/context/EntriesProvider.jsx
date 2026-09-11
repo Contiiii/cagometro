@@ -41,7 +41,54 @@ export function EntriesProvider({ children }) {
 
   const [pendingChanges, setPendingChanges] = useState([]);
 
-  const [today] = useState(() => getLocalDateKey());
+  const [today, setToday] = useState(() => getLocalDateKey());
+
+  useEffect(() => {
+    let timerId = null;
+
+    function refreshToday() {
+      setToday(getLocalDateKey());
+    }
+
+    function scheduleNextMidnight() {
+      const now = new Date();
+
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 0);
+
+      timerId = window.setTimeout(() => {
+        refreshToday();
+        scheduleNextMidnight();
+      }, nextMidnight.getTime() - now.getTime());
+    }
+
+    scheduleNextMidnight();
+
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        refreshToday();
+      }
+    }
+
+    function handleFocus() {
+      refreshToday();
+    }
+
+    function handleOnline() {
+      refreshToday();
+    }
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.clearTimeout(timerId);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
 
   const flushPendingChanges = useCallback(
     async (changes = pendingChanges) => {

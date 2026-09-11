@@ -35,7 +35,7 @@ const NAV_ITEMS = [
   },
   {
     label: "Traguardi",
-    path: "/Achievements",
+    path: "/achievements",
     icon: Trophy,
   },
 ];

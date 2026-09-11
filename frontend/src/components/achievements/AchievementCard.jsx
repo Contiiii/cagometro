@@ -8,6 +8,7 @@ export default function AchievementCard({
   isDark,
   accentStyles,
   prefersReducedMotion,
+  animateEntrance = true,
   onClick,
 }) {
   const icon = achievement.icon;
@@ -24,23 +25,28 @@ export default function AchievementCard({
 
   return (
     <motion.button
-      layout
       type="button"
       onClick={onClick}
       initial={
         prefersReducedMotion
           ? false
-          : { opacity: 0, y: 12 }
+          : animateEntrance
+            ? { opacity: 0, y: 12 }
+            : { opacity: 0 }
       }
       animate={{ opacity: 1, y: 0 }}
-      exit={
-        prefersReducedMotion
-          ? { opacity: 0 }
-          : { opacity: 0, scale: 0.97 }
-      }
+      exit={{ opacity: 0 }}
       transition={{
-        duration: prefersReducedMotion ? 0 : 0.24,
-        delay: prefersReducedMotion ? 0 : index * 0.035,
+        duration: prefersReducedMotion
+          ? 0
+          : animateEntrance
+            ? 0.24
+            : 0.18,
+        delay: prefersReducedMotion
+          ? 0
+          : animateEntrance
+            ? index * 0.035
+            : 0,
       }}
       className={`group overflow-hidden rounded-[1.75rem] border p-4 text-left transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${theme.surface}`}
     >

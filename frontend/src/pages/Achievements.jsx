@@ -42,11 +42,18 @@ export default function Achievements() {
   });
   const [activeFilter, setActiveFilter] = useState("Tutti");
   const [selectedAchievement, setSelectedAchievement] = useState(null);
+  const [animateEntrance, setAnimateEntrance] = useState(true);
 
   const switchSection = (nextSection) => {
     setSection(nextSection);
     localStorage.setItem("achievements-section", nextSection);
     setActiveFilter("Tutti");
+    setAnimateEntrance(false);
+  };
+
+  const changeFilter = (filter) => {
+    setActiveFilter(filter);
+    setAnimateEntrance(false);
   };
 
   const {
@@ -142,12 +149,12 @@ export default function Achievements() {
             <AchievementFilters
               filters={filters}
               activeFilter={activeFilter}
-              setActiveFilter={setActiveFilter}
+              setActiveFilter={changeFilter}
               theme={theme}
             />
           </div>
 
-          <motion.div layout className="mt-5 grid gap-3 md:grid-cols-2">
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
             <AnimatePresence mode="popLayout">
               {filteredAchievements.map((achievement, index) => (
                 <AchievementCard
@@ -158,11 +165,12 @@ export default function Achievements() {
                   isDark={isDark}
                   accentStyles={accentStyles}
                   prefersReducedMotion={prefersReducedMotion}
+                  animateEntrance={animateEntrance}
                   onClick={() => setSelectedAchievement(achievement)}
                 />
               ))}
             </AnimatePresence>
-          </motion.div>
+          </div>
         </section>
       </main>
 

@@ -4,7 +4,7 @@ import {
   UsersRound,
 } from "lucide-react";
 
-export const APP_VERSION = "1.8.2";
+export const APP_VERSION = "1.8.3";
 
 export const RELEASE_FEATURES = [
   {
@@ -16,9 +16,9 @@ export const RELEASE_FEATURES = [
   },
   {
     id: "reports",
-    title: "Report migliorati",
+    title: "Share eport migliorati",
     description:
-      "Nuove metriche, streak e confronti più chiari tra i diversi periodi.",
+      "Nuovo design per lo shere dei report!",
     icon: BarChart3,
   },
   {
