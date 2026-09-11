@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import {
   getShownAchievements,
@@ -11,13 +11,21 @@ import {
 } from "../config/achievements.js";
 
 export function useAchievements() {
-  const [
-    achievementQueue,
-    setAchievementQueue,
-  ] = useState([]);
+  const timerRef = useRef(null);
+
+  const [achievementQueue, setAchievementQueue] = useState([]);
 
   const unlockedAchievement =
     achievementQueue[0] ?? null;
+
+  // Cleanup del timer al dismount del componente che usa l'hook
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   function checkAchievements(
     total,
@@ -64,13 +72,12 @@ export function useAchievements() {
       updatedShownAchievements,
     );
 
-setAchievementQueue(
-  (currentQueue) => [
-    ...currentQueue,
-    ...newAchievements,
-  ],
-);
-    
+    setAchievementQueue(
+      (currentQueue) => [
+        ...currentQueue,
+        ...newAchievements,
+      ],
+    );
   }
 
   function resetLockedAchievements(
@@ -112,7 +119,8 @@ setAchievementQueue(
       updatedShownAchievements,
     );
   }
-function closeAchievement() {
+
+  function closeAchievement() {
     setAchievementQueue(
       (currentQueue) =>
         currentQueue.slice(1),

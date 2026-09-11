@@ -47,12 +47,6 @@ export default function ReportShareModal({
       ? "Registrazioni del mese"
       : "Totale registrazioni";
 
-  const shareText = isWeekReport
-    ? `Report settimanale · ${todayRegistrations} registrazioni oggi · miglior giorno: ${bestPoint?.date ?? "—"} (${bestPoint?.value ?? 0})`
-    : isMonthReport
-      ? `Report mensile · ${total} registrazioni · streak attuale: ${report.streak} giorni · miglior streak del mese: ${report.bestMonthStreak ?? 0} g · miglior giorno: ${bestPoint?.date ?? "—"} (${bestPoint?.value ?? 0})`
-      : `Report ${report.label} · ${total} registrazioni`;
-
   const isDarkCard = resolvedTheme === "dark";
 
   const exportCardClass = isDarkCard
@@ -77,105 +71,47 @@ export default function ReportShareModal({
 
   const [isSharing, setIsSharing] = useState(false);
 
-  async function handleShareCard() {
-    if (isSharing) return;
+async function handleShareCard() {
+  if (isSharing) return;
 
-    setIsSharing(true);
+  setIsSharing(true);
 
-    try {
-      if (!cardRef.current) return;
-
-      const blob = await withTimeout(
-        toBlob(cardRef.current, {
-          cacheBust: true,
-          pixelRatio: 2,
-          skipFonts: true,
-          backgroundColor: isDarkCard ? "#18181b" : "#fffaf8",
-        }),
-        20000,
-        "Timeout durante la generazione dell'immagine",
-      );
-
-      if (!blob) {
-        throw new Error("Impossibile generare l'immagine");
-      }
-
-      const file = new File([blob], "cagometro-report.png", {
-        type: "image/png",
-        lastModified: Date.now(),
-      });
-
-      const shareData = {
-        title: "Cagometro Report",
-        text: shareText,
-        files: [file],
-      };
-
-      if (
-        window.isSecureContext &&
-        navigator.share &&
-        navigator.canShare &&
-        navigator.canShare({ files: [file] })
-      ) {
-        await withTimeout(
-          navigator.share(shareData),
-          60000,
-          "Timeout durante la condivisione",
-        );
-        return;
-      }
-
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "cagometro-report.png";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-
-      alert(
-        "La condivisione nativa non è disponibile qui: ho scaricato l'immagine.",
-      );
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-
-      console.error("Errore durante la condivisione della card:", error);
-
-      try {
-        if (!cardRef.current) return;
-
-        const blob = await withTimeout(
-          toBlob(cardRef.current, {
-            cacheBust: true,
-            pixelRatio: 2,
-            skipFonts: true,
-            backgroundColor: isDarkCard ? "#18181b" : "#fffaf8",
-          }),
-          20000,
-          "Timeout durante la generazione dell'immagine",
-        );
-
-        if (!blob) return;
-
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "cagometro-report.png";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
-
-        alert("Condivisione non riuscita: immagine scaricata.");
-      } catch (fallbackError) {
-        console.error("Errore anche nel fallback download:", fallbackError);
-        alert("Non sono riuscito né a condividere né a scaricare l'immagine.");
-      }
-    } finally {
-      setIsSharing(false);
+  try {
+    if (!cardRef.current) {
+      return;
     }
+
+    const blob = await withTimeout(
+      toBlob(cardRef.current, {
+        pixelRatio: 1,
+        skipFonts: true,
+        backgroundColor: isDarkCard ? "#18181b" : "#fffaf8",
+      }),
+      15000,
+      "Timeout durante la generazione dell'immagine",
+    );
+
+    if (!blob) {
+      throw new Error("Impossibile generare l'immagine");
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "cagometro-report.png";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+  } catch (error) {
+    console.error("Errore durante la condivisione della card:", error);
+  } finally {
+    setIsSharing(false);
   }
+}
 
   return (
     <AnimatePresence>
@@ -246,17 +182,6 @@ export default function ReportShareModal({
                 className={`mt-1 overflow-hidden rounded-[1.8rem] border ${exportCardClass}`}
               >
                 <div className="relative p-5">
-                  <div
-                    className={`pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full blur-3xl ${
-                      isDarkCard ? "bg-pink-500/14" : "bg-pink-500/10"
-                    }`}
-                  />
-                  <div
-                    className={`pointer-events-none absolute bottom-0 left-0 h-20 w-20 rounded-full blur-3xl ${
-                      isDarkCard ? "bg-amber-400/12" : "bg-amber-400/10"
-                    }`}
-                  />
-
                   <div className="relative flex items-start justify-between gap-3">
                     <div>
                       <div
@@ -294,7 +219,9 @@ export default function ReportShareModal({
                     </p>
                   </div>
 
-                  <div className={`mt-5 grid gap-3 ${isMonthReport ? "grid-cols-3" : "grid-cols-2"}`}>
+                  <div
+                    className={`mt-5 grid gap-3 ${isMonthReport ? "grid-cols-3" : "grid-cols-2"}`}
+                  >
                     <div
                       className={`rounded-2xl border p-3 ${exportPanelClass}`}
                     >
@@ -349,7 +276,9 @@ export default function ReportShareModal({
                   <div
                     className={`mt-5 rounded-2xl border px-4 py-3 ${exportPanelClass}`}
                   >
-                    <p className={`text-xs leading-relaxed ${exportMutedClass}`}>
+                    <p
+                      className={`text-xs leading-relaxed ${exportMutedClass}`}
+                    >
                       {bestPointLabel}:{" "}
                       <span className={`font-extrabold ${exportStrongClass}`}>
                         {bestPoint?.date ?? "—"}

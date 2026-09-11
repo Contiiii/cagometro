@@ -9,6 +9,9 @@ export default function TeamSettingsModal({
   isDark,
   prefersReducedMotion,
   leaving,
+  invitesEnabled,
+  togglingInvites,
+  onToggleInvites,
   onClose,
   onEdit,
   onManageMembers,
@@ -66,6 +69,14 @@ export default function TeamSettingsModal({
               isDark={isDark}
               withBorder
             />
+
+            <InvitesToggleItem
+              checked={invitesEnabled}
+              disabled={togglingInvites}
+              onChange={onToggleInvites}
+              theme={theme}
+              isDark={isDark}
+            />
           </div>
         ) : (
           <div
@@ -119,5 +130,63 @@ function SettingsItem({ label, onClick, theme, isDark, withBorder = false }) {
         strokeWidth={2.2}
       />
     </button>
+  );
+}
+
+function InvitesToggleItem({ checked, disabled, onChange, theme, isDark }) {
+  const hoverClass = isDark
+    ? "hover:bg-white/[0.05]"
+    : "hover:bg-zinc-900/[0.04]";
+
+  return (
+    <label
+      className={`flex min-h-14 w-full select-none items-center justify-between gap-3 border-t px-4 py-2 transition-colors ${hoverClass} ${
+        isDark
+          ? "border-white/[0.07]"
+          : "border-zinc-900/[0.07]"
+      } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+    >
+      <span className="min-w-0">
+        <span className={`block text-sm font-bold ${theme.primaryText}`}>
+          Consenti nuovi inviti
+        </span>
+
+        <span
+          className={`mt-0.5 block truncate text-xs font-medium ${theme.muted}`}
+        >
+          {checked
+            ? "Chiunque abbia il codice può entrare"
+            : "Inviti disabilitati, nessun nuovo ingresso"}
+        </span>
+      </span>
+
+      <input
+        type="checkbox"
+        role="switch"
+        aria-checked={checked}
+        aria-label="Consenti nuovi inviti"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+        className="peer sr-only"
+      />
+
+      <span
+        aria-hidden="true"
+        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-pink-500/70 ${
+          checked
+            ? "bg-pink-600"
+            : isDark
+              ? "bg-zinc-700"
+              : "bg-zinc-300"
+        }`}
+      >
+        <span
+          className={`absolute top-1 left-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+            checked ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </span>
+    </label>
   );
 }

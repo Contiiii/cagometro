@@ -32,6 +32,7 @@ import {
   transferOwnership,
   removeTeamMember,
   regenerateInviteCode,
+  toggleTeamInvites,
 } from "../services/teamService";
 
 export default function CagometroTeams() {
@@ -57,6 +58,18 @@ export default function CagometroTeams() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [invitesToggling, setInvitesToggling] = useState(false);
+  const [invitesEnabled, setInvitesEnabled] = useState(() => team?.invites_enabled !== false);
+  const [previousServerInvitesEnabled, setPreviousServerInvitesEnabled] =
+    useState(team?.invites_enabled);
+
+  if (team?.invites_enabled !== previousServerInvitesEnabled) {
+    setPreviousServerInvitesEnabled(team?.invites_enabled);
+
+    if (typeof team?.invites_enabled === "boolean") {
+      setInvitesEnabled(team.invites_enabled);
+    }
+  }
   const [joinOpen, setJoinOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -355,6 +368,36 @@ export default function CagometroTeams() {
     });
   }
 
+  async function handleToggleInvites(nextEnabled) {
+    if (invitesToggling) return;
+
+    const previousEnabled = invitesEnabled;
+
+    setInvitesEnabled(nextEnabled);
+    setInvitesToggling(true);
+
+    try {
+      await toggleTeamInvites(nextEnabled);
+      await refreshTeam();
+
+      toast.success(
+        nextEnabled
+          ? "Inviti riabilitati: il codice è di nuovo attivo"
+          : "Inviti disabilitati",
+      );
+    } catch (error) {
+      console.error("Errore aggiornamento stato inviti:", error);
+
+      setInvitesEnabled(previousEnabled);
+
+      toast.error(
+        "Non è stato possibile aggiornare lo stato degli inviti",
+      );
+    } finally {
+      setInvitesToggling(false);
+    }
+  }
+
   const totalLifetime = leaderboard.reduce(
     (total, member) => total + Number(member.lifetime_total || 0),
     0,
@@ -462,7 +505,7 @@ export default function CagometroTeams() {
           membersCount={members.length}
           totalLifetime={totalLifetime}
           currentUserPosition={currentUserPosition}
-          inviteEnabled={Boolean(inviteCode)}
+          inviteEnabled={Boolean(inviteCode) && invitesEnabled}
           theme={theme}
           isDark={isDark}
           onOpenSettings={() => setSettingsOpen(true)}
@@ -535,6 +578,9 @@ export default function CagometroTeams() {
             isDark={isDark}
             prefersReducedMotion={prefersReducedMotion}
             leaving={leaving}
+            invitesEnabled={invitesEnabled}
+            togglingInvites={invitesToggling}
+            onToggleInvites={handleToggleInvites}
             onClose={() => setSettingsOpen(false)}
             onEdit={() => {
               setSettingsOpen(false);

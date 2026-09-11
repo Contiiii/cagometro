@@ -25,12 +25,9 @@ export async function getMyTeam() {
 }
 
 export async function getTeamInvitePreview(inviteCode) {
-  const { data, error } = await supabase.rpc(
-    "get_team_invite_preview",
-    {
-      p_invite_code: inviteCode,
-    },
-  );
+  const { data, error } = await supabase.rpc("get_team_invite_preview", {
+    p_invite_code: inviteCode,
+  });
 
   if (error) {
     throw error;
@@ -70,6 +67,10 @@ export async function getTeamMembers() {
 }
 
 export async function transferOwnership(newOwnerUserId) {
+  if (!newOwnerUserId) {
+    throw new Error("Seleziona un membro a cui trasferire la proprietà.");
+  }
+
   const { error } = await supabase.rpc("transfer_ownership", {
     new_owner_user_id: newOwnerUserId,
   });

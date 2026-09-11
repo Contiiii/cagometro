@@ -41,7 +41,7 @@ export const RELEASE_FEATURES = [
     id: "teams",
     title: "Schermata di accesso da link!",
     description:
-      "Nuova schermata di accesso al teams quando si entra con il link!!",
+      "Nuova schermata di accesso al teams quando si entra con il link!",
     icon: UsersRound,
   },
   {
@@ -50,11 +50,13 @@ export const RELEASE_FEATURES = [
     description: "Nuovo popup motivazionale ad ogni registrazione!",
     icon: BarChart3,
   },
-  {
+  
+];
+
+/*{
     id: "settings",
     title: "Nuove impostazioni",
     description:
       "Una schermata completamente rinnovata per gestire profilo e stato dell’app.",
     icon: Settings,
-  },
-];
+  }, */
