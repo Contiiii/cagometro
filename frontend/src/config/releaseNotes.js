@@ -38,6 +38,13 @@ export const RELEASE_FEATURES = [
     icon: UsersRound,
   },
   {
+    id: "teams",
+    title: "Schermata di accesso da link!",
+    description:
+      "Nuova schermata di accesso al teams quando si entra con il link!!",
+    icon: UsersRound,
+  },
+  {
     id: "reports",
     title: "Nuovo Popup!",
     description: "Nuovo popup motivazionale ad ogni registrazione!",

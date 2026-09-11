@@ -35,6 +35,8 @@ import { useAuth } from "../hooks/useAuth";
 
 import { useTeam } from "../hooks/useTeam";
 
+import { useTheme } from "../hooks/useTheme";
+
 import { submitFeedback } from "../services/feedbackService";
 import { APP_VERSION } from "../config/releaseNotes";
 
@@ -111,8 +113,8 @@ export default function CagometroSettings() {
 
   const profileInitial = profileName.trim().slice(0, 1).toUpperCase() || "U";
 
-  const [themeMode, setThemeMode] = useState("system");
-  const [systemPrefersDark, setSystemPrefersDark] = useState(true);
+  const { theme: themeMode, setTheme, resolvedTheme } = useTheme();
+
   const [accent, setAccent] = useState("pink");
   const [activeSection, setActiveSection] = useState("system");
 
@@ -149,8 +151,7 @@ export default function CagometroSettings() {
     team: "",
   });
 
-  const resolvedDark =
-    themeMode === "system" ? systemPrefersDark : themeMode === "dark";
+  const resolvedDark = resolvedTheme === "dark";
 
   const accentColor = useMemo(
     () => accentOptions.find((item) => item.id === accent)?.color ?? "#ec4899",
@@ -184,19 +185,6 @@ export default function CagometroSettings() {
         dangerSoft: "border-rose-500/20 bg-rose-500/10 text-rose-600",
         divider: "border-zinc-900/[0.07]",
       };
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const syncSystemTheme = () => {
-      setSystemPrefersDark(media.matches);
-    };
-
-    syncSystemTheme();
-    media.addEventListener("change", syncSystemTheme);
-
-    return () => media.removeEventListener("change", syncSystemTheme);
-  }, []);
 
   useEffect(() => {
     const activeTab = mobileTabButtonsRef.current[activeSection];
@@ -655,7 +643,7 @@ export default function CagometroSettings() {
                   setAccent={setAccent}
                   accentColor={accentColor}
                   themeMode={themeMode}
-                  setThemeMode={setThemeMode}
+                  setTheme={setTheme}
                   vibrationEnabled={vibrationEnabled}
                   setVibrationEnabled={setVibrationEnabled}
                   animationsEnabled={animationsEnabled}
@@ -926,7 +914,7 @@ function AppearancePanel({
   setAccent,
   accentColor,
   themeMode,
-  setThemeMode,
+  setTheme,
   vibrationEnabled,
   setVibrationEnabled,
   animationsEnabled,
@@ -962,7 +950,7 @@ function AppearancePanel({
             <button
               key={option.id}
               type="button"
-              onClick={() => setThemeMode(option.id)}
+              onClick={() => setTheme(option.id)}
               aria-pressed={active}
               className={`min-h-[92px] rounded-[1.25rem] border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
               style={{
@@ -1207,11 +1195,6 @@ function AccountPanel({
         </p>
 
         <div className="mt-3 grid gap-2">
-          <InfoRow
-  label="Versione installata"
-  value="1.8.2"
-  theme={theme}
-/>
           <InfoRow
   label="Versione installata"
   value={APP_VERSION}

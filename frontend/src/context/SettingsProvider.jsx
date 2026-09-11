@@ -60,7 +60,7 @@ export function SettingsProvider({ children }) {
       setSettings((currentSettings) => {
         const updatedSettings = {
           ...currentSettings,
-          value,
+          [settingName]: value,
         };
 
         localStorage.setItem(
