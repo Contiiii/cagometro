@@ -18,8 +18,8 @@ export default function CloudBackupWarning() {
   return (
     <button
       type="button"
-      onClick={() => navigate("/settings")}
-      aria-label="Apri le impostazioni per attivare il backup cloud"
+      onClick={() => navigate("/login")}
+      aria-label="Apri la pagina di accesso per attivare il backup cloud"
       className={`
         mt-4
         flex
@@ -92,7 +92,8 @@ export default function CloudBackupWarning() {
             ${isDark ? "text-zinc-400" : "text-zinc-500"}
           `}
         >
-          Accedi con Google per proteggere e sincronizzare i tuoi progressi.
+          I dati restano su questo dispositivo. Accedi con Google per
+          proteggerli e sincronizzarli.
         </span>
       </span>
 

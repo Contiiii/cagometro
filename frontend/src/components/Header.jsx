@@ -20,7 +20,7 @@ export default function Header({
 
   const { profile } = useProfile();
 
-  const { user, login } = useAuth();
+  const { user } = useAuth();
 
   const isDark = resolvedTheme === "dark";
 
@@ -217,7 +217,7 @@ export default function Header({
           {showSettings && !user && (
             <button
               type="button"
-              onClick={login}
+              onClick={() => navigate("/login")}
               className={`h-11 rounded-2xl border px-4 text-sm font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
                 isDark
                   ? "border-pink-500/20 bg-pink-500/10 text-pink-300"
