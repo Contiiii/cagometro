@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import useModalFocusTrap from "../hooks/useModalFocusTrap";
 import {
   ArrowLeft,
   Bell,
@@ -1511,6 +1512,10 @@ function Field({ label, value, onChange, disabled = false, accentColor }) {
 }
 
 function ModalShell({ title, theme, onClose, prefersReducedMotion, children }) {
+  const dialogRef = useRef(null);
+
+  useModalFocusTrap({ dialogRef, onClose, prefersReducedMotion });
+
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/60 p-3 backdrop-blur-[2px] sm:items-center sm:p-6"
@@ -1523,8 +1528,10 @@ function ModalShell({ title, theme, onClose, prefersReducedMotion, children }) {
       }}
     >
       <motion.section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-labelledby="settings-modal-title"
         initial={
           prefersReducedMotion ? false : { opacity: 0, y: 24, scale: 0.98 }

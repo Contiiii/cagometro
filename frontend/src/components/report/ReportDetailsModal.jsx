@@ -1,5 +1,7 @@
+import { useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import useModalFocusTrap from "../../hooks/useModalFocusTrap";
 
 export default function ReportDetailsModal({
   open,
@@ -9,6 +11,10 @@ export default function ReportDetailsModal({
   theme,
   prefersReducedMotion,
 }) {
+  const dialogRef = useRef(null);
+
+  useModalFocusTrap({ dialogRef, open, onClose, prefersReducedMotion });
+
   return (
     <AnimatePresence>
       {open && (
@@ -25,8 +31,10 @@ export default function ReportDetailsModal({
           }}
         >
           <motion.section
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
+            tabIndex={-1}
             aria-labelledby="report-detail-title"
             initial={
               prefersReducedMotion

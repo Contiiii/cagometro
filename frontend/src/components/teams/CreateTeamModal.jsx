@@ -1,6 +1,7 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { Check, UsersRound, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import useModalFocusTrap from "../../hooks/useModalFocusTrap";
 
 export default function CreateTeamModal({
   open,
@@ -13,8 +14,16 @@ export default function CreateTeamModal({
   const titleId = useId();
   const descriptionId = useId();
 
-  const triggerRef = useRef(null);
+  const dialogRef = useRef(null);
   const nameInputRef = useRef(null);
+
+  useModalFocusTrap({
+    dialogRef,
+    open,
+    onClose: submitting ? undefined : onClose,
+    initialFocusRef: nameInputRef,
+    prefersReducedMotion,
+  });
 
   const [teamName, setTeamName] = useState("");
   const [description, setDescription] = useState("");
@@ -65,41 +74,6 @@ export default function CreateTeamModal({
     violet:
       "bg-violet-500 text-white shadow-[0_12px_30px_rgba(139,92,246,0.28)]",
   };
-
-  useEffect(() => {
-    if (!open) return;
-
-    triggerRef.current = document.activeElement;
-
-    const timeout = window.setTimeout(
-      () => {
-        nameInputRef.current?.focus();
-      },
-      prefersReducedMotion ? 0 : 120,
-    );
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      window.clearTimeout(timeout);
-      document.body.style.overflow = previousOverflow;
-      triggerRef.current?.focus?.();
-    };
-  }, [open, prefersReducedMotion]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape" && !submitting) {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose, submitting]);
 
   const canSubmit = teamName.trim().length >= 3 && !submitting;
 
@@ -159,8 +133,10 @@ export default function CreateTeamModal({
           }}
         >
           <motion.section
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
+            tabIndex={-1}
             aria-labelledby={titleId}
             aria-describedby={descriptionId}
             initial={

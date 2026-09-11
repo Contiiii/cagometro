@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Share2, X } from "lucide-react";
 import { toBlob } from "html-to-image";
 import poopIcon from "../../assets/poop.png";
+import useModalFocusTrap from "../../hooks/useModalFocusTrap";
 
 function withTimeout(promise, ms, message) {
   let timer;
@@ -25,6 +26,7 @@ export default function ReportShareModal({
   resolvedTheme,
 }) {
   const cardRef = useRef(null);
+  const dialogRef = useRef(null);
   const todayRegistrations = todayTotal ?? 0;
   const isWeekReport = period === "week";
   const isMonthReport = period === "month";
@@ -70,6 +72,13 @@ export default function ReportShareModal({
     : "border-pink-500/15 bg-pink-500/10";
 
   const [isSharing, setIsSharing] = useState(false);
+
+  useModalFocusTrap({
+    dialogRef,
+    open,
+    onClose,
+    prefersReducedMotion,
+  });
 
 async function handleShareCard() {
   if (isSharing) return;
@@ -127,8 +136,10 @@ async function handleShareCard() {
           }}
         >
           <motion.section
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
+            tabIndex={-1}
             aria-labelledby="share-report-title"
             initial={
               prefersReducedMotion ? false : { opacity: 0, y: 22, scale: 0.98 }

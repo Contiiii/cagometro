@@ -1,5 +1,7 @@
+import { useRef } from "react";
 import { Check, LockKeyhole, X } from "lucide-react";
 import { motion } from "framer-motion";
+import useModalFocusTrap from "../../hooks/useModalFocusTrap";
 
 export default function AchievementDetailModal({
   achievement,
@@ -9,6 +11,10 @@ export default function AchievementDetailModal({
   prefersReducedMotion,
   onClose,
 }) {
+  const dialogRef = useRef(null);
+
+  useModalFocusTrap({ dialogRef, onClose, prefersReducedMotion });
+
   const icon = achievement.icon;
   const progress = achievement.target
     ? Math.min(
@@ -46,8 +52,10 @@ export default function AchievementDetailModal({
 
   return (
     <motion.section
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
+      tabIndex={-1}
       aria-labelledby="achievement-title"
       initial={prefersReducedMotion ? false : { opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}

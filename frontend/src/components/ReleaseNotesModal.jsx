@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { Check, Sparkles, UsersRound, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import useModalFocusTrap from "../hooks/useModalFocusTrap";
 
 export default function ReleaseNotesModal({
   open,
@@ -10,6 +11,15 @@ export default function ReleaseNotesModal({
   isDark = true,
   prefersReducedMotion = false,
 }) {
+  const dialogRef = useRef(null);
+
+  useModalFocusTrap({
+    dialogRef,
+    open,
+    onClose,
+    prefersReducedMotion,
+  });
+
   const [showAll, setShowAll] = useState(false);
 
   const visibleFeatures = showAll ? features : features.slice(0, 3);
@@ -18,26 +28,6 @@ export default function ReleaseNotesModal({
     features.length - visibleFeatures.length,
     0,
   );
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-
-    const previousOverflow = document.body.style.overflow;
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, onClose]);
-
   const theme = isDark
     ? {
         panel: "border-white/[0.09] bg-[#17171b]",
@@ -72,8 +62,10 @@ export default function ReleaseNotesModal({
           }}
         >
           <motion.section
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
+            tabIndex={-1}
             aria-labelledby="release-notes-title"
             aria-describedby="release-notes-description"
             initial={
