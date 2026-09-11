@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Check, Crown, Lock, Sparkles, UsersRound, X } from "lucide-react";
+import { Check, UsersRound, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 export default function CreateTeamModal({
@@ -18,7 +18,6 @@ export default function CreateTeamModal({
 
   const [teamName, setTeamName] = useState("");
   const [description, setDescription] = useState("");
-  const [privacy, setPrivacy] = useState("private");
   const [accent, setAccent] = useState("pink");
   const [submitting, setSubmitting] = useState(false);
   const [justCreated, setJustCreated] = useState(false);
@@ -115,8 +114,10 @@ export default function CreateTeamModal({
       const payload = {
         name: teamName.trim(),
         description: description.trim(),
-        privacy,
-        accent,
+
+        // Il colore è temporaneamente solo visivo:
+        // non viene inviato né salvato nel database.
+        // accent,
       };
 
       await onCreate(payload);
@@ -128,7 +129,6 @@ export default function CreateTeamModal({
         setJustCreated(false);
         setTeamName("");
         setDescription("");
-        setPrivacy("private");
         setAccent("pink");
         onClose();
       }, 900);
@@ -199,8 +199,7 @@ export default function CreateTeamModal({
                     id={descriptionId}
                     className={`mt-2 max-w-[36ch] text-sm leading-relaxed ${theme.muted}`}
                   >
-                    Dai un nome decente al tuo gruppo. Possibilmente qualcosa
-                    che non faccia vergognare il futuro leaderboard.
+                    Scegli un nome, una descrizione e il colore dell’anteprima.
                   </p>
                 </div>
 
@@ -216,28 +215,23 @@ export default function CreateTeamModal({
               </div>
 
               <div className={`mt-6 rounded-[1.5rem] border p-4 ${theme.soft}`}>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`grid h-11 w-11 place-items-center rounded-[1rem] ${accentClasses[accent]}`}
-                    >
-                      <UsersRound className="h-5 w-5" strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <p className={`text-sm font-black ${theme.text}`}>
-                        Anteprima squadra
-                      </p>
-                      <p className={`text-xs font-medium ${theme.muted}`}>
-                        {teamName.trim() ||
-                          "Nome ancora in fase di apparizione"}
-                      </p>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`grid h-11 w-11 place-items-center rounded-[1rem] ${accentClasses[accent]}`}
+                  >
+                    <UsersRound className="h-5 w-5" strokeWidth={2.2} />
                   </div>
 
-                  <div
-                    className={`rounded-full px-3 py-1.5 text-[11px] font-extrabold ${theme.softer} ${theme.text}`}
-                  >
-                    {privacy === "private" ? "Privata" : "Pubblica"}
+                  <div className="min-w-0">
+                    <p className={`text-sm font-black ${theme.text}`}>
+                      Anteprima squadra
+                    </p>
+
+                    <p
+                      className={`truncate text-xs font-medium ${theme.muted}`}
+                    >
+                      {teamName.trim() || "Nome ancora in fase di apparizione"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -288,60 +282,6 @@ export default function CreateTeamModal({
                   <span
                     className={`text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
                   >
-                    Visibilità
-                  </span>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPrivacy("private")}
-                      disabled={submitting}
-                      aria-pressed={privacy === "private"}
-                      className={`min-h-12 rounded-2xl border px-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
-                        privacy === "private"
-                          ? "border-pink-500 bg-pink-500/10 text-pink-500"
-                          : theme.soft
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Lock className="h-4 w-4" strokeWidth={2.2} />
-                        <span className="text-sm font-black">Privata</span>
-                      </div>
-                      <p
-                        className={`mt-1 text-xs font-medium ${privacy === "private" ? "text-pink-500/80" : theme.muted}`}
-                      >
-                        Si entra solo con invito.
-                      </p>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={submitting}
-                      onClick={() => setPrivacy("public")}
-                      aria-pressed={privacy === "public"}
-                      className={`min-h-12 rounded-2xl border px-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
-                        privacy === "public"
-                          ? "border-pink-500 bg-pink-500/10 text-pink-500"
-                          : theme.soft
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Crown className="h-4 w-4" strokeWidth={2.2} />
-                        <span className="text-sm font-black">Pubblica</span>
-                      </div>
-                      <p
-                        className={`mt-1 text-xs font-medium ${privacy === "public" ? "text-pink-500/80" : theme.muted}`}
-                      >
-                        Chiunque può trovarti.
-                      </p>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <span
-                    className={`text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
-                  >
                     Colore della squadra
                   </span>
 
@@ -374,26 +314,6 @@ export default function CreateTeamModal({
                         </button>
                       );
                     })}
-                  </div>
-                </div>
-
-                <div className={`rounded-[1.35rem] border p-4 ${theme.soft}`}>
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 text-pink-500">
-                      <Sparkles className="h-5 w-5" strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <p className={`text-sm font-black ${theme.text}`}>
-                        Cosa succede dopo
-                      </p>
-                      <p
-                        className={`mt-1 text-xs leading-relaxed ${theme.muted}`}
-                      >
-                        Diventi admin della squadra, puoi invitare persone e
-                        iniziare a competere con una dignità relativa ma
-                        misurabile.
-                      </p>
-                    </div>
                   </div>
                 </div>
 

@@ -122,17 +122,27 @@ export default function JoinTeamPage() {
 
     setJoinStatus("success");
 
-    try {
-      await Promise.all([
-        refreshTeam(),
-        refreshMembers(),
-        refreshLeaderboard(),
-        refreshActivity(),
-      ]);
-    } catch (refreshError) {
+    const refreshResults = await Promise.allSettled([
+      refreshTeam(),
+      refreshMembers(),
+      refreshLeaderboard(),
+      refreshActivity(),
+    ]);
+
+    const hasRefreshFailure = refreshResults.some(
+      (result) => result.status === "rejected",
+    );
+
+    if (hasRefreshFailure) {
       console.error(
         "Ingresso riuscito, ma aggiornamento dati Team non riuscito:",
-        refreshError,
+        refreshResults
+          .filter((result) => result.status === "rejected")
+          .map((result) => result.reason),
+      );
+
+      toast.error(
+        "Sei entrato, ma l’aggiornamento dei dati non è riuscito.",
       );
     }
 
