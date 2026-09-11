@@ -271,7 +271,6 @@ export default function Home() {
       <MotivationToast
         toast={motivationToast}
         onClose={() => setMotivationToast(null)}
-        isDark={isDark}
         prefersReducedMotion={prefersReducedMotion}
       />
 

@@ -1,8 +1,4 @@
-import {
-  BarChart3,
-  Settings,
-  UsersRound,
-} from "lucide-react";
+import { BarChart3, Settings, UsersRound } from "lucide-react";
 
 export const APP_VERSION = "1.8.3";
 
@@ -24,8 +20,7 @@ export const RELEASE_FEATURES = [
   {
     id: "reports",
     title: "periodo in tre righe",
-    description:
-      "Nuovo design per la sezione periodo in tre righe!",
+    description: "Nuovo design per la sezione periodo in tre righe!",
     icon: BarChart3,
   },
   {
@@ -43,6 +38,12 @@ export const RELEASE_FEATURES = [
     icon: UsersRound,
   },
   {
+    id: "reports",
+    title: "Nuovo Popup!",
+    description: "Nuovo popup motivazionale ad ogni registrazione!",
+    icon: BarChart3,
+  },
+  {
     id: "settings",
     title: "Nuove impostazioni",
     description:
@@ -50,11 +51,3 @@ export const RELEASE_FEATURES = [
     icon: Settings,
   },
 ];
-
-/*{
-    id: "reports",
-    title: "Nuovo Popup!",
-    description:
-      "Nuovo popup motivazionale ad ogni registrazione!",
-    icon: BarChart3,
-  }, */
