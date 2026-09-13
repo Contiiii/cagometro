@@ -112,7 +112,7 @@ export default function EditTeamModal({
 
         <Panel theme={theme} radius="panel" padding="lg" className="mt-6">
           <div className="flex items-center gap-4">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-pink-500 text-3xl">
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-accent text-3xl">
               {emoji}
             </div>
 
@@ -146,7 +146,7 @@ export default function EditTeamModal({
             onChange={(event) => setName(event.target.value)}
             maxLength={40}
             disabled={saving}
-            className={`mt-2 w-full rounded-2xl border px-4 py-3 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 disabled:cursor-not-allowed disabled:opacity-60 ${theme.input}`}
+            className={`mt-2 w-full rounded-2xl border px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-60 ${theme.input}`}
           />
 
           <div className="mt-2 flex justify-end">
@@ -171,7 +171,7 @@ export default function EditTeamModal({
             rows={4}
             maxLength={160}
             disabled={saving}
-            className={`mt-2 w-full resize-none rounded-2xl border px-4 py-3 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 disabled:cursor-not-allowed disabled:opacity-60 ${theme.input}`}
+            className={`mt-2 w-full resize-none rounded-2xl border px-4 py-3 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-60 ${theme.input}`}
           />
 
           <div className="mt-2 flex justify-end">
@@ -198,9 +198,9 @@ export default function EditTeamModal({
                   disabled={saving}
                   aria-label={`Seleziona avatar ${item}`}
                   aria-pressed={selected}
-                  className={`h-12 rounded-2xl border text-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`h-12 rounded-2xl border text-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50 ${
                     selected
-                      ? "border-pink-500 bg-pink-500/10 ring-2 ring-pink-500/20"
+                      ? "border-accent bg-accent/10 ring-2 ring-accent/20"
                       : theme.softSurface
                   }`}
                 >
@@ -225,7 +225,7 @@ export default function EditTeamModal({
             type="button"
             onClick={handleSave}
             disabled={saving || !hasChanges || !name.trim()}
-            className="flex-1 rounded-2xl bg-pink-500 py-3 text-sm font-bold text-white transition hover:bg-pink-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-2xl bg-accent py-3 text-sm font-bold text-white transition hover:bg-accent hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "Salvataggio..." : "Salva modifiche"}
           </button>

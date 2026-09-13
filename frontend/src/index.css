@@ -4,6 +4,14 @@
 
 :root {
   color-scheme: light;
+
+  --accent: #ec4899;
+  --accent-contrast: #ffffff;
+}
+
+@theme inline {
+  --color-accent: var(--accent);
+  --color-accent-contrast: var(--accent-contrast);
 }
 
 html {

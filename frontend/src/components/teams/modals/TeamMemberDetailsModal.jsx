@@ -80,7 +80,7 @@ export default function TeamMemberDetailsModal({ onClose }) {
                 </h2>
 
                 {isCurrentUser && (
-                  <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-600 dark:text-pink-300">
+                  <span className="rounded-full bg-accent/12 px-2 py-0.5 text-[10px] font-extrabold text-accent dark:text-accent">
                     TU
                   </span>
                 )}
@@ -128,7 +128,7 @@ export default function TeamMemberDetailsModal({ onClose }) {
               Contributo settimanale
             </p>
 
-            <span className="text-sm font-black text-pink-500">
+            <span className="text-sm font-black text-accent">
               {weeklyTotal.toLocaleString("it-IT")}
             </span>
           </div>
@@ -149,7 +149,7 @@ export default function TeamMemberDetailsModal({ onClose }) {
                 duration: prefersReducedMotion ? 0 : 0.5,
                 ease: "easeOut",
               }}
-              className="h-full rounded-full bg-pink-500"
+              className="h-full rounded-full bg-accent"
             />
           </div>
         </Panel>

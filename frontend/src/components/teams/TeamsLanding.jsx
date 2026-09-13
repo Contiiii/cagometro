@@ -34,13 +34,13 @@ export default function TeamsLanding({ onCreate, onJoin }) {
 
       <main className="mx-auto flex min-h-[calc(100vh-72px)] max-w-2xl items-center px-5 pb-36 pt-8 sm:px-8">
         <Card as="section" theme={theme} padding="lg" className="w-full">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-pink-500/[0.10] blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-accent/[0.10] blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-amber-400/[0.07] blur-3xl" />
 
           <div className="relative">
             <IconTile
               size="3xl"
-              className="overflow-hidden bg-pink-500 shadow-[0_12px_30px_rgba(236,72,153,0.25)]"
+              className="overflow-hidden bg-accent shadow-[0_12px_30px_color-mix(in_oklab,var(--accent)_25%,transparent)]"
             >
               <img
                 src={poopIcon}
@@ -56,19 +56,19 @@ export default function TeamsLanding({ onCreate, onJoin }) {
 
             <div className={`mt-6 grid gap-3 text-sm ${theme.muted}`}>
               <div className="flex items-center gap-2">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/10 text-accent">
                   <span className="text-[10px] font-bold">✓</span>
                 </div>
                 <span>Confronta i progressi con gli amici</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/10 text-accent">
                   <span className="text-[10px] font-bold">✓</span>
                 </div>
                 <span>Sblocca traguardi e sali in classifica</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-500/10 text-pink-500">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/10 text-accent">
                   <span className="text-[10px] font-bold">✓</span>
                 </div>
                 <span>Crea o unisciti in pochi secondi</span>
@@ -80,7 +80,7 @@ export default function TeamsLanding({ onCreate, onJoin }) {
                 <button
                   type="button"
                   onClick={() => setCreateOpen(true)}
-                  className="w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.24)] transition-transform hover:bg-pink-400 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+                  className="w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_24%,transparent)] transition-transform hover:bg-accent hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
                 >
                   <Plus className="h-5 w-5" strokeWidth={2.5} />
                   Crea una squadra
@@ -91,7 +91,7 @@ export default function TeamsLanding({ onCreate, onJoin }) {
                 <button
                   type="button"
                   onClick={() => setJoinOpen(true)}
-                  className={`w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 ${theme.secondary} ${theme.focusOffset}`}
+                  className={`w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${theme.secondary} ${theme.focusOffset}`}
                 >
                   <Link className="h-5 w-5" strokeWidth={2.2} />
                   Entra con un codice

@@ -80,7 +80,7 @@ export default function Header({
             text-left
             focus-visible:outline-none
             focus-visible:ring-2
-            focus-visible:ring-pink-500
+            focus-visible:ring-(--accent)
           "
           aria-label="Vai alla Home"
         >
@@ -92,8 +92,8 @@ export default function Header({
     shrink-0
     place-items-center
     rounded-2xl
-    bg-pink-500
-    shadow-[0_8px_20px_rgba(236,72,153,0.28)]
+    bg-(--accent)
+    shadow-[0_8px_20px_color-mix(in_oklab,var(--accent)_28%,transparent)]
     overflow-hidden
   "
             aria-hidden="true"
@@ -152,7 +152,7 @@ export default function Header({
   duration-300
   focus-visible:outline-none
   focus-visible:ring-2
-  focus-visible:ring-pink-500
+  focus-visible:ring-accent
   ${
     isDark
       ? "border-white/[0.10] bg-white/[0.07]"
@@ -177,7 +177,7 @@ export default function Header({
     right-2.5
     h-4
     w-4
-    ${isDark ? "text-pink-300" : "text-zinc-400"}
+    ${isDark ? "text-accent" : "text-zinc-400"}
   `}
               aria-hidden="true"
             />
@@ -218,10 +218,10 @@ export default function Header({
             <button
               type="button"
               onClick={() => navigate("/login")}
-              className={`h-11 rounded-2xl border px-4 text-sm font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
+              className={`h-11 rounded-2xl border px-4 text-sm font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 isDark
-                  ? "border-pink-500/20 bg-pink-500/10 text-pink-300"
-                  : "border-pink-500/20 bg-pink-500/10 text-pink-600"
+                  ? "border-accent/20 bg-accent/10 text-accent"
+                  : "border-accent/20 bg-accent/10 text-accent"
               }`}
             >
               Accedi
@@ -246,7 +246,7 @@ export default function Header({
   active:scale-95
   focus-visible:outline-none
   focus-visible:ring-2
-  focus-visible:ring-pink-500
+  focus-visible:ring-accent
   ${
     isDark
       ? "border-white/[0.10] bg-white/[0.07]"

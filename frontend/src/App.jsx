@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
 
 import { Suspense, lazy } from "react";
 import { Toaster } from "react-hot-toast";
@@ -27,7 +28,8 @@ export default function App() {
         }}
       />
 
-      <Suspense
+      <MotionConfig reducedMotion="user">
+        <Suspense
         fallback={
           <div
             className="
@@ -58,6 +60,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
+      </MotionConfig>
     </BrowserRouter>
   );
 }

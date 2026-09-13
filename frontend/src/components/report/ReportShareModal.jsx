@@ -69,12 +69,12 @@ export default function ReportShareModal({
   const exportStrongClass = isDarkCard ? "text-zinc-50" : "text-zinc-950";
 
   const exportBadgeClass = isDarkCard
-    ? "bg-pink-500/16 text-pink-300"
-    : "bg-pink-500/10 text-pink-600";
+    ? "bg-accent/16 text-accent"
+    : "bg-accent/10 text-accent";
 
   const exportIconTileClass = isDarkCard
     ? "border-white/[0.08] bg-white/[0.06]"
-    : "border-pink-500/15 bg-pink-500/10";
+    : "border-accent/15 bg-accent/10";
 
   const [isSharing, setIsSharing] = useState(false);
 
@@ -201,7 +201,7 @@ async function handleShareCard() {
                   <div className="relative flex items-start justify-between gap-3">
                     <div>
                       <div
-                        className={`grid h-12 w-12 place-items-center overflow-hidden rounded-[1.1rem] border shadow-[0_10px_24px_rgba(236,72,153,0.16)] ${exportIconTileClass}`}
+                        className={`grid h-12 w-12 place-items-center overflow-hidden rounded-[1.1rem] border shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_16%,transparent)] ${exportIconTileClass}`}
                       >
                         <img
                           src={poopIcon}
@@ -316,7 +316,7 @@ async function handleShareCard() {
                   type="button"
                   onClick={handleShareCard}
                   disabled={isSharing}
-                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.28)] transition-all hover:bg-pink-400 active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_28%,transparent)] transition-all hover:bg-accent hover:brightness-110 active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
                 >
                   <Share2 className="h-5 w-5" strokeWidth={2.4} />
                   {isSharing ? "Condivisione…" : "Condividi immagine"}
@@ -325,7 +325,7 @@ async function handleShareCard() {
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${theme.secondary}`}
+                  className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.secondary}`}
                 >
                   <X className="h-4 w-4" strokeWidth={2.2} />
                   Chiudi

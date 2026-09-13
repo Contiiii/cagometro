@@ -98,7 +98,7 @@ export default function Achievements() {
           >
             I tuoi traguardi,
             <br />
-            messi <span className="text-pink-500">nero su rosa.</span>
+            messi <span className="text-accent">nero su rosa.</span>
           </h1>
 
           <AchievementSectionSwitcher

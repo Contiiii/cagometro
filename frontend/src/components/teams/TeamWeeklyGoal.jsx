@@ -58,7 +58,7 @@ export default function TeamWeeklyGoal({
             </span>
           </div>
 
-          <span className="text-sm font-extrabold text-pink-500">
+          <span className="text-sm font-extrabold text-accent">
             {weeklyProgress}%
           </span>
         </div>
@@ -82,7 +82,7 @@ export default function TeamWeeklyGoal({
               duration: prefersReducedMotion ? 0 : 0.55,
               ease: "easeOut",
             }}
-            className="h-full rounded-full bg-pink-500"
+            className="h-full rounded-full bg-accent"
           />
         </div>
       </Card>

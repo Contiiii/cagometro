@@ -157,7 +157,7 @@ export default function CreateTeamModal({
             }}
             className={`relative max-h-[calc(100dvh-3rem)] w-full max-w-lg overflow-x-hidden overflow-y-auto overscroll-contain rounded-[2rem] border shadow-2xl ${theme.panel}`}
           >
-            <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-pink-500/[0.10] blur-3xl" />
+            <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-accent/[0.10] blur-3xl" />
             <div className="pointer-events-none absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-amber-400/[0.08] blur-3xl" />
 
             <div className="relative p-6 sm:p-7">
@@ -185,7 +185,7 @@ export default function CreateTeamModal({
                   disabled={submitting}
                   onClick={handleClose}
                   aria-label="Chiudi modale crea squadra"
-                  className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${theme.soft}`}
+                  className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.soft}`}
                 >
                   <X className="h-5 w-5" strokeWidth={2.2} />
                 </button>
@@ -229,7 +229,7 @@ export default function CreateTeamModal({
                     maxLength={40}
                     required
                     disabled={submitting}
-                    className={`min-h-12 rounded-2xl border px-4 text-sm font-medium outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 disabled:cursor-not-allowed disabled:opacity-60 ${theme.input}`}
+                    className={`min-h-12 rounded-2xl border px-4 text-sm font-medium outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-60 ${theme.input}`}
                   />
                 </label>
 
@@ -246,7 +246,7 @@ export default function CreateTeamModal({
                     rows={3}
                     maxLength={150}
                     disabled={submitting}
-                    className={`resize-none rounded-2xl border px-4 py-3 text-sm font-medium outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 disabled:cursor-not-allowed disabled:opacity-60 ${theme.input}`}
+                    className={`resize-none rounded-2xl border px-4 py-3 text-sm font-medium outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-60 ${theme.input}`}
                   />
                   <div className="flex justify-end">
                     <span className={`text-xs ${theme.subtle}`}>
@@ -274,9 +274,9 @@ export default function CreateTeamModal({
                           onClick={() => setAccent(option.id)}
                           aria-label={`Seleziona colore ${option.label}`}
                           aria-pressed={active}
-                          className={`flex min-w-[92px] shrink-0 items-center gap-2 rounded-full border px-3 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
+                          className={`flex min-w-[92px] shrink-0 items-center gap-2 rounded-full border px-3 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                             active
-                              ? "border-pink-500 bg-pink-500/10"
+                              ? "border-accent bg-accent/10"
                               : theme.soft
                           }`}
                         >
@@ -299,7 +299,7 @@ export default function CreateTeamModal({
                     type="button"
                     disabled={submitting}
                     onClick={onClose}
-                    className={`min-h-12 rounded-2xl border px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${theme.soft}`}
+                    className={`min-h-12 rounded-2xl border px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.soft}`}
                   >
                     Annulla
                   </button>

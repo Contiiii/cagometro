@@ -35,7 +35,7 @@ export default function CloudBackupWarning() {
         active:scale-[0.98]
         focus-visible:outline-none
         focus-visible:ring-2
-        focus-visible:ring-pink-500
+        focus-visible:ring-accent
         ${
           isDark
             ? `
@@ -59,8 +59,8 @@ export default function CloudBackupWarning() {
           shrink-0
           place-items-center
           rounded-xl
-          bg-pink-500/10
-          text-pink-500
+          bg-accent/10
+          text-accent
         "
       >
         <CloudOff

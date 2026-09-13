@@ -81,7 +81,7 @@ export default function TeamOnboardingModal({
               <div className="flex items-center gap-3">
               <IconTile
                 size="md"
-                className="bg-pink-500/15 text-pink-500"
+                className="bg-accent/15 text-accent"
               >
                 <UserPlus className="h-5 w-5" strokeWidth={2.3} />
               </IconTile>
@@ -126,7 +126,7 @@ export default function TeamOnboardingModal({
                 aria-label={
                   copied ? "Link invito copiato" : "Copia link invito"
                 }
-                className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${theme.secondary} ${theme.focusOffset}`}
+                className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${theme.secondary} ${theme.focusOffset}`}
               >
                 {copied ? (
                   <Check
@@ -147,7 +147,7 @@ export default function TeamOnboardingModal({
                 type="button"
                 onClick={copyInvite}
                 disabled={!inviteLink}
-                className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${theme.secondary} ${theme.focusOffset}`}
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${theme.secondary} ${theme.focusOffset}`}
               >
                 {copied ? (
                   <>
@@ -172,7 +172,7 @@ export default function TeamOnboardingModal({
                 type="button"
                 onClick={shareInvite}
                 disabled={!inviteLink}
-                className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-4 text-sm font-extrabold text-white shadow-[0_10px_22px_rgba(236,72,153,0.20)] transition hover:bg-pink-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-sm font-extrabold text-white shadow-[0_10px_22px_color-mix(in_oklab,var(--accent)_20%,transparent)] transition hover:bg-accent hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Share2
                   className="h-4 w-4"
@@ -247,7 +247,7 @@ export default function TeamOnboardingModal({
         <button
           type="button"
           onClick={onClose}
-          className="mt-7 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.24)] transition hover:bg-pink-400 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+          className="mt-7 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_24%,transparent)] transition hover:bg-accent hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
         >
           Inizia a usare la squadra
         </button>

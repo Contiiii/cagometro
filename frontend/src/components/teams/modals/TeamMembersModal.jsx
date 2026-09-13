@@ -85,7 +85,7 @@ export default function TeamMembersModal({
                       </p>
 
                       {isCurrentUser && (
-                        <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-600 dark:text-pink-300">
+                        <span className="rounded-full bg-accent/12 px-2 py-0.5 text-[10px] font-extrabold text-accent dark:text-accent">
                           TU
                         </span>
                       )}

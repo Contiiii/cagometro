@@ -1,21 +1,39 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 
 import { SettingsContext } from "./settings-context";
 
+import {
+  DEFAULT_ACCENT,
+  VALID_ACCENTS,
+  getAccentColor,
+  getAccentContrast,
+} from "../config/appearance";
+
 const STORAGE_KEY = "cagometro_settings";
 
 const DEFAULT_SETTINGS = {
-  animationsEnabled: true,
   confirmationsEnabled: true,
-  hapticFeedbackEnabled: true,
-  initialTeamActivityLimit: 5,
+  vibrationEnabled: true,
+  initialTeamActivityLimit: 3,
+  accent: DEFAULT_ACCENT,
+  dailyReminder: true,
+  streakAlerts: true,
+  achievementAlerts: true,
+  teamAlerts: false,
 };
 
-const VALID_ACTIVITY_LIMITS = [5, 10, 20];
+const VALID_ACTIVITY_LIMITS = [3, 5, 10];
+
+function booleanSetting(storedSettings, key, fallback) {
+  return typeof storedSettings?.[key] === "boolean"
+    ? storedSettings[key]
+    : fallback;
+}
 
 function loadStoredSettings() {
   try {
@@ -33,12 +51,54 @@ function loadStoredSettings() {
       ...DEFAULT_SETTINGS,
       ...parsedSettings,
 
+      accent: VALID_ACCENTS.includes(
+        parsedSettings.accent,
+      )
+        ? parsedSettings.accent
+        : DEFAULT_ACCENT,
+
       initialTeamActivityLimit:
         VALID_ACTIVITY_LIMITS.includes(
           parsedSettings.initialTeamActivityLimit,
         )
           ? parsedSettings.initialTeamActivityLimit
           : DEFAULT_SETTINGS.initialTeamActivityLimit,
+
+      confirmationsEnabled: booleanSetting(
+        parsedSettings,
+        "confirmationsEnabled",
+        DEFAULT_SETTINGS.confirmationsEnabled,
+      ),
+
+      vibrationEnabled: booleanSetting(
+        parsedSettings,
+        "vibrationEnabled",
+        DEFAULT_SETTINGS.vibrationEnabled,
+      ),
+
+      dailyReminder: booleanSetting(
+        parsedSettings,
+        "dailyReminder",
+        DEFAULT_SETTINGS.dailyReminder,
+      ),
+
+      streakAlerts: booleanSetting(
+        parsedSettings,
+        "streakAlerts",
+        DEFAULT_SETTINGS.streakAlerts,
+      ),
+
+      achievementAlerts: booleanSetting(
+        parsedSettings,
+        "achievementAlerts",
+        DEFAULT_SETTINGS.achievementAlerts,
+      ),
+
+      teamAlerts: booleanSetting(
+        parsedSettings,
+        "teamAlerts",
+        DEFAULT_SETTINGS.teamAlerts,
+      ),
     };
   } catch (error) {
     console.error(
@@ -54,6 +114,20 @@ export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState(
     loadStoredSettings,
   );
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    root.style.setProperty(
+      "--accent",
+      getAccentColor(settings.accent),
+    );
+
+    root.style.setProperty(
+      "--accent-contrast",
+      getAccentContrast(settings.accent),
+    );
+  }, [settings.accent]);
 
   const updateSetting = useCallback(
     (settingName, value) => {
@@ -83,9 +157,22 @@ export function SettingsProvider({ children }) {
     setSettings(DEFAULT_SETTINGS);
   }, []);
 
+  const setAccent = useCallback(
+    (nextAccent) => {
+      if (!VALID_ACCENTS.includes(nextAccent)) {
+        console.error(`Accent non valido: ${nextAccent}`);
+
+        return;
+      }
+
+      updateSetting("accent", nextAccent);
+    },
+    [updateSetting],
+  );
+
   const triggerHapticFeedback = useCallback(
     (duration = 20) => {
-      if (!settings.hapticFeedbackEnabled) {
+      if (!settings.vibrationEnabled) {
         return;
       }
 
@@ -95,32 +182,42 @@ export function SettingsProvider({ children }) {
 
       navigator.vibrate(duration);
     },
-    [settings.hapticFeedbackEnabled],
+    [settings.vibrationEnabled],
   );
 
   const value = useMemo(
     () => ({
       settings,
 
-      animationsEnabled:
-        settings.animationsEnabled,
-
       confirmationsEnabled:
         settings.confirmationsEnabled,
 
-      hapticFeedbackEnabled:
-        settings.hapticFeedbackEnabled,
+      vibrationEnabled:
+        settings.vibrationEnabled,
 
       initialTeamActivityLimit:
         settings.initialTeamActivityLimit,
 
+      accent: settings.accent,
+
+      dailyReminder: settings.dailyReminder,
+
+      streakAlerts: settings.streakAlerts,
+
+      achievementAlerts:
+        settings.achievementAlerts,
+
+      teamAlerts: settings.teamAlerts,
+
       updateSetting,
+      setAccent,
       resetSettings,
       triggerHapticFeedback,
     }),
     [
       settings,
       updateSetting,
+      setAccent,
       resetSettings,
       triggerHapticFeedback,
     ],

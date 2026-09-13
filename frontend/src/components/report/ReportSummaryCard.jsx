@@ -63,7 +63,7 @@ export default function ReportSummaryCard({
       {safeBestPoint.date}
     </p>
 
-    <p className="mt-0.5 text-xs font-bold text-pink-500">
+    <p className="mt-0.5 text-xs font-bold text-accent">
       {safeBestPoint.value} registrazioni
     </p>
   </div>

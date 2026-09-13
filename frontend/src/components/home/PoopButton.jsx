@@ -39,7 +39,7 @@ export default function PoopButton({
           stiffness: 420,
           damping: 18,
         }}
-        className={`relative z-10 grid h-[172px] w-[172px] place-items-center rounded-full border-4 border-pink-300/30 bg-pink-500 ${theme.buttonShadow} transition-colors hover:bg-pink-400 sm:h-[194px] sm:w-[194px] `}
+        className={`relative z-10 grid h-[172px] w-[172px] place-items-center rounded-full border-4 border-accent/30 bg-accent ${theme.buttonShadow} transition-colors hover:bg-accent hover:brightness-110 sm:h-[194px] sm:w-[194px] `}
       >
         {/* FIX: usa <img>, non {poopIcon} */}
         <img
@@ -67,7 +67,7 @@ export default function PoopButton({
                 y: Math.sin((item * Math.PI) / 3) * 112,
               }}
               transition={{ duration: 0.55, ease: "easeOut" }}
-              className="absolute z-20 h-2.5 w-2.5 rounded-full bg-pink-300"
+              className="absolute z-20 h-2.5 w-2.5 rounded-full bg-accent"
             />
           ))}
         </>

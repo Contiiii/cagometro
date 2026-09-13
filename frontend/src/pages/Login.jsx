@@ -90,11 +90,11 @@ export default function Login() {
             <div
               className={`relative overflow-hidden rounded-[2rem] border p-6 sm:p-8 ${theme.surface}`}
             >
-              <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-pink-500/[0.10] blur-3xl" />
+              <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-accent/[0.10] blur-3xl" />
               <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-amber-400/[0.07] blur-3xl" />
 
               <div className="relative">
-                <div className="grid h-14 w-14 place-items-center rounded-[1.35rem] bg-pink-500 shadow-[0_12px_30px_rgba(236,72,153,0.28)]">
+                <div className="grid h-14 w-14 place-items-center rounded-[1.35rem] bg-accent shadow-[0_12px_30px_color-mix(in_oklab,var(--accent)_28%,transparent)]">
                   <Cloud className="h-7 w-7 text-white" strokeWidth={2.3} />
                 </div>
 
@@ -114,7 +114,7 @@ export default function Login() {
                 <ul className={`mt-6 grid gap-3 text-sm ${theme.muted}`}>
                   {CLOUD_BENEFITS.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-3">
-                      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-pink-500/10 text-pink-500">
+                      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
                         <Check className="h-3 w-3" strokeWidth={3} />
                       </span>
                       <span className="font-medium leading-snug">{benefit}</span>
@@ -126,7 +126,7 @@ export default function Login() {
                   type="button"
                   onClick={handleLogin}
                   disabled={loggingIn}
-                  className="mt-8 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(236,72,153,0.24)] transition-colors hover:bg-pink-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+                  className="mt-8 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_24%,transparent)] transition-colors hover:bg-accent hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
                 >
                   {loggingIn ? "Accesso in corso..." : "Accedi con Google"}
                 </button>
@@ -153,7 +153,7 @@ export default function Login() {
                       <button
                         type="button"
                         onClick={() => navigate("/")}
-                        className={`mt-3 inline-flex items-center gap-1.5 text-xs font-bold transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 rounded-lg ${theme.primaryText}`}
+                        className={`mt-3 inline-flex items-center gap-1.5 text-xs font-bold transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg ${theme.primaryText}`}
                       >
                         <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2.4} />
                         Continua in modalità offline

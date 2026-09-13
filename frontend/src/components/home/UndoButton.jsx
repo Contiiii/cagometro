@@ -15,7 +15,7 @@ export default function UndoButton({
       disabled={disabled}
       aria-busy={isUndoing}
       aria-label="Annulla ultima registrazione"
-      className={`mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-35 ${
+      className={`mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-35 ${
         theme.secondary
       } ${
         isDark

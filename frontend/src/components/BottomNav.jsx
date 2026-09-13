@@ -118,10 +118,10 @@ export default function BottomNav() {
                 transition-colors
                 focus-visible:outline-none
                 focus-visible:ring-2
-                focus-visible:ring-pink-500
+                focus-visible:ring-(--accent)
                 ${
                   active
-                    ? "text-pink-500"
+                    ? "text-(--accent)"
                     : isDark
                       ? "text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-200"
                       : "text-zinc-500 hover:bg-zinc-900/[0.05] hover:text-zinc-800"
@@ -138,8 +138,8 @@ export default function BottomNav() {
                     rounded-[1.15rem]
                     ${
                       isDark
-                        ? "bg-pink-500/[0.12]"
-                        : "bg-pink-500/10"
+                        ? "bg-(--accent)/12"
+                        : "bg-(--accent)/10"
                     }
                   `}
                   transition={{

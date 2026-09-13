@@ -108,14 +108,14 @@ export default function JoinTeamModal({
           autoCapitalize="characters"
           spellCheck={false}
           disabled={joining}
-          className={`mt-2 min-h-14 w-full rounded-2xl border px-4 font-mono text-base font-bold tracking-[0.12em] outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 disabled:cursor-not-allowed disabled:opacity-60 ${theme.input}`}
+          className={`mt-2 min-h-14 w-full rounded-2xl border px-4 font-mono text-base font-bold tracking-[0.12em] outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-60 ${theme.input}`}
         />
 
         <button
           type="button"
           onClick={handleJoin}
           disabled={joining || !joinCode.trim()}
-          className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-pink-500 px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(236,72,153,0.22)] transition hover:bg-pink-400 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40"
+          className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_22%,transparent)] transition hover:bg-accent hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
         >
           <UsersRound className="h-5 w-5" strokeWidth={2.3} />
           {joining ? "Ingresso..." : "Entra nella squadra"}

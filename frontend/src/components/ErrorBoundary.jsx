@@ -67,7 +67,7 @@ export default class ErrorBoundary extends Component {
                 font-semibold
                 text-white
                 transition
-                hover:border-pink-500/50
+                hover:border-accent/50
               "
             >
               Riprova
@@ -77,13 +77,13 @@ export default class ErrorBoundary extends Component {
               onClick={this.handleGoHome}
               className="
                 rounded-xl
-                bg-pink-500
+                bg-accent
                 px-5
                 py-3
                 font-semibold
                 text-white
                 transition
-                hover:bg-pink-400
+                hover:bg-accent hover:brightness-110
               "
             >
               Torna alla Home

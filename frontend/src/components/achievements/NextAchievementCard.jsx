@@ -19,7 +19,7 @@ export default function NextAchievementCard({
   return (
     <section className="mx-auto mt-5 max-w-2xl sm:mt-7">
       <Card theme={theme} padding="none">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-pink-500/[0.07] blur-3xl" />
+        <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-accent/[0.07] blur-3xl" />
 
         <div className="relative p-5 sm:p-7">
           <div className="flex items-start gap-4">
@@ -54,7 +54,7 @@ export default function NextAchievementCard({
             <button
               type="button"
               onClick={() => onOpen(nextAchievement)}
-              className={`group shrink-0 grid h-11 w-11 place-items-center rounded-2xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${theme.surfaceAlt}`}
+              className={`group shrink-0 grid h-11 w-11 place-items-center rounded-2xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.surfaceAlt}`}
             >
               <ChevronRight
                 className={`h-5 w-5 transition-transform group-hover:translate-x-0.5 ${

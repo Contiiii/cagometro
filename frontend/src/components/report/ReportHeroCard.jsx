@@ -28,7 +28,7 @@ export default function ReportHeroCard({
       transition={{ duration: prefersReducedMotion ? 0 : 0.22 }}
     >
       <Card theme={theme}>
-      <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-pink-500/[0.07] blur-3xl" />
+      <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent/[0.07] blur-3xl" />
 
       <div className="relative flex items-start justify-between gap-4">
         <div>
@@ -83,7 +83,7 @@ export default function ReportHeroCard({
           <button
             type="button"
             onClick={onShare}
-            className="rounded-xl bg-pink-500 px-4 py-2 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)] transition hover:bg-pink-400"
+            className="rounded-xl bg-accent px-4 py-2 text-xs font-extrabold text-white shadow-[0_8px_20px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:bg-accent hover:brightness-110"
           >
             📤 Condividi
           </button>
@@ -103,7 +103,7 @@ export default function ReportHeroCard({
   className={
     isDecrease
       ? "text-red-500"
-      : "text-pink-500"
+      : "text-accent"
   }
 >
   {Math.abs(difference)} attività{" "}

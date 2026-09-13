@@ -22,10 +22,10 @@ export default function AchievementDetailModal({
 
   const styles = {
     pink: {
-      solid: "bg-pink-500 text-white",
-      soft: "bg-pink-500/10 text-pink-500",
-      text: "text-pink-500",
-      progress: "bg-pink-500",
+      solid: "bg-accent text-white",
+      soft: "bg-accent/10 text-accent",
+      text: "text-accent",
+      progress: "bg-accent",
     },
     amber: {
       solid: "bg-amber-500 text-zinc-950",
@@ -76,7 +76,7 @@ export default function AchievementDetailModal({
             type="button"
             onClick={onClose}
             aria-label="Chiudi dettaglio traguardo"
-            className={`grid h-11 w-11 place-items-center rounded-2xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${theme.surfaceAlt}`}
+            className={`grid h-11 w-11 place-items-center rounded-2xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.surfaceAlt}`}
           >
             <X className="h-5 w-5" strokeWidth={2.2} />
           </button>

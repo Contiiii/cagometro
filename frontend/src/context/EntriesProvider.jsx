@@ -323,6 +323,7 @@ export function EntriesProvider({ children }) {
       value={{
         entries,
         syncStatus,
+        pendingChanges,
         today,
         todayCount,
         incrementToday,

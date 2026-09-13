@@ -21,7 +21,7 @@ export default function ReportPeriodSelector({
           type="button"
           onClick={() => changePeriod(key)}
           aria-pressed={period === key}
-          className={`min-h-11 rounded-xl px-2 text-xs font-extrabold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
+          className={`min-h-11 rounded-xl px-2 text-xs font-extrabold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
             period === key
               ? isDark
                 ? "bg-zinc-100 text-zinc-950 shadow-sm"

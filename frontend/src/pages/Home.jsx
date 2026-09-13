@@ -26,6 +26,7 @@ import { useTheme } from "../hooks/useTheme.js";
 import { useEntries } from "../hooks/useEntries.js";
 import { useStats } from "../hooks/useStats.js";
 import { useAchievements } from "../hooks/useAchievements.js";
+import { useSettings } from "../hooks/useSettings.js";
 import { calculateStreak } from "../utils/stats.js";
 
 const CURRENT_APP_VERSION = APP_VERSION;
@@ -58,6 +59,8 @@ export default function Home() {
     resetLockedAchievements,
   } = useAchievements();
 
+  const { triggerHapticFeedback } = useSettings();
+
   const { streak, bestStreak } = useStats(entries);
 
   const [burst, setBurst] = useState(0);
@@ -82,9 +85,7 @@ export default function Home() {
         phrase: pickRandomPhrase(prev?.phrase),
       }));
 
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        navigator.vibrate(50);
-      }
+      triggerHapticFeedback(50);
 
       if (newEntries) {
         const total = Object.values(newEntries).reduce(
@@ -114,9 +115,7 @@ export default function Home() {
 
       setMessage("Ultima registrazione annullata.");
 
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        navigator.vibrate(30);
-      }
+      triggerHapticFeedback(30);
 
       const total = Object.values(newEntries).reduce(
         (sum, value) => sum + value,
@@ -148,8 +147,8 @@ export default function Home() {
         secondary:
           "bg-white/[0.055] border-white/[0.08] text-zinc-300 hover:bg-white/[0.09]",
         counterRing: "border-white/[0.07]",
-        buttonShadow: "shadow-[0_16px_45px_rgba(236,72,153,0.30)]",
-        buttonOuter: "border-pink-300/30",
+        buttonShadow: "shadow-[0_16px_45px_color-mix(in_oklab,var(--accent)_30%,transparent)]",
+        buttonOuter: "border-accent/30",
       }
     : {
         app: "bg-[#f8f5f3] text-zinc-900",
@@ -160,8 +159,8 @@ export default function Home() {
         secondary:
           "bg-zinc-900/[0.045] border-zinc-900/[0.08] text-zinc-600 hover:bg-zinc-900/[0.08]",
         counterRing: "border-zinc-900/[0.07]",
-        buttonShadow: "shadow-[0_16px_45px_rgba(236,72,153,0.28)]",
-        buttonOuter: "border-pink-500/20",
+        buttonShadow: "shadow-[0_16px_45px_color-mix(in_oklab,var(--accent)_28%,transparent)]",
+        buttonOuter: "border-accent/20",
       };
 
   const formattedDate = new Intl.DateTimeFormat("it-IT", {
@@ -202,7 +201,7 @@ export default function Home() {
           <h1
             className={`max-w-md text-[clamp(2rem,7vw,3.6rem)] font-black leading-[0.98] tracking-[-0.065em] ${theme.primaryText}`}
           >
-            Ogni <span className="text-pink-500">click</span>
+            Ogni <span className="text-accent">click</span>
             <br />
             racconta una storia.
           </h1>
@@ -217,7 +216,7 @@ export default function Home() {
           theme={theme}
           className="mx-auto mt-5 max-w-2xl sm:mt-7"
         >
-          <div className="pointer-events-none absolute -right-12 top-2 h-36 w-36 rounded-full bg-pink-500/[0.07] blur-3xl" />
+          <div className="pointer-events-none absolute -right-12 top-2 h-36 w-36 rounded-full bg-accent/[0.07] blur-3xl" />
           <div className="pointer-events-none absolute -left-16 bottom-0 h-32 w-32 rounded-full bg-amber-400/[0.05] blur-3xl" />
 
           <DailyCounter

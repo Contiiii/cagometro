@@ -48,7 +48,7 @@ export default function AchievementCard({
             ? index * 0.035
             : 0,
       }}
-      className={`group overflow-hidden rounded-[1.75rem] border p-4 text-left transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${theme.surface}`}
+      className={`group overflow-hidden rounded-[1.75rem] border p-4 text-left transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.surface}`}
     >
       <div className="flex items-start gap-3.5">
         <span

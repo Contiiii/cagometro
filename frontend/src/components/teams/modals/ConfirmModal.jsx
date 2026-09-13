@@ -101,7 +101,7 @@ export default function ConfirmModal({
             disabled={loading}
             onClick={handleConfirm}
             className={`flex-1 rounded-2xl py-3 text-sm font-bold text-white ${
-              isDanger ? "bg-rose-500" : "bg-pink-500"
+              isDanger ? "bg-rose-500" : "bg-accent"
             } disabled:cursor-not-allowed disabled:opacity-50`}
           >
             {loading ? "Attendere..." : confirmText}

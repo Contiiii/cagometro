@@ -142,7 +142,7 @@ export default function JoinTeamPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-[#0c0c0f] px-5 text-zinc-100">
       <section className="w-full max-w-sm rounded-[1.75rem] border border-white/[0.08] bg-zinc-900/80 p-6 shadow-2xl">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-pink-400">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">
           Invito squadra
         </p>
 
@@ -173,7 +173,7 @@ export default function JoinTeamPage() {
 
             <div className="mt-5 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
               <div className="flex items-start gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-pink-500/15 text-xl">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-accent/15 text-xl">
                   {inviteTeam.avatar_emoji || "💩"}
                 </span>
 
@@ -222,7 +222,7 @@ export default function JoinTeamPage() {
               isJoining ||
               !inviteTeam
             }
-            className="min-h-12 rounded-2xl bg-pink-500 px-4 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(236,72,153,0.25)] transition-colors hover:bg-pink-400 disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/35"
+            className="min-h-12 rounded-2xl bg-accent px-4 text-sm font-extrabold text-white shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition-colors hover:bg-accent hover:brightness-110 disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/35"
           >
             {isJoining
               ? "Accesso in corso..."
@@ -233,7 +233,7 @@ export default function JoinTeamPage() {
             type="button"
             onClick={handleCancel}
             disabled={isJoining}
-            className="min-h-12 rounded-2xl border border-white/[0.10] bg-white/[0.04] px-4 text-sm font-bold text-zinc-200 transition-colors hover:bg-white/[0.08] disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
+            className="min-h-12 rounded-2xl border border-white/[0.10] bg-white/[0.04] px-4 text-sm font-bold text-zinc-200 transition-colors hover:bg-white/[0.08] disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             Annulla
           </button>

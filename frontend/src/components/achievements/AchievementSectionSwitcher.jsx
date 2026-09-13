@@ -14,7 +14,7 @@ export default function AchievementSectionSwitcher({
         type="button"
         onClick={() => switchSection("personali")}
         aria-pressed={section === "personali"}
-        className={`min-h-11 rounded-xl px-4 text-sm font-extrabold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
+        className={`min-h-11 rounded-xl px-4 text-sm font-extrabold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
           section === "personali"
             ? isDark
               ? "bg-zinc-100 text-zinc-950 shadow-sm"
@@ -29,7 +29,7 @@ export default function AchievementSectionSwitcher({
         type="button"
         onClick={() => switchSection("squadra")}
         aria-pressed={section === "squadra"}
-        className={`min-h-11 rounded-xl px-4 text-sm font-extrabold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
+        className={`min-h-11 rounded-xl px-4 text-sm font-extrabold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
           section === "squadra"
             ? isDark
               ? "bg-zinc-100 text-zinc-950 shadow-sm"

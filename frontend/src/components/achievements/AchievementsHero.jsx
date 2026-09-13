@@ -21,7 +21,7 @@ export default function AchievementsHero({
       theme={theme}
       className="mx-auto mt-5 max-w-2xl sm:mt-7"
     >
-      <div className="pointer-events-none absolute -right-12 top-2 h-36 w-36 rounded-full bg-pink-500/[0.07] blur-3xl" />
+      <div className="pointer-events-none absolute -right-12 top-2 h-36 w-36 rounded-full bg-accent/[0.07] blur-3xl" />
 
       <div className="relative flex items-start justify-between gap-4">
         <div>
@@ -66,7 +66,7 @@ export default function AchievementsHero({
               strokeWidth="10"
               strokeLinecap="round"
               fill="none"
-              className="stroke-pink-500"
+              className="stroke-accent"
               initial={false}
               animate={{ strokeDashoffset: dashOffset }}
               transition={{
@@ -81,7 +81,7 @@ export default function AchievementsHero({
 
           <div className="absolute inset-0 grid place-items-center">
             <Trophy
-              className="h-8 w-8 text-pink-500"
+              className="h-8 w-8 text-accent"
               strokeWidth={2.2}
             />
           </div>

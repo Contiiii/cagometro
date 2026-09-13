@@ -129,7 +129,7 @@ function SettingsItem({ label, onClick, theme, isDark, withBorder = false }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-h-14 w-full items-center justify-between px-4 text-left text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${borderClass} ${hoverClass} ${theme.primaryText}`}
+      className={`flex min-h-14 w-full items-center justify-between px-4 text-left text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${borderClass} ${hoverClass} ${theme.primaryText}`}
     >
       <span>{label}</span>
 
@@ -181,9 +181,9 @@ function InvitesToggleItem({ checked, disabled, onChange, theme, isDark }) {
 
       <span
         aria-hidden="true"
-        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-pink-500/70 ${
+        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-accent/70 ${
           checked
-            ? "bg-pink-600"
+            ? "bg-accent"
             : isDark
               ? "bg-zinc-700"
               : "bg-zinc-300"

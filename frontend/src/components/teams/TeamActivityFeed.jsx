@@ -10,6 +10,8 @@ import {
   Wifi,
   X,
 } from "lucide-react";
+
+import { useSettings } from "../../hooks/useSettings.js";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { useTeamUI } from "../../hooks/useTeamUI";
@@ -37,8 +39,8 @@ function getActivityIcon(type) {
 function getActivityStyle(type, isDark) {
   const styles = {
     entry_created: isDark
-      ? "bg-pink-500/15 text-pink-400"
-      : "bg-pink-500/12 text-pink-600",
+      ? "bg-accent/15 text-accent"
+      : "bg-accent/12 text-accent",
 
     member_joined: isDark
       ? "bg-emerald-400/15 text-emerald-400"
@@ -128,12 +130,14 @@ export default function TeamActivityFeed({
 }) {
   const { theme, isDark, prefersReducedMotion } = useTeamUI();
 
+  const { initialTeamActivityLimit } = useSettings();
+
   const [showAllActivities, setShowAllActivities] =
     useState(false);
 
   const visibleActivities = showAllActivities
     ? activity
-    : activity.slice(0, 3);
+    : activity.slice(0, initialTeamActivityLimit);
 
   return (
     <Section spacing="lg">
@@ -259,14 +263,14 @@ export default function TeamActivityFeed({
           </AnimatePresence>
         )}
 
-        {activity.length > 3 && (
+        {activity.length > initialTeamActivityLimit && (
           <button
             type="button"
             onClick={() =>
               setShowAllActivities((current) => !current)
             }
             aria-expanded={showAllActivities}
-            className={`flex min-h-14 w-full items-center justify-center gap-2 border-t text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${
+            className={`flex min-h-14 w-full items-center justify-center gap-2 border-t text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
               isDark
                 ? "border-white/[0.07] hover:bg-white/[0.045]"
                 : "border-zinc-900/[0.07] hover:bg-zinc-900/[0.035]"
@@ -275,7 +279,7 @@ export default function TeamActivityFeed({
             {showAllActivities
               ? "Mostra meno"
               : `Carica altre ${
-                  activity.length - 3
+                  activity.length - initialTeamActivityLimit
                 } attività`}
 
             <ChevronDown

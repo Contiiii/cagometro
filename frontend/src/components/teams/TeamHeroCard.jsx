@@ -19,12 +19,12 @@ export default function TeamHeroCard({
     <section className="mx-auto max-w-3xl">
       <div className="relative">
         <Card theme={theme} padding="none">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-pink-500/[0.08] blur-3xl" />
+          <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-accent/[0.08] blur-3xl" />
           <div className="pointer-events-none absolute -left-10 bottom-0 h-24 w-24 rounded-full bg-amber-400/[0.06] blur-3xl" />
 
           <div className="relative p-4 sm:p-5">
             <div className="flex items-start gap-3 sm:gap-4">
-              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-[1.35rem] bg-pink-500 text-2xl shadow-[0_12px_30px_rgba(236,72,153,0.28)] sm:h-16 sm:w-16 sm:text-3xl">
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-[1.35rem] bg-accent text-2xl shadow-[0_12px_30px_color-mix(in_oklab,var(--accent)_28%,transparent)] sm:h-16 sm:w-16 sm:text-3xl">
                 {team?.avatar_emoji || "🏆"}
               </div>
 
@@ -37,7 +37,7 @@ export default function TeamHeroCard({
                   </h1>
 
                   {team?.role === "owner" && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-pink-500/10 px-2.5 py-1 text-[10px] font-extrabold text-pink-600 dark:text-pink-300 sm:text-[11px]">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-1 text-[10px] font-extrabold text-accent dark:text-accent sm:text-[11px]">
                       <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.4} />
                       ADMIN
                     </span>
@@ -74,7 +74,7 @@ export default function TeamHeroCard({
         ? "Gestisci squadra"
         : "Impostazioni squadra"
     }
-    className={`inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 sm:px-4 ${theme.secondary}`}
+    className={`inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:px-4 ${theme.secondary}`}
   >
     <Settings
       className="h-4 w-4 shrink-0"
@@ -91,7 +91,7 @@ export default function TeamHeroCard({
     onClick={onOpenInvite}
     aria-label="Invita un membro"
      disabled={!invitesEnabled}
-    className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-2xl bg-pink-500 px-3 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(236,72,153,0.22)] transition hover:bg-pink-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-pink-400/40 sm:px-4"
+    className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-2xl bg-accent px-3 text-sm font-extrabold text-white shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_22%,transparent)] transition hover:bg-accent hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40 sm:px-4"
   >
     <UserPlus
       className="h-4 w-4 shrink-0"

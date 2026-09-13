@@ -193,11 +193,11 @@ export default function TeamLeaderboard({
                         duration: 0.24,
                       }
                 }
-                className={`flex min-h-[82px] w-full items-center gap-3 px-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink-500 ${
+                className={`flex min-h-[82px] w-full items-center gap-3 px-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${
                   isCurrentUser
                     ? isDark
-                      ? "bg-pink-500/[0.10]"
-                      : "bg-pink-500/[0.07]"
+                      ? "bg-accent/[0.10]"
+                      : "bg-accent/[0.07]"
                     : isDark
                       ? "hover:bg-white/[0.045]"
                       : "hover:bg-zinc-900/[0.035]"
@@ -249,7 +249,7 @@ export default function TeamLeaderboard({
                     </span>
 
                     {isCurrentUser && (
-                      <span className="rounded-full bg-pink-500/12 px-2 py-0.5 text-[10px] font-extrabold text-pink-600 dark:text-pink-300">
+                      <span className="rounded-full bg-accent/12 px-2 py-0.5 text-[10px] font-extrabold text-accent dark:text-accent">
                         TU
                       </span>
                     )}
@@ -317,7 +317,7 @@ function RankingButton({ active, onClick, isDark, theme, children }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`min-h-9 rounded-lg px-3 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 ${
+      className={`min-h-9 rounded-lg px-3 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
         active
           ? isDark
             ? "bg-zinc-100 text-zinc-950 shadow-sm"

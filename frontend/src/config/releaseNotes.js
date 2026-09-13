@@ -1,4 +1,4 @@
-import { BarChart3, UsersRound } from "lucide-react";
+import { BarChart3, Settings, UsersRound } from "lucide-react";
 
 export const APP_VERSION = "1.9.0";
 
@@ -6,8 +6,7 @@ export const RELEASE_FEATURES = [
   {
     id: "teams-0",
     title: "Aggiunta schermata di login!",
-    description:
-      "E' stata aggiunta una nuova schermata per il login!",
+    description: "E' stata aggiunta una nuova schermata per il login!",
     icon: UsersRound,
   },
   {
@@ -17,21 +16,21 @@ export const RELEASE_FEATURES = [
       "Ora nella nuova classifica sotto al tuo nome ci saranno anche i tuoi XP e la tua streak!",
     icon: UsersRound,
   },
-    {
+  {
     id: "teams-2",
     title: "Nuovo design della classifica!",
     description:
       "Ora i primi 3 della classifica del proprio team avranno un titolo speciale!",
     icon: UsersRound,
   },
-    {
+  {
     id: "teams-3",
     title: "Schermata di accesso da link!",
     description:
       "Nuova schermata di accesso al teams quando si entra con il link! e aggiunta opzione per disattivare il codice di invito",
     icon: UsersRound,
   },
-    {
+  {
     id: "teams-4",
     title: "Nuova card spiegazione quando si crea una squadra!",
     description:
@@ -64,13 +63,11 @@ export const RELEASE_FEATURES = [
     description: "Nuovo popup motivazionale ad ogni registrazione!",
     icon: BarChart3,
   },
-  
-];
-
-/*{
-    id: "settings",
-    title: "Nuove impostazioni",
+  {
+    id: "settings-1",
+    title: "Aggiunto cambio stile applicazione",
     description:
-      "Una schermata completamente rinnovata per gestire profilo e stato dell’app.",
+      "Aggiunta selezione stile dell'applicazione nelle impostazioni!",
     icon: Settings,
-  }, */
+  },
+];

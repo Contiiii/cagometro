@@ -79,12 +79,12 @@ export default function ReportChart({
                   setSelectedPointId(point.id);
                   setDetailsOpen(true);
                 }}
-                className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
+                className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <span
                   className={`text-xs font-black ${
                     isSelected
-                      ? "text-pink-500"
+                      ? "text-accent"
                       : "opacity-0"
                   }`}
                 >
@@ -118,8 +118,8 @@ export default function ReportChart({
                     }}
                     className={`w-full rounded-full transition-colors ${
                       isSelected
-                        ? "bg-pink-500"
-                        : "bg-pink-500/45 group-hover:bg-pink-500/70"
+                        ? "bg-accent"
+                        : "bg-accent/45 group-hover:bg-accent/70"
                     }`}
                   />
                 </div>
@@ -127,7 +127,7 @@ export default function ReportChart({
                 <span
                   className={`h-3 text-[10px] font-bold ${
                     isSelected
-                      ? "text-pink-500"
+                      ? "text-accent"
                       : theme.subtle
                   }`}
                 >

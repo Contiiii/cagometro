@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import useModalFocusTrap from "../hooks/useModalFocusTrap";
 import {
   ArrowLeft,
-  Bell,
   BellRing,
   ChevronRight,
   Cloud,
@@ -14,18 +13,15 @@ import {
   Moon,
   Palette,
   Pencil,
-  RefreshCw,
   Save,
   Send,
   Shield,
   Smartphone,
-  Sparkles,
   Sun,
   Trash2,
   User,
   UsersRound,
   Vibrate,
-  Wand2,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -34,15 +30,21 @@ import { useNavigate } from "react-router-dom";
 import { useProfile } from "../hooks/useProfile";
 import { useAuth } from "../hooks/useAuth";
 
+import { useEntries } from "../hooks/useEntries";
+
 import { useTeam } from "../hooks/useTeam";
 
 import { useTheme } from "../hooks/useTheme";
+
+import { useSettings } from "../hooks/useSettings";
 
 import IconTile from "../components/ui/IconTile";
 import StatCard from "../components/ui/StatCard";
 
 import { submitFeedback } from "../services/feedbackService";
 import { APP_VERSION } from "../config/releaseNotes";
+import { accentOptions } from "../config/appearance";
+import { resolveSyncState } from "../config/syncState";
 
 const feedbackCategories = [
   { id: "miglioria", label: "Miglioria" },
@@ -51,27 +53,20 @@ const feedbackCategories = [
   { id: "altro", label: "Altro" },
 ];
 
-const accentOptions = [
-  { id: "pink", label: "Rosa classico", color: "#ec4899" },
-  { id: "amber", label: "Ambra sospetta", color: "#f59e0b" },
-  { id: "emerald", label: "Verde compost", color: "#10b981" },
-  { id: "violet", label: "Viola illegale", color: "#8b5cf6" },
-];
-
 const settingsSections = [
   {
     id: "appearance",
     label: "Aspetto",
     description: "Tema, colore e movimento",
     icon: Palette,
-    disabled: true,
+    disabled: false,
   },
   {
     id: "notifications",
     label: "Notifiche",
     description: "Promemoria e avvisi",
     icon: BellRing,
-    disabled: true,
+    disabled: false,
   },
   {
     id: "system",
@@ -85,7 +80,7 @@ const settingsSections = [
     label: "Privacy",
     description: "Esportazione e sicurezza",
     icon: Shield,
-    disabled: true,
+    disabled: false,
   },
   {
     id: "account",
@@ -119,22 +114,23 @@ export default function CagometroSettings() {
 
   const { theme: themeMode, setTheme, resolvedTheme } = useTheme();
 
-  const [accent, setAccent] = useState("pink");
+  const {
+    accent,
+    setAccent,
+    vibrationEnabled,
+    initialTeamActivityLimit,
+    updateSetting,
+  } = useSettings();
+
+  const { syncStatus, pendingChanges } = useEntries();
+
   const [activeSection, setActiveSection] = useState("system");
-
-  const [dailyReminder, setDailyReminder] = useState(true);
-  const [streakAlerts, setStreakAlerts] = useState(true);
-  const [achievementAlerts, setAchievementAlerts] = useState(true);
-  const [teamAlerts, setTeamAlerts] = useState(false);
-
-  const [vibrationEnabled, setVibrationEnabled] = useState(true);
-  const [animationsEnabled, setAnimationsEnabled] = useState(true);
-  const [compactStats, setCompactStats] = useState(false);
   const cloudEnabled = Boolean(user);
+  const canVibrate =
+    typeof navigator !== "undefined" &&
+    typeof navigator.vibrate === "function";
 
-  const syncState = cloudEnabled
-    ? "Sincronizzazione automatica attiva"
-    : "Sincronizzazione non disponibile";
+  const syncState = resolveSyncState(user, syncStatus, pendingChanges);
 
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [dangerModal, setDangerModal] = useState(null);
@@ -215,6 +211,10 @@ export default function CagometroSettings() {
     window.setTimeout(() => {
       setToast(null);
     }, 2200);
+  };
+
+  const handleSoon = () => {
+    showToast("In arrivo");
   };
 
   const openProfileEditor = () => {
@@ -316,7 +316,6 @@ export default function CagometroSettings() {
   return (
     <div
       className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
-      style={{ "--accent": accentColor }}
     >
       <header
         className={`sticky top-0 z-30 border-b backdrop-blur-xl ${theme.header}`}
@@ -347,21 +346,21 @@ export default function CagometroSettings() {
           <IconTile
   size="lg"
   role="status"
-  aria-label={syncState}
-  title={syncState}
+  aria-label={syncState.label}
+  title={syncState.label}
   className={`relative border ${theme.soft}`}
 >
   <Cloud
     className="h-5 w-5"
     strokeWidth={2.2}
     style={{
-      color: cloudEnabled ? accentColor : "#f59e0b",
+      color: syncState.iconColor ?? accentColor,
     }}
   />
 
   <span
     className={`absolute right-2 top-2 h-2 w-2 rounded-full ${
-      cloudEnabled ? "bg-emerald-500" : "bg-amber-500"
+      syncState.dotClass
     }`}
   />
 </IconTile>
@@ -652,11 +651,14 @@ export default function CagometroSettings() {
                   themeMode={themeMode}
                   setTheme={setTheme}
                   vibrationEnabled={vibrationEnabled}
-                  setVibrationEnabled={setVibrationEnabled}
-                  animationsEnabled={animationsEnabled}
-                  setAnimationsEnabled={setAnimationsEnabled}
-                  compactStats={compactStats}
-                  setCompactStats={setCompactStats}
+                  setVibrationEnabled={(value) =>
+                    updateSetting("vibrationEnabled", value)
+                  }
+                  canVibrate={canVibrate}
+                  initialTeamActivityLimit={initialTeamActivityLimit}
+                  setInitialTeamActivityLimit={(value) =>
+                    updateSetting("initialTeamActivityLimit", value)
+                  }
                 />
               )}
 
@@ -664,14 +666,6 @@ export default function CagometroSettings() {
                 <NotificationsPanel
                   theme={theme}
                   accentColor={accentColor}
-                  dailyReminder={dailyReminder}
-                  setDailyReminder={setDailyReminder}
-                  streakAlerts={streakAlerts}
-                  setStreakAlerts={setStreakAlerts}
-                  achievementAlerts={achievementAlerts}
-                  setAchievementAlerts={setAchievementAlerts}
-                  teamAlerts={teamAlerts}
-                  setTeamAlerts={setTeamAlerts}
                 />
               )}
 
@@ -679,13 +673,19 @@ export default function CagometroSettings() {
                 <SystemPanel
                   theme={theme}
                   accentColor={accentColor}
-                  syncState={syncState}
+                  syncState={syncState.label}
+                  syncDotClass={syncState.dotClass}
+                  syncPing={syncState.ping}
                   cloudEnabled={cloudEnabled}
                 />
               )}
 
               {activeSection === "privacy" && (
-                <PrivacyPanel theme={theme} accentColor={accentColor} />
+                <PrivacyPanel
+                  theme={theme}
+                  accentColor={accentColor}
+                  onSoon={handleSoon}
+                />
               )}
 
               {activeSection === "account" && (
@@ -696,6 +696,7 @@ export default function CagometroSettings() {
                   accent={accent}
                   onDanger={setDangerModal}
                   onFeedback={openFeedback}
+                  onSoon={handleSoon}
                 />
               )}
             </motion.section>
@@ -838,7 +839,7 @@ export default function CagometroSettings() {
                   onChange={(event) => setFeedbackMessage(event.target.value)}
                   placeholder="Miglioria, aggiornamento, bug… dimmi tutto."
                   rows={5}
-                  className="min-h-32 resize-y rounded-2xl border border-zinc-300/70 bg-white/80 p-4 text-sm font-medium text-zinc-900 outline-none transition focus-visible:ring-2 focus-visible:ring-pink-500"
+                  className="min-h-32 resize-y rounded-2xl border border-zinc-300/70 bg-white/80 p-4 text-sm font-medium text-zinc-900 outline-none transition focus-visible:ring-2 focus-visible:ring-accent"
                   style={{ "--tw-ring-color": accentColor }}
                 />
               </label>
@@ -903,10 +904,9 @@ function AppearancePanel({
   setTheme,
   vibrationEnabled,
   setVibrationEnabled,
-  animationsEnabled,
-  setAnimationsEnabled,
-  compactStats,
-  setCompactStats,
+  canVibrate,
+  initialTeamActivityLimit,
+  setInitialTeamActivityLimit,
 }) {
   const themeOptions = [
     { id: "light", label: "Chiaro", icon: Sun },
@@ -1001,53 +1001,68 @@ function AppearancePanel({
         })}
       </div>
 
-      <div className="mt-7 grid gap-3 sm:grid-cols-2">
-        <SettingToggleCard
-          icon={Vibrate}
-          title="Vibrazione"
-          description="Un feedback tattile quando tocchi ciò che conta."
-          value={vibrationEnabled}
-          onChange={setVibrationEnabled}
-          theme={theme}
-          accentColor={accentColor}
-        />
+      <p
+        className={`mt-7 text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+      >
+        Attività del team
+      </p>
 
-        <SettingToggleCard
-          icon={Sparkles}
-          title="Animazioni"
-          description="Piccoli movimenti, senza balletto gratuito."
-          value={animationsEnabled}
-          onChange={setAnimationsEnabled}
-          theme={theme}
-          accentColor={accentColor}
-        />
+      <p className={`mt-1 text-sm font-medium ${theme.muted}`}>
+        Quante attività recenti mostrare all'inizio.
+      </p>
 
-        <SettingToggleCard
-          icon={Wand2}
-          title="Statistiche compatte"
-          description="Più informazioni, meno aria teatrale."
-          value={compactStats}
-          onChange={setCompactStats}
-          theme={theme}
-          accentColor={accentColor}
-        />
+      <div className="mt-3 grid grid-cols-3 divide-x divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+        {[3, 5, 10].map((option) => {
+          const active = initialTeamActivityLimit === option;
+
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setInitialTeamActivityLimit(option)}
+              aria-pressed={active}
+              className={`flex h-11 items-center justify-center text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 ${
+                active
+                  ? "text-white"
+                  : `${theme.soft} ${theme.muted}`
+              }`}
+              style={{
+                backgroundColor: active
+                  ? accentColor
+                  : undefined,
+                borderLeftColor: active
+                  ? accentColor
+                  : undefined,
+                borderRightColor: active
+                  ? accentColor
+                  : undefined,
+                "--tw-ring-color": accentColor,
+              }}
+            >
+              {option}
+            </button>
+          );
+        })}
       </div>
+
+      {canVibrate && (
+        <div className="mt-7 grid gap-3 sm:grid-cols-2">
+          <SettingToggleCard
+            icon={Vibrate}
+            title="Vibrazione"
+            description="Un feedback tattile quando tocchi ciò che conta."
+            value={vibrationEnabled}
+            onChange={setVibrationEnabled}
+            theme={theme}
+            accentColor={accentColor}
+          />
+        </div>
+      )}
     </PanelFrame>
   );
 }
 
-function NotificationsPanel({
-  theme,
-  accentColor,
-  dailyReminder,
-  setDailyReminder,
-  streakAlerts,
-  setStreakAlerts,
-  achievementAlerts,
-  setAchievementAlerts,
-  teamAlerts,
-  setTeamAlerts,
-}) {
+function NotificationsPanel({ theme, accentColor }) {
   return (
     <PanelFrame
       eyebrow="Notifiche"
@@ -1055,52 +1070,35 @@ function NotificationsPanel({
       description="Avvisi utili, senza trasformare il telefono in una sirena."
       theme={theme}
     >
-      <div className="grid gap-3">
-        <SettingToggleRow
-          icon={Bell}
-          title="Promemoria giornaliero"
-          description="Il classico “ehi, esisti ancora?”."
-          value={dailyReminder}
-          onChange={setDailyReminder}
-          accentColor={accentColor}
-          theme={theme}
-        />
+      <div className={`rounded-[1.5rem] border p-4 ${theme.soft}`}>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className={`text-sm font-black ${theme.text}`}>
+              Notifiche del dispositivo
+            </p>
 
-        <SettingToggleRow
-          icon={RefreshCw}
-          title="Avvisi streak"
-          description="Quando la serie è viva e chiede rispetto."
-          value={streakAlerts}
-          onChange={setStreakAlerts}
-          accentColor={accentColor}
-          theme={theme}
-        />
+            <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
+              Promemoria giornaliero, avvisi streak, traguardi e notifiche di
+              squadra.
+            </p>
+          </div>
 
-        <SettingToggleRow
-          icon={Sparkles}
-          title="Traguardi sbloccati"
-          description="Per celebrare i momenti in cui fai sul serio."
-          value={achievementAlerts}
-          onChange={setAchievementAlerts}
-          accentColor={accentColor}
-          theme={theme}
-        />
-
-        <SettingToggleRow
-          icon={UsersRound}
-          title="Notifiche di squadra"
-          description="Quando il team chiama, almeno lo sai."
-          value={teamAlerts}
-          onChange={setTeamAlerts}
-          accentColor={accentColor}
-          theme={theme}
-        />
+          <span
+            className="shrink-0 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em]"
+            style={{
+              backgroundColor: `${accentColor}18`,
+              color: accentColor,
+            }}
+          >
+            Prossimamente
+          </span>
+        </div>
       </div>
     </PanelFrame>
   );
 }
 
-function PrivacyPanel({ theme, accentColor }) {
+function PrivacyPanel({ theme, accentColor, onSoon }) {
   return (
     <PanelFrame
       eyebrow="Privacy"
@@ -1113,30 +1111,27 @@ function PrivacyPanel({ theme, accentColor }) {
           icon={Download}
           title="Esporta dati"
           description="CSV riepilogativo locale."
-          actionLabel="Prossimamente"
+          onClick={onSoon}
           theme={theme}
           accentColor={accentColor}
-          disabled
         />
 
         <ActionRow
           icon={Shield}
           title="Verifica dispositivi"
           description="Controllo delle sessioni e dei dispositivi collegati."
-          actionLabel="Prossimamente"
+          onClick={onSoon}
           theme={theme}
           accentColor={accentColor}
-          disabled
         />
 
         <ActionRow
           icon={Info}
           title="Informativa privacy"
           description="Come vengono trattati i dati dell’account."
-          actionLabel="Prossimamente"
+          onClick={onSoon}
           theme={theme}
           accentColor={accentColor}
-          disabled
         />
       </div>
     </PanelFrame>
@@ -1150,6 +1145,7 @@ function AccountPanel({
   accent,
   onDanger,
   onFeedback,
+  onSoon,
 }) {
   const accentLabel =
     accentOptions.find((item) => item.id === accent)?.label ?? "Rosa classico";
@@ -1214,11 +1210,23 @@ function AccountPanel({
             onClick={() => onDanger("logout")}
           />
 
-          <DangerButton icon={UsersRound} label="Esci dalla squadra" disabled />
+          <DangerButton
+            icon={UsersRound}
+            label="Esci dalla squadra"
+            onClick={() => onSoon()}
+          />
 
-          <DangerButton icon={Trash2} label="Elimina dati locali" disabled />
+          <DangerButton
+            icon={Trash2}
+            label="Elimina dati locali"
+            onClick={() => onSoon()}
+          />
 
-          <DangerButton icon={X} label="Elimina account" disabled />
+          <DangerButton
+            icon={X}
+            label="Elimina account"
+            onClick={() => onSoon()}
+          />
         </div>
       </div>
     </PanelFrame>
@@ -1279,53 +1287,6 @@ function SettingToggleCard({
       <p className={`mt-1 text-xs font-medium leading-relaxed ${theme.muted}`}>
         {description}
       </p>
-    </button>
-  );
-}
-
-function SettingToggleRow({
-  icon: Icon,
-  title,
-  description,
-  value,
-  onChange,
-  accentColor,
-  theme,
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!value)}
-      aria-pressed={value}
-      className={`flex min-h-[76px] items-center justify-between gap-4 rounded-[1.3rem] border px-4 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
-      style={{ "--tw-ring-color": accentColor }}
-    >
-      <span className="flex min-w-0 items-center gap-3">
-        <IconTile
-          size="md"
-          rounded="rounded-xl"
-          style={{ backgroundColor: `${accentColor}15` }}
-        >
-          <Icon
-            className="h-[18px] w-[18px]"
-            strokeWidth={2.2}
-            style={{ color: accentColor }}
-          />
-        </IconTile>
-
-        <span className="min-w-0">
-          <span className={`block text-sm font-black ${theme.text}`}>
-            {title}
-          </span>
-          <span
-            className={`mt-1 block text-xs font-medium leading-relaxed ${theme.muted}`}
-          >
-            {description}
-          </span>
-        </span>
-      </span>
-
-      <TinySwitch value={value} accentColor={accentColor} />
     </button>
   );
 }
@@ -1575,7 +1536,14 @@ function StatusBadge({ children, active = true }) {
   );
 }
 
-function SystemPanel({ theme, accentColor, cloudEnabled,syncState }) {
+function SystemPanel({
+  theme,
+  accentColor,
+  cloudEnabled,
+  syncState,
+  syncDotClass,
+  syncPing,
+}) {
   return (
     <PanelFrame
       eyebrow="Sistema"
@@ -1614,13 +1582,13 @@ function SystemPanel({ theme, accentColor, cloudEnabled,syncState }) {
         </div>
 
         <span className="relative flex h-3 w-3 shrink-0">
-          {cloudEnabled && (
+          {syncPing && (
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
           )}
 
           <span
             className={`relative inline-flex h-3 w-3 rounded-full ${
-              cloudEnabled ? "bg-emerald-500" : "bg-amber-500"
+              syncDotClass
             }`}
           />
         </span>
