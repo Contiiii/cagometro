@@ -35,8 +35,6 @@ import { useAuth } from "../hooks/useAuth";
 
 import { useEntries } from "../hooks/useEntries";
 
-import { useTeam } from "../hooks/useTeam";
-
 import { useTheme } from "../hooks/useTheme";
 
 import { useSettings } from "../hooks/useSettings";
@@ -104,12 +102,6 @@ export default function CagometroSettings() {
   const navigate = useNavigate();
   const { profile, updateProfile } = useProfile();
   const { user, login, logout } = useAuth();
-  const { team } = useTeam();
-
-  const profileTeam =
-    team?.name ??
-    team?.team_name ??
-    null;
 
   const profileName = profile?.displayName ?? profile?.display_name ?? "Utente";
 
@@ -536,14 +528,6 @@ export default function CagometroSettings() {
                 <p className={`mt-1 truncate text-sm ${theme.muted}`}>
                   {user?.email ?? "Nessuna email collegata"}
                 </p>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span
-                    className={`rounded-full border px-3 py-1 text-xs font-black ${theme.soft}`}
-                  >
-                    {profileTeam ?? "Nessuna squadra"}
-                  </span>
-                </div>
               </div>
             </div>
 
