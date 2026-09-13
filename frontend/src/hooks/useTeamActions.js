@@ -76,6 +76,7 @@ export function useTeamActions({
         name,
         description: payload.description?.trim() || null,
         avatarEmoji: "🏆",
+        maxMembers: payload.maxMembers,
       });
 
       // Nota: privacy/accent non vengono inviati perché la RPC create_team
@@ -439,6 +440,7 @@ reportError(error, {
         name: payload.name?.trim(),
         description: payload.description?.trim() || null,
         avatarEmoji: payload.avatarEmoji,
+        maxMembers: payload.maxMembers,
       });
     } catch (error) {
       reportError(error, {

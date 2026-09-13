@@ -45,6 +45,8 @@ export function EntriesProvider({ children }) {
 
   const entriesRef = useRef(entries);
 
+  const entriesOwnerRef = useRef(null);
+
   useEffect(() => {
     entriesRef.current = entries;
   }, [entries]);
@@ -155,10 +157,27 @@ export function EntriesProvider({ children }) {
   useEffect(() => {
     if (authLoading) return;
 
+    let cancelled = false;
+
     async function bootstrapEntries() {
+      const previousOwner = entriesOwnerRef.current;
+
       if (!user) {
+        entriesOwnerRef.current = null;
+        setPendingChanges([]);
+        setSyncStatus("synced");
         setEntries(loadAnonymousEntries());
         return;
+      }
+
+      // Cambio account: azzera subito lo stato del proprietario precedente
+      // così i suoi dati non finiscono nella chiave del nuovo utente.
+      entriesOwnerRef.current = user.id;
+
+      if (previousOwner !== user.id) {
+        setPendingChanges([]);
+        setSyncStatus("synced");
+        setEntries({});
       }
 
       // 1. Mostra subito la cache locale
@@ -185,6 +204,8 @@ export function EntriesProvider({ children }) {
             ),
           );
 
+          if (cancelled) return;
+
           clearPendingSync(user.id);
           setPendingChanges([]);
         } catch (error) {
@@ -195,10 +216,16 @@ export function EntriesProvider({ children }) {
       try {
         const data = await getEntries(user.id);
 
+        // Un fetch partito per un account precedente non deve
+        // sovrascrivere i dati dell'account corrente.
+        if (cancelled) return;
+
         if (data.length === 0 && hasAnonymousEntries()) {
           const anonymousEntries = loadAnonymousEntries();
 
           const migratedData = await importEntries(user.id, anonymousEntries);
+
+          if (cancelled) return;
 
           localStorage.removeItem("entries_anonymous");
 
@@ -216,10 +243,21 @@ export function EntriesProvider({ children }) {
     }
 
     bootstrapEntries();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, authLoading]);
 
   useEffect(() => {
     if (authLoading) return;
+
+    // Persiste solo se i dati in stato appartengono davvero all'utente
+    // corrente: durante un cambio account non deve finire roba del
+    // vecchio account nella chiave del nuovo.
+    if (entriesOwnerRef.current !== (user?.id ?? null)) {
+      return;
+    }
 
     if (user) {
       saveUserEntries(user.id, entries);
@@ -319,6 +357,7 @@ export function EntriesProvider({ children }) {
   }
 
   const clearLocalData = useCallback(() => {
+    entriesOwnerRef.current = null;
     setEntries({});
     entriesRef.current = {};
     setPendingChanges([]);

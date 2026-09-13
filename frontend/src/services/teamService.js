@@ -1,10 +1,11 @@
 import { supabase } from "../lib/supabase";
 
-export async function createTeam({ name, description, avatarEmoji }) {
+export async function createTeam({ name, description, avatarEmoji, maxMembers }) {
   const { data, error } = await supabase.rpc("create_team", {
     team_name: name,
     team_description: description,
     team_avatar_emoji: avatarEmoji,
+    team_max_members: maxMembers,
   });
 
   if (error) {
@@ -100,11 +101,12 @@ export async function getTeamLeaderboard() {
   return data ?? [];
 }
 
-export async function updateTeam({ name, description, avatarEmoji }) {
+export async function updateTeam({ name, description, avatarEmoji, maxMembers }) {
   const { data, error } = await supabase.rpc("update_team", {
     p_name: name,
     p_description: description,
     p_avatar_emoji: avatarEmoji,
+    p_max_members: maxMembers,
   });
 
   if (error) {

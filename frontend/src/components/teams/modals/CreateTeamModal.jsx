@@ -21,6 +21,7 @@ export default function CreateTeamModal({
 
   const [teamName, setTeamName] = useState("");
   const [description, setDescription] = useState("");
+  const [maxMembers, setMaxMembers] = useState(10);
   const [accent, setAccent] = useState("pink");
   const [submitting, setSubmitting] = useState(false);
   const [justCreated, setJustCreated] = useState(false);
@@ -90,6 +91,7 @@ export default function CreateTeamModal({
       const payload = {
         name: teamName.trim(),
         description: description.trim(),
+        maxMembers,
 
         // Il colore è temporaneamente solo visivo:
         // non viene inviato né salvato nel database.
@@ -105,6 +107,7 @@ export default function CreateTeamModal({
         setJustCreated(false);
         setTeamName("");
         setDescription("");
+        setMaxMembers(10);
         setAccent("pink");
         onClose();
       }, 900);
@@ -254,6 +257,66 @@ export default function CreateTeamModal({
                     </span>
                   </div>
                 </label>
+
+                <div className="grid gap-2">
+                  <span
+                    className={`text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+                  >
+                    Dimensione squadra
+                  </span>
+
+                  <div
+                    className={`flex items-center justify-between rounded-2xl border px-2 py-1 ${theme.input}`}
+                  >
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() =>
+                        setMaxMembers((current) => Math.max(2, current - 1))
+                      }
+                      aria-label="Riduci dimensione squadra"
+                      className={`grid h-10 w-10 place-items-center rounded-xl text-lg font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40 ${theme.soft}`}
+                    >
+                      −
+                    </button>
+
+                    <label className="flex items-baseline gap-1">
+                      <input
+                        type="number"
+                        min={2}
+                        max={50}
+                        value={maxMembers}
+                        disabled={submitting}
+                        onChange={(event) => {
+                          const next = Number(event.target.value);
+                          setMaxMembers(
+                            Number.isNaN(next) ? 2 : Math.min(50, Math.max(2, next)),
+                          );
+                        }}
+                        className={`w-14 bg-transparent text-center text-sm font-black outline-none disabled:opacity-60 ${theme.text}`}
+                      />
+                      <span className={`text-xs font-medium ${theme.subtle}`}>
+                        membri
+                      </span>
+                    </label>
+
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() =>
+                        setMaxMembers((current) => Math.min(50, current + 1))
+                      }
+                      aria-label="Aumenta dimensione squadra"
+                      className={`grid h-10 w-10 place-items-center rounded-xl text-lg font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40 ${theme.soft}`}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <p className={`text-xs ${theme.subtle}`}>
+                    Da 2 a 50 membri inclusi i fondatori.
+                  </p>
+                </div>
 
                 <div className="grid gap-2">
                   <span

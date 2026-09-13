@@ -99,6 +99,7 @@ describe("useTeamActions", () => {
       await result.current.handleCreateTeam({
         name: "Comp",
         description: "desc",
+        maxMembers: 12,
       });
     });
 
@@ -106,6 +107,7 @@ describe("useTeamActions", () => {
       name: "Comp",
       description: "desc",
       avatarEmoji: "🏆",
+      maxMembers: 12,
     });
     expect(props.refreshTeam).toHaveBeenCalledTimes(1);
     expect(props.refreshMembers).toHaveBeenCalledTimes(1);
@@ -409,6 +411,7 @@ describe("useTeamActions", () => {
         name: "Nuovo nome",
         description: "x",
         avatarEmoji: "🔥",
+        maxMembers: 15,
       });
     });
 
@@ -416,6 +419,7 @@ describe("useTeamActions", () => {
       name: "Nuovo nome",
       description: "x",
       avatarEmoji: "🔥",
+      maxMembers: 15,
     });
     expect(props.refreshTeam).toHaveBeenCalledTimes(1);
     expect(countErrorNotifies(notify)).toBe(0);

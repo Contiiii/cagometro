@@ -30,6 +30,7 @@ export default function EditTeamModal({
 
   const [name, setName] = useState(team?.team_name || "");
   const [description, setDescription] = useState(team?.description || "");
+  const [maxMembers, setMaxMembers] = useState(team?.max_members || 10);
   const [emoji, setEmoji] = useState(team?.avatar_emoji || "🏆");
   const [saving, setSaving] = useState(false);
 
@@ -37,11 +38,13 @@ export default function EditTeamModal({
 
   const originalName = (team?.team_name || "").trim();
   const originalDescription = (team?.description || "").trim();
+  const originalMaxMembers = team?.max_members || 10;
   const originalEmoji = team?.avatar_emoji || "🏆";
 
   const hasChanges =
     name.trim() !== originalName ||
     description.trim() !== originalDescription ||
+    maxMembers !== originalMaxMembers ||
     emoji !== originalEmoji;
 
   function handleClose() {
@@ -66,6 +69,7 @@ export default function EditTeamModal({
         name: normalizedName,
         description: normalizedDescription,
         avatarEmoji: emoji,
+        maxMembers,
       });
 
       toast.success("Squadra aggiornata");
@@ -179,6 +183,64 @@ export default function EditTeamModal({
               {description.length}/160
             </span>
           </div>
+        </div>
+
+        <div className="mt-5">
+          <p className={`text-sm font-bold ${theme.primaryText}`}>
+            Dimensione squadra
+          </p>
+
+          <div
+            className={`mt-3 flex items-center justify-between rounded-2xl border px-2 py-1 ${theme.input}`}
+          >
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() =>
+                setMaxMembers((current) => Math.max(2, current - 1))
+              }
+              aria-label="Riduci dimensione squadra"
+              className={`grid h-10 w-10 place-items-center rounded-xl text-lg font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40 ${theme.softSurface}`}
+            >
+              −
+            </button>
+
+            <label className="flex items-baseline gap-1">
+              <input
+                type="number"
+                min={2}
+                max={50}
+                value={maxMembers}
+                disabled={saving}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setMaxMembers(
+                    Number.isNaN(next) ? 2 : Math.min(50, Math.max(2, next)),
+                  );
+                }}
+                className={`w-14 bg-transparent text-center text-sm font-black outline-none disabled:opacity-60 ${theme.primaryText}`}
+              />
+              <span className={`text-xs font-medium ${theme.subtle}`}>
+                membri
+              </span>
+            </label>
+
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() =>
+                setMaxMembers((current) => Math.min(50, current + 1))
+              }
+              aria-label="Aumenta dimensione squadra"
+              className={`grid h-10 w-10 place-items-center rounded-xl text-lg font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40 ${theme.softSurface}`}
+            >
+              +
+            </button>
+          </div>
+
+          <p className={`mt-2 text-xs ${theme.subtle}`}>
+            Da 2 a 50 membri inclusi i fondatori.
+          </p>
         </div>
 
         <div className="mt-5">

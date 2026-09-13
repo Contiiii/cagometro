@@ -5,56 +5,16 @@ export const APP_VERSION = "2.0.0";
 export const RELEASE_FEATURES = [
   {
     id: "teams-0",
-    title: "Aggiunta schermata di login!",
-    description: "E' stata aggiunta una nuova schermata per il login!",
+    title: "Aggiunto numero massimo membri!",
+    description: "ora puoi deciere tu il numero massimo dei membri per la tua squadra!",
     icon: UsersRound,
   },
-  {
-    id: "teams-1",
-    title: "Nuova classifica!",
-    description:
-      "Ora nella nuova classifica sotto al tuo nome ci saranno anche i tuoi XP e la tua streak!",
-    icon: UsersRound,
-  },
-  {
-    id: "teams-2",
-    title: "Nuovo design della classifica!",
-    description:
-      "Ora i primi 3 della classifica del proprio team avranno un titolo speciale!",
-    icon: UsersRound,
-  },
-  {
-    id: "teams-3",
-    title: "Schermata di accesso da link!",
-    description:
-      "Nuova schermata di accesso al teams quando si entra con il link! e aggiunta opzione per disattivare il codice di invito",
-    icon: UsersRound,
-  },
-  {
-    id: "teams-4",
-    title: "Nuova card spiegazione quando si crea una squadra!",
-    description:
-      "Nuova schermata che ti spiega come funzionano le squadre non appena ne crei una!",
-    icon: UsersRound,
-  },
+  /*
   {
     id: "reports-1",
     title: "Share eport migliorati",
     description:
       "Nuovo design per lo shere dei report! e nuove animazioni per gli achievements",
-    icon: BarChart3,
-  },
-  {
-    id: "reports-2",
-    title: "periodo in tre righe",
-    description: "Nuovo design per la sezione periodo in tre righe!",
-    icon: BarChart3,
-  },
-  {
-    id: "reports-3",
-    title: "Grafici modificati!",
-    description:
-      "I grafici della settimana e del totale sono stati modificati! ora rappresenteranno rispettivamente dal lunedi alla domenica e almeno 3 grafici anche se nulli!",
     icon: BarChart3,
   },
   {
@@ -65,16 +25,9 @@ export const RELEASE_FEATURES = [
   },
   {
     id: "settings-1",
-    title: "Aggiunto cambio stile applicazione",
-    description:
-      "Aggiunta selezione stile dell'applicazione nelle impostazioni!",
-    icon: Settings,
-  },
-  {
-    id: "settings-1",
     title: "Implementata schermata impostazioni!",
     description:
       "Creata schermata impostazioni implementandola!",
     icon: Settings,
-  },
+  },*/
 ];
