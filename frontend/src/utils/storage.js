@@ -1,5 +1,9 @@
 const ANONYMOUS_ENTRIES_KEY = "entries_anonymous";
 
+const SETTINGS_KEY = "cagometro_settings";
+const THEME_KEY = "cagometro_theme";
+const SHOWN_ACHIEVEMENTS_KEY = "shownAchievements";
+
 const LEGACY_ACHIEVEMENT_IDS = {
   "Prima Cacca": "prima-cacca",
   Abitudinario: "abitudinario",
@@ -10,7 +14,7 @@ const LEGACY_ACHIEVEMENT_IDS = {
 
 export function getShownAchievements() {
   const storedAchievements = JSON.parse(
-    localStorage.getItem("shownAchievements") || "[]",
+    localStorage.getItem(SHOWN_ACHIEVEMENTS_KEY) || "[]",
   );
 
   return storedAchievements.map(
@@ -19,7 +23,10 @@ export function getShownAchievements() {
 }
 
 export function saveShownAchievements(achievements) {
-  localStorage.setItem("shownAchievements", JSON.stringify(achievements));
+  localStorage.setItem(
+    SHOWN_ACHIEVEMENTS_KEY,
+    JSON.stringify(achievements),
+  );
 }
 
 export function loadAnonymousEntries() {
@@ -64,4 +71,16 @@ export function savePendingSync(userId, changes) {
 
 export function clearPendingSync(userId) {
   localStorage.removeItem(getPendingSyncKey(userId));
+}
+
+export function clearAllLocalData(userId) {
+  localStorage.removeItem(ANONYMOUS_ENTRIES_KEY);
+  localStorage.removeItem(SETTINGS_KEY);
+  localStorage.removeItem(THEME_KEY);
+  localStorage.removeItem(SHOWN_ACHIEVEMENTS_KEY);
+
+  if (userId) {
+    localStorage.removeItem(getUserEntriesKey(userId));
+    localStorage.removeItem(getPendingSyncKey(userId));
+  }
 }

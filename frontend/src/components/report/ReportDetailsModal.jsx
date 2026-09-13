@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
@@ -12,6 +13,8 @@ export default function ReportDetailsModal({
   theme,
   prefersReducedMotion,
 }) {
+  const titleId = useId();
+
   return (
     <AnimatePresence>
       {open && (
@@ -19,7 +22,7 @@ export default function ReportDetailsModal({
           theme={theme}
           prefersReducedMotion={prefersReducedMotion}
           onClose={onClose}
-          labelledBy="report-detail-title"
+          labelledBy={titleId}
           maxWidth="max-w-md"
           maxHeight=""
           overlayClass="bg-zinc-950/60"
@@ -32,7 +35,7 @@ export default function ReportDetailsModal({
                 </p>
 
                 <h2
-                  id="report-detail-title"
+                  id={titleId}
                   className={`mt-1 text-2xl font-black tracking-tight ${theme.text}`}
                 >
                   {selectedPoint.date}

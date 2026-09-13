@@ -2,10 +2,19 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { SettingsContext } from "./settings-context";
+
+import { useAuth } from "../hooks/useAuth";
+
+import {
+  getMySettings,
+  ensureMySettings,
+  upsertMySettings,
+} from "../services/settingsService";
 
 import {
   DEFAULT_ACCENT,
@@ -15,6 +24,8 @@ import {
 } from "../config/appearance";
 
 const STORAGE_KEY = "cagometro_settings";
+
+const ACCOUNT_SYNC_DEBOUNCE_MS = 800;
 
 const DEFAULT_SETTINGS = {
   confirmationsEnabled: true,
@@ -111,9 +122,136 @@ function loadStoredSettings() {
 }
 
 export function SettingsProvider({ children }) {
+  const { user, loading: authLoading } = useAuth();
+
   const [settings, setSettings] = useState(
     loadStoredSettings,
   );
+
+  const settingsRef = useRef(settings);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  const skipNextSyncRef = useRef(false);
+
+  useEffect(() => {
+    if (authLoading || !user?.id) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function syncSettingsFromAccount() {
+      try {
+        const serverSettings = await getMySettings();
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!serverSettings) {
+          await ensureMySettings();
+
+          if (cancelled) {
+            return;
+          }
+
+          await upsertMySettings({
+            dailyReminder: settingsRef.current.dailyReminder,
+            streakAlerts: settingsRef.current.streakAlerts,
+            achievementAlerts:
+              settingsRef.current.achievementAlerts,
+            teamAlerts: settingsRef.current.teamAlerts,
+          });
+
+          return;
+        }
+
+        const currentSettings = settingsRef.current;
+
+        const nextSettings = {
+          ...currentSettings,
+          dailyReminder: serverSettings.daily_reminder,
+          streakAlerts: serverSettings.streak_alerts,
+          achievementAlerts:
+            serverSettings.achievement_alerts,
+          teamAlerts: serverSettings.team_alerts,
+        };
+
+        const settingsChanged =
+          currentSettings.dailyReminder !==
+            nextSettings.dailyReminder ||
+          currentSettings.streakAlerts !==
+            nextSettings.streakAlerts ||
+          currentSettings.achievementAlerts !==
+            nextSettings.achievementAlerts ||
+          currentSettings.teamAlerts !==
+            nextSettings.teamAlerts;
+
+        if (!settingsChanged) {
+          return;
+        }
+
+        skipNextSyncRef.current = true;
+
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(nextSettings),
+        );
+
+        setSettings(nextSettings);
+      } catch (error) {
+        console.error(
+          "Errore sincronizzazione impostazioni account:",
+          error,
+        );
+      }
+    }
+
+    syncSettingsFromAccount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, authLoading]);
+
+  useEffect(() => {
+    if (authLoading || !user?.id) {
+      return;
+    }
+
+    if (skipNextSyncRef.current) {
+      skipNextSyncRef.current = false;
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      upsertMySettings({
+        dailyReminder: settings.dailyReminder,
+        streakAlerts: settings.streakAlerts,
+        achievementAlerts: settings.achievementAlerts,
+        teamAlerts: settings.teamAlerts,
+      }).catch((error) => {
+        console.error(
+          "Errore salvataggio impostazioni account:",
+          error,
+        );
+      });
+    }, ACCOUNT_SYNC_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [
+    user?.id,
+    authLoading,
+    settings.dailyReminder,
+    settings.streakAlerts,
+    settings.achievementAlerts,
+    settings.teamAlerts,
+  ]);
 
   useEffect(() => {
     const root = document.documentElement;

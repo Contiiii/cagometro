@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Check, Sparkles, UsersRound, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import useModalFocusTrap from "../hooks/useModalFocusTrap";
@@ -12,6 +12,7 @@ export default function ReleaseNotesModal({
   prefersReducedMotion = false,
 }) {
   const dialogRef = useRef(null);
+  const titleId = useId();
 
   useModalFocusTrap({
     dialogRef,
@@ -66,7 +67,7 @@ export default function ReleaseNotesModal({
             role="dialog"
             aria-modal="true"
             tabIndex={-1}
-            aria-labelledby="release-notes-title"
+            aria-labelledby={titleId}
             aria-describedby="release-notes-description"
             initial={
               prefersReducedMotion
@@ -110,7 +111,7 @@ export default function ReleaseNotesModal({
                   </div>
 
                   <h2
-                    id="release-notes-title"
+                    id={titleId}
                     className={`mt-4 text-3xl font-black tracking-[-0.06em] ${theme.text}`}
                   >
                     Cosa c’è di nuovo

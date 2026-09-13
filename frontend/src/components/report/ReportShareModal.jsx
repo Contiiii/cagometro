@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Share2, X } from "lucide-react";
 import { toBlob } from "html-to-image";
@@ -27,6 +27,7 @@ export default function ReportShareModal({
 }) {
   const cardRef = useRef(null);
   const dialogRef = useRef(null);
+  const titleId = useId();
   const todayRegistrations = todayTotal ?? 0;
   const isWeekReport = period === "week";
   const isMonthReport = period === "month";
@@ -145,7 +146,7 @@ async function handleShareCard() {
             role="dialog"
             aria-modal="true"
             tabIndex={-1}
-            aria-labelledby="share-report-title"
+            aria-labelledby={titleId}
             initial={
               prefersReducedMotion ? false : { opacity: 0, y: 22, scale: 0.98 }
             }
@@ -169,7 +170,7 @@ async function handleShareCard() {
                 </p>
 
                 <h2
-                  id="share-report-title"
+                  id={titleId}
                   className={`mt-1 text-[1.7rem] font-black tracking-[-0.04em] ${theme.primaryText}`}
                 >
                   Condividi il ritmo

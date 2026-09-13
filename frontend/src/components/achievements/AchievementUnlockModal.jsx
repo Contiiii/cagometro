@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import useModalFocusTrap from "../../hooks/useModalFocusTrap";
 
@@ -10,6 +10,7 @@ export default function AchievementUnlockModal({
   prefersReducedMotion,
 }) {
   const dialogRef = useRef(null);
+  const titleId = useId();
 
   useModalFocusTrap({ dialogRef, open, onClose });
 
@@ -57,6 +58,7 @@ export default function AchievementUnlockModal({
             role="dialog"
             aria-modal="true"
             tabIndex={-1}
+            aria-labelledby={titleId}
             onClick={(e) => e.stopPropagation()}
             initial={
               prefersReducedMotion
@@ -95,6 +97,7 @@ export default function AchievementUnlockModal({
               </p>
 
               <h2
+                id={titleId}
                 className={`mt-3 text-3xl font-black tracking-[-0.06em] ${theme.text}`}
               >
                 {achievement.title}

@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Check, LockKeyhole, X } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -12,6 +13,7 @@ export default function AchievementDetailModal({
   onClose,
 }) {
 
+  const titleId = useId();
   const icon = achievement.icon;
   const progress = achievement.target
     ? Math.min(
@@ -56,7 +58,7 @@ export default function AchievementDetailModal({
       theme={theme}
       prefersReducedMotion={prefersReducedMotion}
       onClose={onClose}
-      labelledBy="achievement-title"
+      labelledBy={titleId}
       maxWidth="max-w-md"
       maxHeight=""
       overlayClass="bg-zinc-950/60"
@@ -89,7 +91,7 @@ export default function AchievementDetailModal({
         </p>
 
         <h2
-          id="achievement-title"
+          id={titleId}
           className={`mt-2 text-3xl font-black tracking-[-0.06em] ${theme.text}`}
         >
           {achievement.title}

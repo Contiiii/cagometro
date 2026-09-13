@@ -4,6 +4,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SettingsProvider } from "./SettingsProvider";
 import { useSettings } from "../hooks/useSettings";
+import { useAuth } from "../hooks/useAuth";
+import {
+  getMySettings,
+  ensureMySettings,
+  upsertMySettings,
+} from "../services/settingsService";
+
+vi.mock("../hooks/useAuth", () => ({
+  useAuth: vi.fn(),
+}));
+
+vi.mock("../services/settingsService", () => ({
+  getMySettings: vi.fn(),
+  ensureMySettings: vi.fn(),
+  upsertMySettings: vi.fn(),
+}));
 
 const STORAGE_KEY = "cagometro_settings";
 
@@ -47,6 +63,11 @@ beforeEach(() => {
   });
 
   vi.clearAllMocks();
+
+  useAuth.mockReturnValue({ user: null, loading: false });
+  getMySettings.mockResolvedValue(null);
+  ensureMySettings.mockResolvedValue(undefined);
+  upsertMySettings.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -95,6 +116,24 @@ describe("SettingsProvider", () => {
     const latest = getLatest();
 
     expect(latest.accent).toBe("emerald");
+    expect(latest.teamAlerts).toBe(true);
+    expect(latest.dailyReminder).toBe(true);
+  });
+
+  it("dopo un refresh (remount) ripristina le preferenze persistenti", () => {
+    const first = renderProvider();
+
+    act(() => {
+      first.getLatest().updateSetting("accent", "violet");
+      first.getLatest().updateSetting("teamAlerts", true);
+    });
+
+    cleanup();
+
+    const { getLatest } = renderProvider();
+    const latest = getLatest();
+
+    expect(latest.accent).toBe("violet");
     expect(latest.teamAlerts).toBe(true);
     expect(latest.dailyReminder).toBe(true);
   });
@@ -223,5 +262,100 @@ describe("SettingsProvider", () => {
         getLatest().triggerHapticFeedback(30);
       });
     }).not.toThrow();
+  });
+
+  it("con utente autenticato carica le preferenze dal server", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    getMySettings.mockResolvedValue({
+      daily_reminder: false,
+      streak_alerts: true,
+      achievement_alerts: false,
+      team_alerts: true,
+    });
+
+    const { getLatest } = renderProvider();
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    const latest = getLatest();
+
+    expect(latest.dailyReminder).toBe(false);
+    expect(latest.streakAlerts).toBe(true);
+    expect(latest.achievementAlerts).toBe(false);
+    expect(latest.teamAlerts).toBe(true);
+
+    expect(upsertMySettings).not.toHaveBeenCalled();
+  });
+
+  it("senza riga sul server crea l'impostazione e invia le preferenze locali", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+    getMySettings.mockResolvedValue(null);
+
+    renderProvider();
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    expect(ensureMySettings).toHaveBeenCalledTimes(1);
+    expect(upsertMySettings).toHaveBeenCalledWith({
+      dailyReminder: true,
+      streakAlerts: true,
+      achievementAlerts: true,
+      teamAlerts: false,
+    });
+  });
+
+  it("salva le preferenze sul server dopo il debounce", async () => {
+    vi.useFakeTimers();
+
+    try {
+      useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+      getMySettings.mockResolvedValue({
+        daily_reminder: true,
+        streak_alerts: true,
+        achievement_alerts: true,
+        team_alerts: false,
+      });
+
+      const { getLatest } = renderProvider();
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      act(() => {
+        getLatest().updateSetting("teamAlerts", true);
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(800);
+      });
+
+      expect(upsertMySettings).toHaveBeenCalledWith({
+        dailyReminder: true,
+        streakAlerts: true,
+        achievementAlerts: true,
+        teamAlerts: true,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("senza utente non sincronizza con il server", async () => {
+    renderProvider();
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    expect(getMySettings).not.toHaveBeenCalled();
+    expect(ensureMySettings).not.toHaveBeenCalled();
+    expect(upsertMySettings).not.toHaveBeenCalled();
   });
 });

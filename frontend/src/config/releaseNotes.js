@@ -70,4 +70,11 @@ export const RELEASE_FEATURES = [
       "Aggiunta selezione stile dell'applicazione nelle impostazioni!",
     icon: Settings,
   },
+  {
+    id: "settings-1",
+    title: "Implementata schermata impostazioni!",
+    description:
+      "Creata schermata impostazioni implementandola!",
+    icon: Settings,
+  },
 ];

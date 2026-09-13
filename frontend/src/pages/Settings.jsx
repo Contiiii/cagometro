@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import useModalFocusTrap from "../hooks/useModalFocusTrap";
 import {
   ArrowLeft,
@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Cloud,
   Download,
+  Gauge,
   Info,
   Lightbulb,
   LogIn,
@@ -19,6 +20,8 @@ import {
   Smartphone,
   Sun,
   Trash2,
+  TrendingUp,
+  Trophy,
   User,
   UsersRound,
   Vibrate,
@@ -40,11 +43,23 @@ import { useSettings } from "../hooks/useSettings";
 
 import IconTile from "../components/ui/IconTile";
 import StatCard from "../components/ui/StatCard";
+import ReleaseNotesModal from "../components/ReleaseNotesModal";
 
 import { submitFeedback } from "../services/feedbackService";
-import { APP_VERSION } from "../config/releaseNotes";
+import {
+  deleteAccount,
+  getMySessions,
+  revokeOtherSessions,
+  revokeSession,
+} from "../services/accountService";
+import { APP_VERSION, RELEASE_FEATURES } from "../config/releaseNotes";
 import { accentOptions } from "../config/appearance";
 import { resolveSyncState } from "../config/syncState";
+import { getLevel } from "../config/levels";
+import { getTotalHistorical } from "../utils/stats";
+import { clearAllLocalData } from "../utils/storage";
+import { parseUserAgent } from "../utils/userAgent";
+import { buildTechExport } from "../utils/techExport";
 
 const feedbackCategories = [
   { id: "miglioria", label: "Miglioria" },
@@ -70,16 +85,9 @@ const settingsSections = [
   },
   {
     id: "system",
-    label: "Sistema",
-    description: "Stato dell'app",
+    label: "Dati e sincronizzazione",
+    description: "Servizi e salvataggio dei dati",
     icon: Cloud,
-    disabled: false,
-  },
-  {
-    id: "privacy",
-    label: "Privacy",
-    description: "Esportazione e sicurezza",
-    icon: Shield,
     disabled: false,
   },
   {
@@ -99,16 +107,13 @@ export default function CagometroSettings() {
   const { team } = useTeam();
 
   const profileTeam =
-  team?.name ??
-  team?.team_name ??
-  null;
+    team?.name ??
+    team?.team_name ??
+    null;
 
   const profileName = profile?.displayName ?? profile?.display_name ?? "Utente";
 
   const profileAvatar = profile?.avatarUrl ?? profile?.avatar_url ?? null;
-
-  const profileLevel = profile?.level ?? 1;
-  const profileXp = profile?.xp ?? 0;
 
   const profileInitial = profileName.trim().slice(0, 1).toUpperCase() || "U";
 
@@ -119,12 +124,25 @@ export default function CagometroSettings() {
     setAccent,
     vibrationEnabled,
     initialTeamActivityLimit,
+    dailyReminder,
+    streakAlerts,
+    achievementAlerts,
+    teamAlerts,
     updateSetting,
   } = useSettings();
 
-  const { syncStatus, pendingChanges } = useEntries();
+  const { entries, syncStatus, pendingChanges, clearLocalData } = useEntries();
 
-  const [activeSection, setActiveSection] = useState("system");
+  const dayCount = Object.keys(entries).length;
+  const totalCount = Object.values(entries).reduce(
+    (acc, value) => acc + value,
+    0,
+  );
+
+  const totalXp = getTotalHistorical(entries) * 10;
+  const effectiveLevel = getLevel(totalXp).level;
+
+  const [activeSection, setActiveSection] = useState(settingsSections[0].id);
   const cloudEnabled = Boolean(user);
   const canVibrate =
     typeof navigator !== "undefined" &&
@@ -141,6 +159,19 @@ export default function CagometroSettings() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackName, setFeedbackName] = useState("");
   const [feedbackSending, setFeedbackSending] = useState(false);
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
+  const [typedAccountName, setTypedAccountName] = useState("");
+
+  const openDangerAction = (action) => {
+    setTypedAccountName("");
+    setDangerModal(action);
+  };
+
+  const closeDangerAction = () => {
+    setTypedAccountName("");
+    setDangerModal(null);
+  };
 
   const mobileTabsRef = useRef(null);
   const mobileTabButtonsRef = useRef({});
@@ -148,7 +179,6 @@ export default function CagometroSettings() {
   const [draftProfile, setDraftProfile] = useState({
     name: "",
     email: "",
-    team: "",
   });
 
   const resolvedDark = resolvedTheme === "dark";
@@ -198,13 +228,6 @@ export default function CagometroSettings() {
     });
   }, [activeSection]);
 
-  const completedSetupCount = [
-    profileName !== "Utente",
-    Boolean(user?.email),
-  ].filter(Boolean).length;
-
-  const overallSetupProgress = Math.round((completedSetupCount / 2) * 100);
-
   const showToast = (message) => {
     setToast(message);
 
@@ -213,15 +236,49 @@ export default function CagometroSettings() {
     }, 2200);
   };
 
-  const handleSoon = () => {
-    showToast("In arrivo");
+  const handleExportTech = () => {
+    const payload = buildTechExport({
+      app: "Cagometro",
+      versione: APP_VERSION,
+      generatoIl: new Date().toISOString(),
+      utenteLoggato: Boolean(user),
+      syncStatus,
+      label: syncState.label,
+      modificheInAttesa: pendingChanges,
+      giorniRegistrati: dayCount,
+      totaleSegnalazioni: totalCount,
+      entries,
+    });
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const clock = new Date();
+    const stamp = [
+      clock.getFullYear(),
+      String(clock.getMonth() + 1).padStart(2, "0"),
+      String(clock.getDate()).padStart(2, "0"),
+      "-",
+      String(clock.getHours()).padStart(2, "0"),
+      String(clock.getMinutes()).padStart(2, "0"),
+    ].join("");
+
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `cagometro-export-${stamp}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+
+    showToast("Export tecnico scaricato");
   };
 
   const openProfileEditor = () => {
     setDraftProfile({
       name: profileName === "Utente" ? "" : profileName,
       email: user?.email ?? "",
-      team: profileTeam ?? "",
     });
 
     setProfileEditorOpen(true);
@@ -232,6 +289,25 @@ export default function CagometroSettings() {
     setFeedbackMessage("");
     setFeedbackName(profileName !== "Utente" ? profileName : "");
     setFeedbackOpen(true);
+  };
+
+  const openReleaseNotes = () => {
+    setReleaseNotesOpen(true);
+  };
+
+  const openSystemTab = () => {
+    setActiveSection("system");
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const closeReleaseNotes = () => {
+    window.localStorage.setItem(
+      "cagometro_last_seen_version",
+      APP_VERSION,
+    );
+
+    setReleaseNotesOpen(false);
   };
 
   async function sendFeedback() {
@@ -296,6 +372,44 @@ export default function CagometroSettings() {
   }
 
   async function handleDangerAction() {
+    if (dangerModal === "delete-data") {
+      setDangerModal(null);
+
+      clearLocalData();
+      clearAllLocalData(user?.id);
+      showToast("Dati locali eliminati");
+
+      return;
+    }
+
+    if (dangerModal === "delete-account") {
+      setDangerModal(null);
+
+      try {
+        await deleteAccount();
+
+        clearLocalData();
+        clearAllLocalData(user?.id);
+
+        try {
+          await logout();
+        } catch (error) {
+          console.error("Sessione già revocata:", error);
+        }
+
+        navigate("/");
+        showToast("Account eliminato");
+      } catch (error) {
+        console.error(
+          "Errore durante l'eliminazione dell'account:",
+          error,
+        );
+        showToast("Non è stato possibile eliminare l'account");
+      }
+
+      return;
+    }
+
     if (dangerModal !== "logout") {
       setDangerModal(null);
       return;
@@ -343,27 +457,29 @@ export default function CagometroSettings() {
             </p>
           </div>
 
-          <IconTile
-  size="lg"
-  role="status"
-  aria-label={syncState.label}
-  title={syncState.label}
-  className={`relative border ${theme.soft}`}
->
-  <Cloud
-    className="h-5 w-5"
-    strokeWidth={2.2}
-    style={{
-      color: syncState.iconColor ?? accentColor,
-    }}
-  />
+          <button
+            type="button"
+            onClick={openSystemTab}
+            aria-label="Vai allo stato di sincronizzazione"
+            className={`relative rounded-2xl border transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
+            style={{ "--tw-ring-color": accentColor }}
+          >
+            <IconTile size="lg" role="status">
+              <Cloud
+                className="h-5 w-5"
+                strokeWidth={2.2}
+                style={{
+                  color: syncState.iconColor ?? accentColor,
+                }}
+              />
+            </IconTile>
 
-  <span
-    className={`absolute right-2 top-2 h-2 w-2 rounded-full ${
-      syncState.dotClass
-    }`}
-  />
-</IconTile>
+            <span
+              className={`absolute right-2 top-2 h-2 w-2 rounded-full ${
+                syncState.dotClass
+              }`}
+            />
+          </button>
         </div>
       </header>
 
@@ -422,10 +538,6 @@ export default function CagometroSettings() {
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <StatusBadge active={cloudEnabled}>
-                    {cloudEnabled ? "Cloud attivo" : "Cloud non disponibile"}
-                  </StatusBadge>
-
                   <span
                     className={`rounded-full border px-3 py-1 text-xs font-black ${theme.soft}`}
                   >
@@ -459,64 +571,14 @@ export default function CagometroSettings() {
             </div>
           </div>
 
-          <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <StatCard label="Livello" value={profileLevel} theme={theme} />
+          <div className="relative mt-6 grid grid-cols-2 gap-3">
+            <StatCard label="Livello" value={effectiveLevel} theme={theme} />
 
             <StatCard
               label="Esperienza"
-              value={`${profileXp} XP`}
+              value={`${totalXp.toLocaleString("it-IT")} XP`}
               theme={theme}
             />
-
-            <StatCard
-              label="Squadra"
-              value={profileTeam ?? "—"}
-              theme={theme}
-              className="col-span-2 sm:col-span-1"
-            />
-          </div>
-
-          <div
-            className={`relative mt-5 rounded-[1.4rem] border p-4 ${theme.soft}`}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className={`text-sm font-black ${theme.text}`}>
-                  Assetto dell’account
-                </p>
-
-                <p
-                  className={`mt-1 text-xs font-medium leading-relaxed ${theme.muted}`}
-                >
-                  {overallSetupProgress === 100
-                    ? "Profilo pronto. Le informazioni principali sono complete."
-                    : "Completa le informazioni principali per preparare il profilo."}
-                </p>
-              </div>
-
-              <span
-                className="shrink-0 text-lg font-black"
-                style={{ color: accentColor }}
-              >
-                {overallSetupProgress}%
-              </span>
-            </div>
-
-            <div
-              className={`mt-4 h-2 overflow-hidden rounded-full ${
-                resolvedDark ? "bg-white/[0.08]" : "bg-zinc-900/[0.08]"
-              }`}
-            >
-              <motion.div
-                initial={false}
-                animate={{ width: `${overallSetupProgress}%` }}
-                transition={{
-                  duration: prefersReducedMotion ? 0 : 0.55,
-                }}
-                className="h-full rounded-full"
-                style={{ backgroundColor: accentColor }}
-              />
-            </div>
           </div>
         </section>
 
@@ -650,11 +712,6 @@ export default function CagometroSettings() {
                   accentColor={accentColor}
                   themeMode={themeMode}
                   setTheme={setTheme}
-                  vibrationEnabled={vibrationEnabled}
-                  setVibrationEnabled={(value) =>
-                    updateSetting("vibrationEnabled", value)
-                  }
-                  canVibrate={canVibrate}
                   initialTeamActivityLimit={initialTeamActivityLimit}
                   setInitialTeamActivityLimit={(value) =>
                     updateSetting("initialTeamActivityLimit", value)
@@ -666,6 +723,11 @@ export default function CagometroSettings() {
                 <NotificationsPanel
                   theme={theme}
                   accentColor={accentColor}
+                  dailyReminder={dailyReminder}
+                  streakAlerts={streakAlerts}
+                  achievementAlerts={achievementAlerts}
+                  teamAlerts={teamAlerts}
+                  updateSetting={updateSetting}
                 />
               )}
 
@@ -677,14 +739,16 @@ export default function CagometroSettings() {
                   syncDotClass={syncState.dotClass}
                   syncPing={syncState.ping}
                   cloudEnabled={cloudEnabled}
-                />
-              )}
-
-              {activeSection === "privacy" && (
-                <PrivacyPanel
-                  theme={theme}
-                  accentColor={accentColor}
-                  onSoon={handleSoon}
+                  dayCount={dayCount}
+                  totalCount={totalCount}
+                  pendingCount={pendingChanges.length}
+                  vibrationEnabled={vibrationEnabled}
+                  setVibrationEnabled={(value) =>
+                    updateSetting("vibrationEnabled", value)
+                  }
+                  canVibrate={canVibrate}
+                  onExportTech={handleExportTech}
+                  onShowReleaseNotes={openReleaseNotes}
                 />
               )}
 
@@ -694,9 +758,12 @@ export default function CagometroSettings() {
                   accentColor={accentColor}
                   themeMode={themeMode}
                   accent={accent}
-                  onDanger={setDangerModal}
+                  isLoggedIn={Boolean(user)}
+                  onDanger={openDangerAction}
                   onFeedback={openFeedback}
-                  onSoon={handleSoon}
+                  onPrivacy={() => navigate("/privacy")}
+                  onDevices={() => setSessionsOpen(true)}
+                  onShowReleaseNotes={openReleaseNotes}
                 />
               )}
             </motion.section>
@@ -720,6 +787,7 @@ export default function CagometroSettings() {
                   setDraftProfile((current) => ({ ...current, name: value }))
                 }
                 accentColor={accentColor}
+                dark={resolvedDark}
               />
 
               <Field
@@ -730,6 +798,7 @@ export default function CagometroSettings() {
                 }
                 accentColor={accentColor}
                 disabled
+                dark={resolvedDark}
               />
 
               <button
@@ -755,14 +824,12 @@ export default function CagometroSettings() {
           <ModalShell
             title="Conferma azione"
             theme={theme}
-            onClose={() => setDangerModal(null)}
+            onClose={closeDangerAction}
             prefersReducedMotion={prefersReducedMotion}
           >
             <div className="rounded-[1.4rem] border border-rose-500/20 bg-rose-500/10 p-4 text-rose-500">
               <p className="text-sm font-black">
                 {dangerModal === "logout" && "Vuoi davvero disconnetterti?"}
-                {dangerModal === "leave-team" &&
-                  "Vuoi davvero uscire dalla squadra?"}
                 {dangerModal === "delete-data" &&
                   "Vuoi eliminare i dati locali?"}
                 {dangerModal === "delete-account" &&
@@ -775,10 +842,39 @@ export default function CagometroSettings() {
               </p>
             </div>
 
+            {dangerModal === "delete-account" && (
+              <div className="mt-5 grid gap-2">
+                <label className="grid gap-2">
+                  <span
+                    className={`text-xs font-bold uppercase tracking-[0.12em] ${
+                      resolvedDark ? "text-zinc-400" : "text-zinc-500"
+                    }`}
+                  >
+                    Digita {profileName} per confermare
+                  </span>
+
+                  <input
+                    value={typedAccountName}
+                    onChange={(event) =>
+                      setTypedAccountName(event.target.value)
+                    }
+                    placeholder={profileName}
+                    autoComplete="off"
+                    className={`min-h-12 rounded-2xl border px-4 text-sm font-medium outline-none transition ${
+                      resolvedDark
+                        ? "border-white/10 bg-white/[0.06] text-zinc-100 placeholder:text-zinc-500"
+                        : "border-zinc-300/70 bg-white/80 text-zinc-900"
+                    }`}
+                    style={{ "--tw-ring-color": accentColor }}
+                  />
+                </label>
+              </div>
+            )}
+
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={() => setDangerModal(null)}
+                onClick={closeDangerAction}
                 className={`min-h-12 rounded-2xl border px-4 text-sm font-bold ${theme.soft}`}
               >
                 Annulla
@@ -787,7 +883,11 @@ export default function CagometroSettings() {
               <button
                 type="button"
                 onClick={handleDangerAction}
-                className="min-h-12 rounded-2xl bg-rose-500 px-4 text-sm font-extrabold text-white"
+                disabled={
+                  dangerModal === "delete-account" &&
+                  typedAccountName.trim() !== profileName
+                }
+                className="min-h-12 rounded-2xl bg-rose-500 px-4 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Conferma
               </button>
@@ -795,6 +895,26 @@ export default function CagometroSettings() {
           </ModalShell>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {sessionsOpen && (
+          <SessionsModal
+            theme={theme}
+            accentColor={accentColor}
+            onClose={() => setSessionsOpen(false)}
+            prefersReducedMotion={prefersReducedMotion}
+          />
+        )}
+      </AnimatePresence>
+
+      <ReleaseNotesModal
+        open={releaseNotesOpen}
+        onClose={closeReleaseNotes}
+        version={APP_VERSION}
+        features={RELEASE_FEATURES}
+        isDark={resolvedDark}
+        prefersReducedMotion={prefersReducedMotion}
+      />
 
       <AnimatePresence>
         {feedbackOpen && (
@@ -830,7 +950,11 @@ export default function CagometroSettings() {
               </div>
 
               <label className="grid gap-2">
-                <span className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">
+                <span
+                  className={`text-xs font-bold uppercase tracking-[0.12em] ${
+                    resolvedDark ? "text-zinc-400" : "text-zinc-500"
+                  }`}
+                >
                   Messaggio
                 </span>
 
@@ -839,7 +963,11 @@ export default function CagometroSettings() {
                   onChange={(event) => setFeedbackMessage(event.target.value)}
                   placeholder="Miglioria, aggiornamento, bug… dimmi tutto."
                   rows={5}
-                  className="min-h-32 resize-y rounded-2xl border border-zinc-300/70 bg-white/80 p-4 text-sm font-medium text-zinc-900 outline-none transition focus-visible:ring-2 focus-visible:ring-accent"
+                  className={`min-h-32 resize-y rounded-2xl border p-4 text-sm font-medium outline-none transition focus-visible:ring-2 ${
+                    resolvedDark
+                      ? "border-white/10 bg-white/[0.06] text-zinc-100 placeholder:text-zinc-500"
+                      : "border-zinc-300/70 bg-white/80 text-zinc-900"
+                  }`}
                   style={{ "--tw-ring-color": accentColor }}
                 />
               </label>
@@ -849,6 +977,7 @@ export default function CagometroSettings() {
                 value={feedbackName}
                 onChange={setFeedbackName}
                 accentColor={accentColor}
+                dark={resolvedDark}
               />
 
               <button
@@ -902,9 +1031,6 @@ function AppearancePanel({
   accentColor,
   themeMode,
   setTheme,
-  vibrationEnabled,
-  setVibrationEnabled,
-  canVibrate,
   initialTeamActivityLimit,
   setInitialTeamActivityLimit,
 }) {
@@ -921,148 +1047,140 @@ function AppearancePanel({
       description="Tema, colore e piccoli dettagli che rendono l’app più tua."
       theme={theme}
     >
-      <p
-        className={`text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
-      >
-        Tema
-      </p>
+      <div className={`rounded-2xl border p-4 ${theme.soft}`}>
+        <p
+          className={`text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+        >
+          Tema
+        </p>
 
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        {themeOptions.map((option) => {
-          const Icon = option.icon;
-          const active = themeMode === option.id;
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {themeOptions.map((option) => {
+            const Icon = option.icon;
+            const active = themeMode === option.id;
 
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setTheme(option.id)}
-              aria-pressed={active}
-              className={`min-h-[92px] rounded-[1.25rem] border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
-              style={{
-                borderColor: active ? accentColor : undefined,
-                boxShadow: active
-                  ? `0 0 0 1px ${accentColor} inset`
-                  : undefined,
-                "--tw-ring-color": accentColor,
-              }}
-            >
-              <Icon
-                className="h-5 w-5"
-                strokeWidth={2.2}
-                style={{ color: active ? accentColor : undefined }}
-              />
-              <p className={`mt-4 text-sm font-black ${theme.text}`}>
-                {option.label}
-              </p>
-            </button>
-          );
-        })}
-      </div>
-
-      <p
-        className={`mt-7 text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
-      >
-        Colore distintivo
-      </p>
-
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {accentOptions.map((option) => {
-          const active = accent === option.id;
-
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setAccent(option.id)}
-              aria-pressed={active}
-              className={`flex min-h-14 items-center justify-between rounded-2xl border px-4 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
-              style={{
-                borderColor: active ? option.color : undefined,
-                boxShadow: active
-                  ? `0 0 0 1px ${option.color} inset`
-                  : undefined,
-                "--tw-ring-color": option.color,
-              }}
-            >
-              <span className="flex items-center gap-3">
-                <span
-                  className="h-7 w-7 rounded-full shadow-sm"
-                  style={{ backgroundColor: option.color }}
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setTheme(option.id)}
+                aria-pressed={active}
+                className={`min-h-[92px] rounded-2xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
+                style={{
+                  borderColor: active ? accentColor : undefined,
+                  boxShadow: active
+                    ? `0 0 0 1px ${accentColor} inset`
+                    : undefined,
+                  "--tw-ring-color": accentColor,
+                }}
+              >
+                <Icon
+                  className="h-5 w-5"
+                  strokeWidth={2.2}
+                  style={{ color: active ? accentColor : undefined }}
                 />
-                <span className={`text-sm font-black ${theme.text}`}>
+                <p className={`mt-4 text-sm font-black ${theme.text}`}>
                   {option.label}
-                </span>
-              </span>
-
-              {active && <CheckMark color={option.color} />}
-            </button>
-          );
-        })}
-      </div>
-
-      <p
-        className={`mt-7 text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
-      >
-        Attività del team
-      </p>
-
-      <p className={`mt-1 text-sm font-medium ${theme.muted}`}>
-        Quante attività recenti mostrare all'inizio.
-      </p>
-
-      <div className="mt-3 grid grid-cols-3 divide-x divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-        {[3, 5, 10].map((option) => {
-          const active = initialTeamActivityLimit === option;
-
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setInitialTeamActivityLimit(option)}
-              aria-pressed={active}
-              className={`flex h-11 items-center justify-center text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 ${
-                active
-                  ? "text-white"
-                  : `${theme.soft} ${theme.muted}`
-              }`}
-              style={{
-                backgroundColor: active
-                  ? accentColor
-                  : undefined,
-                borderLeftColor: active
-                  ? accentColor
-                  : undefined,
-                borderRightColor: active
-                  ? accentColor
-                  : undefined,
-                "--tw-ring-color": accentColor,
-              }}
-            >
-              {option}
-            </button>
-          );
-        })}
-      </div>
-
-      {canVibrate && (
-        <div className="mt-7 grid gap-3 sm:grid-cols-2">
-          <SettingToggleCard
-            icon={Vibrate}
-            title="Vibrazione"
-            description="Un feedback tattile quando tocchi ciò che conta."
-            value={vibrationEnabled}
-            onChange={setVibrationEnabled}
-            theme={theme}
-            accentColor={accentColor}
-          />
+                </p>
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
+
+      <div className={`mt-4 rounded-2xl border p-4 ${theme.soft}`}>
+        <p
+          className={`text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+        >
+          Stile
+        </p>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {accentOptions.map((option) => {
+            const active = accent === option.id;
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setAccent(option.id)}
+                aria-pressed={active}
+                className={`flex min-h-14 items-center justify-between rounded-2xl border px-4 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
+                style={{
+                  borderColor: active ? option.color : undefined,
+                  boxShadow: active
+                    ? `0 0 0 1px ${option.color} inset`
+                    : undefined,
+                  "--tw-ring-color": option.color,
+                }}
+              >
+                <span className="flex items-center gap-3">
+                  <span
+                    className="h-7 w-7 rounded-full shadow-sm"
+                    style={{ backgroundColor: option.color }}
+                  />
+                  <span className={`text-sm font-black ${theme.text}`}>
+                    {option.label}
+                  </span>
+                </span>
+
+                {active && <CheckMark color={option.color} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className={`mt-4 rounded-2xl border p-4 ${theme.soft}`}>
+        <p
+          className={`text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+        >
+          Attività del team
+        </p>
+
+        <p className={`mt-1 text-sm font-medium ${theme.muted}`}>
+          Quante attività recenti mostrare all'inizio.
+        </p>
+
+        <div className="mt-3 grid grid-cols-3 divide-x divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+          {[3, 5, 10].map((option) => {
+            const active = initialTeamActivityLimit === option;
+
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setInitialTeamActivityLimit(option)}
+                aria-pressed={active}
+                className={`flex h-11 items-center justify-center text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 ${
+                  active ? "text-white" : `${theme.soft} ${theme.muted}`
+                }`}
+                style={{
+                  backgroundColor: active ? accentColor : undefined,
+                  borderLeftColor: active ? accentColor : undefined,
+                  borderRightColor: active ? accentColor : undefined,
+                  "--tw-ring-color": accentColor,
+                }}
+              >
+                {option}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </PanelFrame>
   );
 }
 
-function NotificationsPanel({ theme, accentColor }) {
+function NotificationsPanel({
+  theme,
+  accentColor,
+  dailyReminder,
+  streakAlerts,
+  achievementAlerts,
+  teamAlerts,
+  updateSetting,
+}) {
   return (
     <PanelFrame
       eyebrow="Notifiche"
@@ -1070,7 +1188,7 @@ function NotificationsPanel({ theme, accentColor }) {
       description="Avvisi utili, senza trasformare il telefono in una sirena."
       theme={theme}
     >
-      <div className={`rounded-[1.5rem] border p-4 ${theme.soft}`}>
+      <div className={`rounded-2xl border p-4 ${theme.soft}`}>
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className={`text-sm font-black ${theme.text}`}>
@@ -1078,8 +1196,7 @@ function NotificationsPanel({ theme, accentColor }) {
             </p>
 
             <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
-              Promemoria giornaliero, avvisi streak, traguardi e notifiche di
-              squadra.
+              La consegna dei messaggi arriverà presto.
             </p>
           </div>
 
@@ -1094,45 +1211,55 @@ function NotificationsPanel({ theme, accentColor }) {
           </span>
         </div>
       </div>
-    </PanelFrame>
-  );
-}
 
-function PrivacyPanel({ theme, accentColor, onSoon }) {
-  return (
-    <PanelFrame
-      eyebrow="Privacy"
-      title="Dati sotto controllo"
-      description="Strumenti chiari per esportare informazioni e controllare gli accessi."
-      theme={theme}
-    >
-      <div className="grid gap-3">
-        <ActionRow
-          icon={Download}
-          title="Esporta dati"
-          description="CSV riepilogativo locale."
-          onClick={onSoon}
-          theme={theme}
-          accentColor={accentColor}
-        />
+      <div className={`mt-4 overflow-hidden rounded-2xl border ${theme.soft}`}>
+        <p
+          className={`px-4 pb-3 pt-4 text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+        >
+          Che cosa ricevere
+        </p>
 
-        <ActionRow
-          icon={Shield}
-          title="Verifica dispositivi"
-          description="Controllo delle sessioni e dei dispositivi collegati."
-          onClick={onSoon}
-          theme={theme}
-          accentColor={accentColor}
-        />
+        <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <SettingToggleCard
+            icon={BellRing}
+            title="Promemoria giornaliero"
+            description="Un promemoria ogni giorno per non dimenticare."
+            value={dailyReminder}
+            onChange={(value) => updateSetting("dailyReminder", value)}
+            theme={theme}
+            accentColor={accentColor}
+          />
 
-        <ActionRow
-          icon={Info}
-          title="Informativa privacy"
-          description="Come vengono trattati i dati dell’account."
-          onClick={onSoon}
-          theme={theme}
-          accentColor={accentColor}
-        />
+          <SettingToggleCard
+            icon={TrendingUp}
+            title="Avvisi streak"
+            description="Quando la tua serie è a rischio o va a buon fine."
+            value={streakAlerts}
+            onChange={(value) => updateSetting("streakAlerts", value)}
+            theme={theme}
+            accentColor={accentColor}
+          />
+
+          <SettingToggleCard
+            icon={Trophy}
+            title="Traguardi"
+            description="Quando sblocchi un nuovo traguardo."
+            value={achievementAlerts}
+            onChange={(value) => updateSetting("achievementAlerts", value)}
+            theme={theme}
+            accentColor={accentColor}
+          />
+
+          <SettingToggleCard
+            icon={UsersRound}
+            title="Squadra"
+            description="Attività e novità dalla tua squadra."
+            value={teamAlerts}
+            onChange={(value) => updateSetting("teamAlerts", value)}
+            theme={theme}
+            accentColor={accentColor}
+          />
+        </div>
       </div>
     </PanelFrame>
   );
@@ -1143,9 +1270,12 @@ function AccountPanel({
   accentColor,
   themeMode,
   accent,
+  isLoggedIn,
   onDanger,
   onFeedback,
-  onSoon,
+  onPrivacy,
+  onDevices,
+  onShowReleaseNotes,
 }) {
   const accentLabel =
     accentOptions.find((item) => item.id === accent)?.label ?? "Rosa classico";
@@ -1154,34 +1284,69 @@ function AccountPanel({
     <PanelFrame
       eyebrow="Account"
       title="Le cose importanti"
-      description="Informazioni tecniche, accesso e funzionalità in arrivo."
+      description="Segnalazioni, informazioni chiave e le azioni più delicate."
       theme={theme}
     >
-      <div className="grid gap-3">
+      <div className={`overflow-hidden rounded-2xl border ${theme.soft}`}>
+        <p
+          className={`px-4 pb-3 pt-4 text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+        >
+          Supporto e informazioni
+        </p>
+
+        <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <ActionRow
+            icon={Lightbulb}
+            title="Segnala un'idea"
+            description="Migliorie, aggiornamenti o qualsiasi cosa vuoi farmi sapere."
+            actionLabel="Scrivi"
+            onClick={onFeedback}
+            theme={theme}
+            accentColor={accentColor}
+          />
+
+          <ActionRow
+            icon={Info}
+            title="Informativa privacy"
+            description="Come vengono trattati i dati dell'account."
+            onClick={onPrivacy}
+            theme={theme}
+            accentColor={accentColor}
+          />
+        </div>
+      </div>
+
+      <div className={`mt-4 overflow-hidden rounded-2xl border ${theme.soft}`}>
         <ActionRow
-          icon={Lightbulb}
-          title="Segnala un'idea"
-          description="Migliorie, aggiornamenti o qualsiasi cosa vuoi farmi sapere."
-          actionLabel="Scrivi"
-          onClick={onFeedback}
+          icon={Shield}
+          title="Verifica dispositivi"
+          description="Controllo delle sessioni e dei dispositivi collegati."
+          onClick={onDevices}
           theme={theme}
           accentColor={accentColor}
         />
       </div>
 
-      <div className={`mt-6 rounded-[1.5rem] border p-4 ${theme.soft}`}>
+      <div className={`mt-4 overflow-hidden rounded-2xl border ${theme.soft}`}>
         <p
-          className={`text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+          className={`px-4 pb-3 pt-4 text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
         >
           Informazioni app
         </p>
 
-        <div className="mt-3 grid gap-2">
+        <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
           <InfoRow
-  label="Versione installata"
-  value={APP_VERSION}
-  theme={theme}
-/>
+            label="Versione installata"
+            value={APP_VERSION}
+            theme={theme}
+            action={
+              <VersionInfoButton
+                onClick={onShowReleaseNotes}
+                theme={theme}
+                accentColor={accentColor}
+              />
+            }
+          />
           <InfoRow
             label="Tema attivo"
             value={
@@ -1193,40 +1358,40 @@ function AccountPanel({
             }
             theme={theme}
           />
-          <InfoRow label="Accento" value={accentLabel} theme={theme} />
+          <InfoRow label="Stile" value={accentLabel} theme={theme} />
         </div>
       </div>
 
-      <div className={`mt-6 rounded-[1.5rem] border p-4 ${theme.dangerSoft}`}>
-        <p className="text-sm font-black">Azioni delicate</p>
-        <p className="mt-1 text-xs font-medium leading-relaxed opacity-80">
+      <div className={`mt-4 overflow-hidden rounded-2xl border ${theme.dangerSoft}`}>
+        <p className="px-4 pb-1 pt-4 text-xs font-bold uppercase tracking-[0.12em] text-current">
+          Azioni delicate
+        </p>
+        <p className="px-4 pb-3 text-xs font-medium leading-relaxed opacity-80">
           Sono qui apposta: visibili, ma separate dal resto delle impostazioni.
         </p>
 
-        <div className="mt-4 grid gap-2">
-          <DangerButton
-            icon={LogOut}
-            label="Disconnetti"
-            onClick={() => onDanger("logout")}
-          />
-
-          <DangerButton
-            icon={UsersRound}
-            label="Esci dalla squadra"
-            onClick={() => onSoon()}
-          />
+        <div className="divide-y divide-rose-500/20">
+          {isLoggedIn && (
+            <DangerButton
+              icon={LogOut}
+              label="Disconnetti"
+              onClick={() => onDanger("logout")}
+            />
+          )}
 
           <DangerButton
             icon={Trash2}
             label="Elimina dati locali"
-            onClick={() => onSoon()}
+            onClick={() => onDanger("delete-data")}
           />
 
-          <DangerButton
-            icon={X}
-            label="Elimina account"
-            onClick={() => onSoon()}
-          />
+          {isLoggedIn && (
+            <DangerButton
+              icon={X}
+              label="Elimina account"
+              onClick={() => onDanger("delete-account")}
+            />
+          )}
         </div>
       </div>
     </PanelFrame>
@@ -1271,22 +1436,35 @@ function SettingToggleCard({
       type="button"
       onClick={() => onChange(!value)}
       aria-pressed={value}
-      className={`rounded-[1.3rem] border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
+      className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2"
       style={{ "--tw-ring-color": accentColor }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <Icon
-          className="h-5 w-5"
-          strokeWidth={2.2}
-          style={{ color: accentColor }}
-        />
-        <TinySwitch value={value} accentColor={accentColor} />
-      </div>
+      <span className="flex min-w-0 items-center gap-3">
+        <IconTile
+          size="md"
+          rounded="rounded-xl"
+          style={{ backgroundColor: `${accentColor}15` }}
+        >
+          <Icon
+            className="h-5 w-5"
+            strokeWidth={2.2}
+            style={{ color: accentColor }}
+          />
+        </IconTile>
 
-      <p className={`mt-5 text-sm font-black ${theme.text}`}>{title}</p>
-      <p className={`mt-1 text-xs font-medium leading-relaxed ${theme.muted}`}>
-        {description}
-      </p>
+        <span className="min-w-0">
+          <span className={`block text-sm font-black ${theme.text}`}>
+            {title}
+          </span>
+          <span
+            className={`mt-1 block text-xs font-medium leading-relaxed ${theme.muted}`}
+          >
+            {description}
+          </span>
+        </span>
+      </span>
+
+      <TinySwitch value={value} accentColor={accentColor} />
     </button>
   );
 }
@@ -1324,7 +1502,7 @@ function ActionRow({
       type="button"
       disabled={disabled}
       onClick={disabled ? undefined : onClick}
-      className={`w-full rounded-[1.3rem] border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft} ${
+      className={`flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition focus-visible:outline-none focus-visible:ring-2 ${
         disabled ? "cursor-not-allowed opacity-60" : "hover:opacity-90"
       }`}
       style={{ "--tw-ring-color": accentColor }}
@@ -1352,54 +1530,71 @@ function ActionRow({
           >
             {description}
           </span>
-
-          {actionLabel && (
-            <span
-              className="mt-3 inline-flex max-w-full rounded-full px-3 py-1 text-[10px] font-extrabold sm:hidden"
-              style={{
-                backgroundColor: `${accentColor}18`,
-                color: accentColor,
-              }}
-            >
-              {actionLabel}
-            </span>
-          )}
         </span>
+      </span>
 
-        <span className="hidden shrink-0 items-center gap-2 sm:flex">
-          {actionLabel && (
-            <span
-              className="rounded-full px-3 py-1 text-[11px] font-extrabold"
-              style={{
-                backgroundColor: `${accentColor}18`,
-                color: accentColor,
-              }}
-            >
-              {actionLabel}
-            </span>
-          )}
+      <span className="flex shrink-0 items-center gap-2">
+        {actionLabel && (
+          <span
+            className="rounded-full px-3 py-1 text-[11px] font-extrabold"
+            style={{
+              backgroundColor: `${accentColor}18`,
+              color: accentColor,
+            }}
+          >
+            {actionLabel}
+          </span>
+        )}
 
-          {!disabled && (
-            <ChevronRight
-              className="h-4 w-4 shrink-0"
-              strokeWidth={2.4}
-              style={{ color: accentColor }}
-            />
-          )}
-        </span>
+        {!disabled && (
+          <ChevronRight
+            className="h-4 w-4 shrink-0"
+            strokeWidth={2.4}
+            style={{ color: accentColor }}
+          />
+        )}
       </span>
     </button>
   );
 }
 
-function InfoRow({ label, value, theme }) {
+function InfoRow({ label, value, theme, action }) {
   return (
-    <div
-      className={`flex items-center justify-between gap-4 rounded-xl px-3 py-2.5 ${theme.elevated}`}
-    >
-      <span className={`text-xs font-bold ${theme.text}`}>{label}</span>
-      <span className={`text-xs font-extrabold ${theme.muted}`}>{value}</span>
+    <div className="flex items-center justify-between gap-4 px-4 py-4">
+      <span className={`text-sm font-bold ${theme.text}`}>{label}</span>
+
+      {action ? (
+        <span className="flex items-center gap-2.5">
+          {value !== null && value !== undefined && (
+            <span className={`text-sm font-extrabold ${theme.muted}`}>
+              {value}
+            </span>
+          )}
+
+          {action}
+        </span>
+      ) : (
+        <span className={`text-sm font-extrabold ${theme.muted}`}>{value}</span>
+      )}
     </div>
+  );
+}
+
+function VersionInfoButton({ onClick, theme, accentColor }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Novità della versione"
+      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
+      style={{ "--tw-ring-color": accentColor }}
+    >
+      <Info
+        className="h-3.5 w-3.5"
+        strokeWidth={2.4}
+        style={{ color: accentColor }}
+      />
+    </button>
   );
 }
 
@@ -1420,7 +1615,7 @@ function DangerButton({ icon: Icon, label, onClick, disabled = false }) {
       type="button"
       disabled={disabled}
       onClick={disabled ? undefined : onClick}
-      className={`flex min-h-11 items-center justify-between rounded-2xl border border-rose-500/20 bg-transparent px-4 text-left text-sm font-bold text-current transition ${
+      className={`flex min-h-11 w-full items-center justify-between gap-3 px-4 py-4 text-left text-sm font-bold text-current transition ${
         disabled ? "cursor-not-allowed opacity-50" : "hover:bg-rose-500/10"
       }`}
     >
@@ -1441,10 +1636,21 @@ function DangerButton({ icon: Icon, label, onClick, disabled = false }) {
   );
 }
 
-function Field({ label, value, onChange, disabled = false, accentColor }) {
+function Field({
+  label,
+  value,
+  onChange,
+  disabled = false,
+  accentColor,
+  dark = false,
+}) {
   return (
     <label className="grid gap-2">
-      <span className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">
+      <span
+        className={`text-xs font-bold uppercase tracking-[0.12em] ${
+          dark ? "text-zinc-400" : "text-zinc-500"
+        }`}
+      >
         {label}
       </span>
 
@@ -1452,7 +1658,11 @@ function Field({ label, value, onChange, disabled = false, accentColor }) {
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-12 rounded-2xl border border-zinc-300/70 bg-white/80 px-4 text-sm font-medium text-zinc-900 outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+        className={`min-h-12 rounded-2xl border px-4 text-sm font-medium outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          dark
+            ? "border-white/10 bg-white/[0.06] text-zinc-100 placeholder:text-zinc-500"
+            : "border-zinc-300/70 bg-white/80 text-zinc-900"
+        }`}
         style={{ "--tw-ring-color": accentColor }}
       />
     </label>
@@ -1463,6 +1673,8 @@ function ModalShell({ title, theme, onClose, prefersReducedMotion, children }) {
   const dialogRef = useRef(null);
 
   useModalFocusTrap({ dialogRef, onClose, prefersReducedMotion });
+
+  const titleId = useId();
 
   return (
     <motion.div
@@ -1480,7 +1692,7 @@ function ModalShell({ title, theme, onClose, prefersReducedMotion, children }) {
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        aria-labelledby="settings-modal-title"
+        aria-labelledby={titleId}
         initial={
           prefersReducedMotion ? false : { opacity: 0, y: 24, scale: 0.98 }
         }
@@ -1499,7 +1711,7 @@ function ModalShell({ title, theme, onClose, prefersReducedMotion, children }) {
               Impostazioni
             </p>
             <h2
-              id="settings-modal-title"
+              id={titleId}
               className={`mt-1 text-2xl font-black tracking-[-0.05em] ${theme.text}`}
             >
               {title}
@@ -1522,17 +1734,190 @@ function ModalShell({ title, theme, onClose, prefersReducedMotion, children }) {
   );
 }
 
-function StatusBadge({ children, active = true }) {
+function formatSessionTime(value) {
+  if (!value) return "accesso sconosciuto";
+
+  return new Date(value).toLocaleString("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function SessionsModal({
+  theme,
+  accentColor,
+  onClose,
+  prefersReducedMotion,
+}) {
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [busySessionId, setBusySessionId] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+
+    const load = async () => {
+      try {
+        const data = await getMySessions();
+        if (alive) setSessions(data);
+      } catch (error) {
+        console.error(
+          "Errore durante il caricamento delle sessioni:",
+          error,
+        );
+        if (alive) setLoadError(true);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function handleRevokeOne(sessionId) {
+    setBusySessionId(sessionId);
+
+    try {
+      await revokeSession(sessionId);
+      setSessions((current) =>
+        current.filter((session) => session.session_id !== sessionId),
+      );
+    } catch (error) {
+      console.error("Errore durante la revoca della sessione:", error);
+    } finally {
+      setBusySessionId(null);
+    }
+  }
+
+  async function handleRevokeOthers() {
+    setBusySessionId("all");
+
+    try {
+      await revokeOtherSessions();
+      setSessions((current) =>
+        current.filter((session) => session.is_current),
+      );
+    } catch (error) {
+      console.error("Errore durante la revoca delle sessioni:", error);
+    } finally {
+      setBusySessionId(null);
+    }
+  }
+
   return (
-    <span
-      className={`rounded-full border px-3 py-1 text-xs font-black ${
-        active
-          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
-          : "border-amber-500/20 bg-amber-500/10 text-amber-500"
-      }`}
+    <ModalShell
+      title="Dispositivi collegati"
+      theme={theme}
+      onClose={onClose}
+      prefersReducedMotion={prefersReducedMotion}
     >
-      {children}
-    </span>
+      {loading ? (
+        <p className={`py-6 text-center text-sm font-semibold ${theme.muted}`}>
+          Caricamento…
+        </p>
+      ) : loadError ? (
+        <p className={`py-6 text-center text-sm font-semibold ${theme.muted}`}>
+          Non è stato possibile caricare le sessioni. Riprova a riaprire la
+          finestra.
+        </p>
+      ) : sessions.length === 0 ? (
+        <p className={`py-6 text-center text-sm font-semibold ${theme.muted}`}>
+          Nessuna sessione attiva
+        </p>
+      ) : (
+        <div className="grid gap-3">
+          {sessions.map((session) => {
+            const agent = parseUserAgent(session.user_agent);
+            const deviceLabel =
+              [agent.browser, agent.os].filter(Boolean).join(" · ") ||
+              "Dispositivo sconosciuto";
+
+            return (
+              <div
+                key={session.session_id}
+                className={`flex min-w-0 items-center gap-3 rounded-2xl border p-4 ${theme.soft}`}
+              >
+                <IconTile
+                  size="md"
+                  style={{ backgroundColor: `${accentColor}18` }}
+                >
+                  <Smartphone
+                    className="h-5 w-5"
+                    strokeWidth={2.2}
+                    style={{ color: accentColor }}
+                  />
+                </IconTile>
+
+                <div className="min-w-0 flex-1">
+                  <p className={`truncate text-sm font-bold ${theme.text}`}>
+                    {deviceLabel}
+                  </p>
+
+                  <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
+                    {[
+                      session.ip ? `IP ${session.ip}` : null,
+                      agent.device ? agent.device : null,
+                      session.created_at
+                        ? `Creato il ${formatSessionTime(session.created_at)}`
+                        : null,
+                      session.refreshed_at
+                        ? `Ultimo accesso ${formatSessionTime(
+                            session.refreshed_at,
+                          )}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+
+                {session.is_current ? (
+                  <span
+                    className="shrink-0 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em]"
+                    style={{
+                      backgroundColor: `${accentColor}18`,
+                      color: accentColor,
+                    }}
+                  >
+                    Questa sessione
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleRevokeOne(session.session_id)}
+                    disabled={busySessionId !== null}
+                    className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold disabled:opacity-50"
+                  >
+                    <LogOut className="h-4 w-4" strokeWidth={2.2} />
+                    Esci
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {!loading && sessions.some((session) => !session.is_current) && (
+        <button
+          type="button"
+          onClick={handleRevokeOthers}
+          disabled={busySessionId !== null}
+          className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 text-sm font-extrabold text-rose-500 disabled:opacity-50"
+        >
+          <Shield className="h-4 w-4" strokeWidth={2.3} />
+          Revoca le altre sessioni
+        </button>
+      )}
+    </ModalShell>
   );
 }
 
@@ -1543,27 +1928,127 @@ function SystemPanel({
   syncState,
   syncDotClass,
   syncPing,
+  dayCount,
+  totalCount,
+  pendingCount,
+  vibrationEnabled,
+  setVibrationEnabled,
+  canVibrate,
+  onExportTech,
+  onShowReleaseNotes,
 }) {
   return (
     <PanelFrame
-      eyebrow="Sistema"
-      title="Stato dell'app"
+      eyebrow="Dati e sincronizzazione"
+      title="Servizi e salvataggio"
       description="Informazioni sul servizio e sul salvataggio dei dati."
       theme={theme}
     >
       <div
-        className="flex min-h-[88px] w-full items-center justify-between rounded-[1.5rem] border px-4"
+        className="relative min-h-[104px] overflow-hidden rounded-2xl border p-4"
         style={{
           borderColor: `${accentColor}33`,
           backgroundColor: `${accentColor}10`,
         }}
       >
-        <div className="flex min-w-0 items-center gap-3">
+        <div
+          className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full blur-3xl"
+          style={{ backgroundColor: `${accentColor}24` }}
+        />
+
+        <div className="pointer-events-none absolute -bottom-16 -left-10 h-32 w-32 rounded-full bg-amber-400/[0.06] blur-3xl" />
+
+        <div className="relative flex items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-4">
+            <IconTile
+              size="xl"
+              className="shrink-0 text-white"
+              style={{
+                backgroundColor: accentColor,
+                boxShadow: `0 12px 26px ${accentColor}59`,
+              }}
+            >
+              <Cloud className="h-6 w-6" strokeWidth={2.2} />
+            </IconTile>
+
+            <div className="min-w-0">
+              <p className={`text-base font-black tracking-tight ${theme.text}`}>
+                {cloudEnabled ? "Cloud attivo" : "Cloud non disponibile"}
+              </p>
+
+              <p
+                className={`mt-1 text-xs font-medium leading-relaxed ${theme.muted}`}
+              >
+                {syncState}
+              </p>
+            </div>
+          </div>
+
+          <span
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.06em]"
+            style={{
+              borderColor: `${accentColor}33`,
+              backgroundColor: `${accentColor}12`,
+              color: accentColor,
+            }}
+          >
+            <span className={`relative inline-flex h-2 w-2 rounded-full ${syncDotClass}`}>
+              {syncPing && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              )}
+            </span>
+
+            {cloudEnabled ? "Collegato" : "Non collegato"}
+          </span>
+        </div>
+      </div>
+
+      {canVibrate && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setVibrationEnabled(!vibrationEnabled)}
+            aria-pressed={vibrationEnabled}
+            className={`flex min-h-[104px] w-full items-center justify-between gap-4 rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
+            style={{ "--tw-ring-color": accentColor }}
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <IconTile
+                size="lg"
+                style={{ backgroundColor: `${accentColor}15` }}
+              >
+                <Vibrate
+                  className="h-5 w-5"
+                  strokeWidth={2.2}
+                  style={{ color: accentColor }}
+                />
+              </IconTile>
+
+              <span className="min-w-0">
+                <span className={`block text-sm font-black ${theme.text}`}>
+                  Vibrazione
+                </span>
+
+                <span
+                  className={`mt-1 block text-xs font-medium leading-relaxed ${theme.muted}`}
+                >
+                  Un feedback tattile quando tocchi ciò che conta.
+                </span>
+              </span>
+            </span>
+
+            <TinySwitch value={vibrationEnabled} accentColor={accentColor} />
+          </button>
+        </div>
+      )}
+
+      <div className={`mt-4 rounded-2xl border p-4 ${theme.soft}`}>
+        <div className="flex items-center gap-3">
           <IconTile
             size="lg"
-            style={{ backgroundColor: `${accentColor}18` }}
+            style={{ backgroundColor: `${accentColor}15` }}
           >
-            <Cloud
+            <Gauge
               className="h-5 w-5"
               strokeWidth={2.2}
               style={{ color: accentColor }}
@@ -1572,63 +2057,105 @@ function SystemPanel({
 
           <div className="min-w-0">
             <p className={`text-sm font-black ${theme.text}`}>
-              {cloudEnabled ? "Cloud attivo" : "Cloud non disponibile"}
-            </p>
-
-            <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
-              {syncState}
-            </p>
-          </div>
-        </div>
-
-        <span className="relative flex h-3 w-3 shrink-0">
-          {syncPing && (
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
-          )}
-
-          <span
-            className={`relative inline-flex h-3 w-3 rounded-full ${
-              syncDotClass
-            }`}
-          />
-        </span>
-      </div>
-
-      <div className={`mt-4 rounded-[1.5rem] border p-4 ${theme.soft}`}>
-        <p className={`text-sm font-black ${theme.text}`}>
-          Salvataggio automatico
-        </p>
-
-        <p
-          className={`mt-1 text-xs font-medium leading-relaxed ${theme.muted}`}
-        >
-          I dati vengono salvati automaticamente sul tuo account. Non è
-          necessaria alcuna operazione manuale.
-        </p>
-      </div>
-
-      <div className={`mt-4 rounded-[1.5rem] border p-4 ${theme.soft}`}>
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className={`text-sm font-black ${theme.text}`}>
               Controlli avanzati
             </p>
 
-            <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
-              Diagnostica, esportazione tecnica e gestione sessioni.
+            <p className={`mt-0.5 text-xs font-medium ${theme.muted}`}>
+              Diagnostica dell'app e dati tecnici.
             </p>
           </div>
-
-          <span
-            className="shrink-0 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em]"
-            style={{
-              backgroundColor: `${accentColor}18`,
-              color: accentColor,
-            }}
-          >
-            Prossimamente
-          </span>
         </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <StatCard
+            size="lg"
+            label="Giorni registrati"
+            value={dayCount}
+            theme={theme}
+            tone="elevated"
+          />
+
+          <StatCard
+            size="lg"
+            label="Totale segnalazioni"
+            value={
+              pendingCount > 0
+                ? `${totalCount} (+${pendingCount})`
+                : totalCount
+            }
+            theme={theme}
+            tone="elevated"
+          />
+        </div>
+
+        <div className="mt-3 grid gap-2">
+          <InfoRow
+            label="Versione installata"
+            value={APP_VERSION}
+            theme={theme}
+            action={
+              <VersionInfoButton
+                onClick={onShowReleaseNotes}
+                theme={theme}
+                accentColor={accentColor}
+              />
+            }
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={onExportTech}
+          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-extrabold text-white transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2"
+          style={{
+            backgroundColor: accentColor,
+            boxShadow: `0 12px 28px ${accentColor}40`,
+            "--tw-ring-color": `${accentColor}55`,
+          }}
+        >
+          <Download className="h-4 w-4" strokeWidth={2.2} />
+          Esporta JSON tecnico
+        </button>
+      </div>
+
+      <div
+        className={`mt-4 flex min-h-[104px] items-center justify-between gap-4 rounded-2xl border p-4 ${theme.soft}`}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <IconTile
+            size="lg"
+            style={{ backgroundColor: `${accentColor}15` }}
+          >
+            <Save
+              className="h-5 w-5"
+              strokeWidth={2.2}
+              style={{ color: accentColor }}
+            />
+          </IconTile>
+
+          <div className="min-w-0">
+            <p className={`text-sm font-black ${theme.text}`}>
+              Salvataggio automatico
+            </p>
+
+            <p
+              className={`mt-1 text-xs font-medium leading-relaxed ${theme.muted}`}
+            >
+              I dati vengono salvati automaticamente sul tuo account. Non è
+              necessaria alcuna operazione manuale.
+            </p>
+          </div>
+        </div>
+
+        <span
+          className="shrink-0 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em]"
+          style={{
+            backgroundColor: `${accentColor}18`,
+            color: accentColor,
+          }}
+        >
+          Automatico
+        </span>
       </div>
     </PanelFrame>
   );

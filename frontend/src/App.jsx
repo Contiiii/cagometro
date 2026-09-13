@@ -11,6 +11,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 const Teams = lazy(() => import("./pages/Teams"));
 const JoinTeamPage = lazy(() => import("./pages/JoinTeamPage"));
 const Login = lazy(() => import("./pages/Login"));
+const Privacy = lazy(() => import("./pages/Privacy"));
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
 
           <Route path="/report" element={<Report />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/join/:code" element={<JoinTeamPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -318,6 +318,13 @@ export function EntriesProvider({ children }) {
     });
   }
 
+  const clearLocalData = useCallback(() => {
+    setEntries({});
+    entriesRef.current = {};
+    setPendingChanges([]);
+    setSyncStatus("synced");
+  }, []);
+
   return (
     <EntriesContext.Provider
       value={{
@@ -328,6 +335,7 @@ export function EntriesProvider({ children }) {
         todayCount,
         incrementToday,
         decrementToday,
+        clearLocalData,
       }}
     >
       {children}

@@ -11,6 +11,12 @@ vi.mock("../hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
 
+vi.mock("../services/entriesService", () => ({
+  getEntries: vi.fn().mockResolvedValue([]),
+  saveEntry: vi.fn().mockRejectedValue(new Error("offline")),
+  importEntries: vi.fn().mockResolvedValue([]),
+}));
+
 let latest = null;
 
 function Probe() {
@@ -52,5 +58,38 @@ describe("EntriesProvider", () => {
 
     expect(latest.syncStatus).toBe("synced");
     expect(latest.pendingChanges).toEqual([]);
+  });
+
+  it("clearLocalData resetta entries, pendingChanges e syncStatus", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    expect(latest.syncStatus).toBe("pending");
+    expect(latest.pendingChanges.length).toBeGreaterThan(0);
+
+    await act(async () => {
+      latest.clearLocalData();
+    });
+
+    expect(latest.entries).toEqual({});
+    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.syncStatus).toBe("synced");
   });
 });
