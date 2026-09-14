@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ProfileContext } from "./profile-context";
 
@@ -14,8 +14,10 @@ export function ProfileProvider({ children }) {
 
   const [profile, setProfile] = useState(null);
 
+  const userId = user?.id ?? null;
+
   useEffect(() => {
-    if (authLoading || !user) {
+    if (authLoading || !userId) {
       return;
     }
 
@@ -23,7 +25,7 @@ export function ProfileProvider({ children }) {
 
     async function loadProfile() {
       try {
-        const data = await getProfile(user.id);
+        const data = await getProfile(userId);
 
         if (!cancelled) {
           setProfile(data);
@@ -38,16 +40,16 @@ export function ProfileProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading]);
+  }, [userId, authLoading]);
 
   const updateProfile = useCallback(
     async ({ displayName, avatarUrl }) => {
-      if (!user) {
+      if (!userId) {
         throw new Error("Utente non autenticato");
       }
 
       const updatedProfile = await updateProfileService({
-        userId: user.id,
+        userId,
         displayName,
         avatarUrl,
       });
@@ -56,16 +58,19 @@ export function ProfileProvider({ children }) {
 
       return updatedProfile;
     },
-    [user],
+    [userId],
+  );
+
+  const value = useMemo(
+    () => ({
+      profile: userId ? profile : null,
+      updateProfile,
+    }),
+    [userId, profile, updateProfile],
   );
 
   return (
-    <ProfileContext.Provider
-      value={{
-        profile: user ? profile : null,
-        updateProfile,
-      }}
-    >
+    <ProfileContext.Provider value={value}>
       {children}
     </ProfileContext.Provider>
   );

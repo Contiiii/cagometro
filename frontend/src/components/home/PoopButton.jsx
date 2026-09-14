@@ -1,6 +1,6 @@
 // components/PoopButton.jsx
 import { motion } from "framer-motion";
-import poopIcon from "../../assets/poop.png";
+import poopIcon from "../../assets/poop.webp";
 
 export default function PoopButton({
   onClick,

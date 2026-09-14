@@ -4,6 +4,7 @@ import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAuth } from "../hooks/useAuth";
+import { useSettings } from "../hooks/useSettings";
 import { supabase } from "../lib/supabase";
 import {
   getMyTeam,
@@ -16,6 +17,10 @@ import { useTeam } from "../hooks/useTeam";
 
 vi.mock("../hooks/useAuth", () => ({
   useAuth: vi.fn(),
+}));
+
+vi.mock("../hooks/useSettings", () => ({
+  useSettings: vi.fn(),
 }));
 
 vi.mock("../lib/supabase", () => ({
@@ -125,6 +130,8 @@ beforeEach(() => {
   latest = null;
 
   useAuth.mockReturnValue({ user: null, loading: false });
+
+  useSettings.mockReturnValue({ initialTeamActivityLimit: 3 });
 
   getTeamMembers.mockResolvedValue(MEMBERS);
   getTeamLeaderboard.mockResolvedValue(LEADERBOARD);

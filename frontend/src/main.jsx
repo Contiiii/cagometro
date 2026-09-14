@@ -3,11 +3,11 @@ import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 
 import "./index.css";
+import "@fontsource-variable/inter";
 import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthProvider.jsx";
 import { EntriesProvider } from "./context/EntriesProvider";
 import { ProfileProvider } from "./context/ProfileProvider";
-import { TeamProvider } from "./context/TeamProvider";
 import { ThemeProvider } from "./context/ThemeProvider";
 import { SettingsProvider } from "./context/SettingsProvider";
 
@@ -22,15 +22,13 @@ createRoot(document.getElementById("root")).render(
     <ErrorBoundary>
       <AuthProvider>
         <ProfileProvider>
-          <TeamProvider>
-            <EntriesProvider>
-              <ThemeProvider>
-                <SettingsProvider>
-                  <App />
-                </SettingsProvider>
-              </ThemeProvider>
-            </EntriesProvider>
-          </TeamProvider>
+          <EntriesProvider>
+            <ThemeProvider>
+              <SettingsProvider>
+                <App />
+              </SettingsProvider>
+            </ThemeProvider>
+          </EntriesProvider>
         </ProfileProvider>
       </AuthProvider>
     </ErrorBoundary>

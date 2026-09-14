@@ -9,7 +9,7 @@ import IconTile from "../ui/IconTile";
 
 import { useTeamUI } from "../../hooks/useTeamUI";
 
-import poopIcon from "../../assets/poop.png";
+import poopIcon from "../../assets/poop.webp";
 
 const CreateTeamModal = lazy(() => import("./modals/CreateTeamModal"));
 const JoinTeamModal = lazy(() => import("./modals/JoinTeamModal"));

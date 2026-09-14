@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AnimatePresence, useReducedMotion } from "framer-motion";
 
 import Header from "../components/Header";
@@ -72,12 +72,20 @@ export default function Achievements() {
     activeFilter,
   });
 
-  const theme = getAchievementTheme(isDark);
+  const theme = useMemo(() => getAchievementTheme(isDark), [isDark]);
 
-  const accentStyles = getAchievementAccentStyles(isDark);
+  const accentStyles = useMemo(
+    () => getAchievementAccentStyles(isDark),
+    [isDark],
+  );
 
   const circumference = 2 * Math.PI * 44;
-  const dashOffset = circumference - (overallProgress / 100) * circumference;
+  const dashOffset = useMemo(
+    () =>
+      circumference -
+      (overallProgress / 100) * circumference,
+    [circumference, overallProgress],
+  );
 
   return (
     <div

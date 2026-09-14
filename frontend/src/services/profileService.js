@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 export async function getProfile(userId) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select("user_id,display_name,avatar_url")
     .eq("user_id", userId)
     .single();
 

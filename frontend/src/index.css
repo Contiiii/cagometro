@@ -12,6 +12,7 @@
 @theme inline {
   --color-accent: var(--accent);
   --color-accent-contrast: var(--accent-contrast);
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
@@ -28,7 +29,7 @@ body {
   min-height: 100%;
   margin: 0;
   background-color: inherit;
-  font-family: "Inter", sans-serif;
+  font-family: "Inter Variable", "Inter", sans-serif;
 }
 
 button,

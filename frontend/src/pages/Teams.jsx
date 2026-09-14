@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
 import { useTheme } from "../hooks/useTheme";
@@ -25,6 +25,7 @@ export default function CagometroTeams() {
     members = [],
     leaderboard = [],
     activity = [],
+    loading,
     refreshDashboard,
     refreshTeam,
     refreshMembers,
@@ -34,7 +35,7 @@ export default function CagometroTeams() {
 
   const isDark = resolvedTheme === "dark";
 
-  const theme = getTeamTheme(isDark);
+  const theme = useMemo(() => getTeamTheme(isDark), [isDark]);
 
   const [rankingMode, setRankingMode] = useState("week");
   const [selectedMember, setSelectedMember] = useState(null);
@@ -61,11 +62,30 @@ export default function CagometroTeams() {
     refreshActivity,
   });
 
-  const teamUI = {
-    theme,
-    isDark,
-    prefersReducedMotion,
-  };
+  const teamUI = useMemo(
+    () => ({
+      theme,
+      isDark,
+      prefersReducedMotion,
+    }),
+    [theme, isDark, prefersReducedMotion],
+  );
+
+  if (loading) {
+    return (
+      <TeamUIProvider value={teamUI}>
+        <div
+          className={`min-h-screen overflow-x-hidden font-sans ${theme.app}`}
+        >
+          <main className="mx-auto flex min-h-dvh w-full max-w-5xl items-center justify-center px-5 py-24">
+            <p className={`text-sm font-medium ${theme.muted}`}>
+              Caricamento squadra…
+            </p>
+          </main>
+        </div>
+      </TeamUIProvider>
+    );
+  }
 
   if (!team) {
     return (

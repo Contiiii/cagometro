@@ -91,20 +91,36 @@ export function useTeamDashboard({
 
   const isLastMember = isOwner && activeMembers.length === 1;
 
-  const inviteCode = team?.invite_code ?? "";
+  const inviteCode = useMemo(() => team?.invite_code ?? "", [team?.invite_code]);
 
-  return {
-    totalWeekly,
-    totalLifetime,
-    weeklyGoal,
-    ranking,
-    currentUserPosition,
-    selectedData,
-    selectedPosition,
-    selectedMembership,
-    isOwner,
-    activeMembers,
-    isLastMember,
-    inviteCode,
-  };
+  return useMemo(
+    () => ({
+      totalWeekly,
+      totalLifetime,
+      weeklyGoal,
+      ranking,
+      currentUserPosition,
+      selectedData,
+      selectedPosition,
+      selectedMembership,
+      isOwner,
+      activeMembers,
+      isLastMember,
+      inviteCode,
+    }),
+    [
+      totalWeekly,
+      totalLifetime,
+      weeklyGoal,
+      ranking,
+      currentUserPosition,
+      selectedData,
+      selectedPosition,
+      selectedMembership,
+      isOwner,
+      activeMembers,
+      isLastMember,
+      inviteCode,
+    ],
+  );
 }

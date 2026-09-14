@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef } from "react";
+import { lazy, Suspense, useMemo, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 
 import Header from "../Header";
@@ -47,15 +47,23 @@ export default function TeamsDashboard({
 
   const confirm = actions.confirm;
 
+  const selectionValue = useMemo(
+    () => ({
+      selectedData: data.selectedData,
+      selectedPosition: data.selectedPosition,
+      selectedMembership: data.selectedMembership,
+      selectMember: setSelectedMember,
+    }),
+    [
+      data.selectedData,
+      data.selectedPosition,
+      data.selectedMembership,
+      setSelectedMember,
+    ],
+  );
+
   return (
-    <TeamSelectionProvider
-      value={{
-        selectedData: data.selectedData,
-        selectedPosition: data.selectedPosition,
-        selectedMembership: data.selectedMembership,
-        selectMember: setSelectedMember,
-      }}
-    >
+    <TeamSelectionProvider value={selectionValue}>
       <div
         className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
       >

@@ -2,7 +2,7 @@ import { useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Share2, X } from "lucide-react";
 import { toBlob } from "html-to-image";
-import poopIcon from "../../assets/poop.png";
+import poopIcon from "../../assets/poop.webp";
 import useModalFocusTrap from "../../hooks/useModalFocusTrap";
 
 function withTimeout(promise, ms, message) {

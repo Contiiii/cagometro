@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
 import { EntriesContext } from "./entries-context";
 
@@ -34,6 +34,8 @@ function formatEntries(entriesList) {
 
 export function EntriesProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
+
+  const userId = user?.id ?? null;
 
   const [entries, setEntries] = useState({});
 
@@ -108,22 +110,18 @@ export function EntriesProvider({ children }) {
 
   const flushPendingChanges = useCallback(
     async (changes = pendingChanges) => {
-      if (!user || changes.length === 0) {
+      if (!userId || changes.length === 0) {
         return true;
       }
 
       try {
-        await Promise.all(
-          changes.map((change) =>
-            saveEntry({
-              userId: user.id,
-              date: change.date,
-              count: change.count,
-            }),
-          ),
+        const entriesByDate = Object.fromEntries(
+          changes.map((change) => [change.date, change.count]),
         );
 
-        clearPendingSync(user.id);
+        await importEntries(userId, entriesByDate);
+
+        clearPendingSync(userId);
         setPendingChanges([]);
         setSyncStatus("synced");
 
@@ -131,13 +129,13 @@ export function EntriesProvider({ children }) {
       } catch (error) {
         console.error("Errore sincronizzazione pending:", error);
 
-        savePendingSync(user.id, changes);
+        savePendingSync(userId, changes);
         setSyncStatus("error");
 
         return false;
       }
     },
-    [user, pendingChanges],
+    [userId, pendingChanges],
   );
 
   useEffect(() => {
@@ -162,7 +160,7 @@ export function EntriesProvider({ children }) {
     async function bootstrapEntries() {
       const previousOwner = entriesOwnerRef.current;
 
-      if (!user) {
+      if (!userId) {
         entriesOwnerRef.current = null;
         setPendingChanges([]);
         setSyncStatus("synced");
@@ -172,41 +170,37 @@ export function EntriesProvider({ children }) {
 
       // Cambio account: azzera subito lo stato del proprietario precedente
       // così i suoi dati non finiscono nella chiave del nuovo utente.
-      entriesOwnerRef.current = user.id;
+      entriesOwnerRef.current = userId;
 
-      if (previousOwner !== user.id) {
+      if (previousOwner !== userId) {
         setPendingChanges([]);
         setSyncStatus("synced");
         setEntries({});
       }
 
       // 1. Mostra subito la cache locale
-      const cachedEntries = loadUserEntries(user.id);
+      const cachedEntries = loadUserEntries(userId);
 
       if (Object.keys(cachedEntries).length > 0) {
         setEntries(cachedEntries);
       }
 
       // 2. Recupera eventuali pending
-      const savedPending = loadPendingSync(user.id);
+      const savedPending = loadPendingSync(userId);
       setPendingChanges(savedPending);
 
       // 3. Se online prova a sincronizzarli
       if (navigator.onLine && savedPending.length > 0) {
         try {
-          await Promise.all(
-            savedPending.map((change) =>
-              saveEntry({
-                userId: user.id,
-                date: change.date,
-                count: change.count,
-              }),
-            ),
+          const pendingByDate = Object.fromEntries(
+            savedPending.map((change) => [change.date, change.count]),
           );
+
+          await importEntries(userId, pendingByDate);
 
           if (cancelled) return;
 
-          clearPendingSync(user.id);
+          clearPendingSync(userId);
           setPendingChanges([]);
         } catch (error) {
           console.error("Errore sync pending:", error);
@@ -214,7 +208,7 @@ export function EntriesProvider({ children }) {
       }
 
       try {
-        const data = await getEntries(user.id);
+        const data = await getEntries(userId);
 
         // Un fetch partito per un account precedente non deve
         // sovrascrivere i dati dell'account corrente.
@@ -223,7 +217,7 @@ export function EntriesProvider({ children }) {
         if (data.length === 0 && hasAnonymousEntries()) {
           const anonymousEntries = loadAnonymousEntries();
 
-          const migratedData = await importEntries(user.id, anonymousEntries);
+          const migratedData = await importEntries(userId, anonymousEntries);
 
           if (cancelled) return;
 
@@ -247,7 +241,7 @@ export function EntriesProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading]);
+  }, [userId, authLoading]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -255,61 +249,67 @@ export function EntriesProvider({ children }) {
     // Persiste solo se i dati in stato appartengono davvero all'utente
     // corrente: durante un cambio account non deve finire roba del
     // vecchio account nella chiave del nuovo.
-    if (entriesOwnerRef.current !== (user?.id ?? null)) {
+    if (entriesOwnerRef.current !== userId) {
       return;
     }
 
-    if (user) {
-      saveUserEntries(user.id, entries);
+    if (userId) {
+      saveUserEntries(userId, entries);
     } else {
       saveAnonymousEntries(entries);
     }
-  }, [entries, user, authLoading]);
+  }, [entries, userId, authLoading]);
 
   const todayCount = entries[today] || 0;
 
-  function createPendingChanges(date, count) {
-    setPendingChanges((prev) => {
-      const nextPendingChanges = [
-        ...prev.filter((change) => change.date !== date),
-        {
+  const createPendingChanges = useCallback(
+    (date, count) => {
+      setPendingChanges((prev) => {
+        const nextPendingChanges = [
+          ...prev.filter((change) => change.date !== date),
+          {
+            date,
+            count,
+          },
+        ];
+
+        if (userId) {
+          savePendingSync(userId, nextPendingChanges);
+        }
+
+        return nextPendingChanges;
+      });
+    },
+    [userId],
+  );
+
+  const syncEntry = useCallback(
+    async (date, count, logActivity = false) => {
+      try {
+        await saveEntry({
+          userId,
           date,
           count,
-        },
-      ];
+        });
+        if (logActivity) {
+          await createTeamActivity("entry_created", 1);
+        }
 
-      if (user) {
-        savePendingSync(user.id, nextPendingChanges);
+        await flushPendingChanges();
+
+        setSyncStatus("synced");
+      } catch (error) {
+        console.error(error);
+
+        createPendingChanges(date, count);
+
+        setSyncStatus("pending");
       }
+    },
+    [userId, flushPendingChanges, createPendingChanges],
+  );
 
-      return nextPendingChanges;
-    });
-  }
-
-  async function syncEntry(date, count, logActivity = false) {
-    try {
-      await saveEntry({
-        userId: user.id,
-        date,
-        count,
-      });
-      if (logActivity) {
-        await createTeamActivity("entry_created", 1);
-      }
-
-      await flushPendingChanges();
-
-      setSyncStatus("synced");
-    } catch (error) {
-      console.error(error);
-
-      createPendingChanges(date, count);
-
-      setSyncStatus("pending");
-    }
-  }
-
-  function incrementToday() {
+  const incrementToday = useCallback(() => {
     return enqueueMutation(async () => {
       const currentCount = entriesRef.current[today] || 0;
       const newCount = currentCount + 1;
@@ -321,16 +321,15 @@ export function EntriesProvider({ children }) {
       entriesRef.current = newEntries;
       setEntries(newEntries);
 
-      if (user) {
-        saveUserEntries(user.id, newEntries);
+      if (userId) {
         await syncEntry(today, newCount, true);
       }
 
       return newEntries;
     });
-  }
+  }, [today, userId, syncEntry]);
 
-  function decrementToday() {
+  const decrementToday = useCallback(() => {
     return enqueueMutation(async () => {
       const currentCount = entriesRef.current[today] || 0;
 
@@ -347,14 +346,13 @@ export function EntriesProvider({ children }) {
       entriesRef.current = newEntries;
       setEntries(newEntries);
 
-      if (user) {
-        saveUserEntries(user.id, newEntries);
+      if (userId) {
         await syncEntry(today, newCount);
       }
 
       return newEntries;
     });
-  }
+  }, [today, userId, syncEntry]);
 
   const clearLocalData = useCallback(() => {
     entriesOwnerRef.current = null;
@@ -364,19 +362,31 @@ export function EntriesProvider({ children }) {
     setSyncStatus("synced");
   }, []);
 
+  const value = useMemo(
+    () => ({
+      entries,
+      syncStatus,
+      pendingChanges,
+      today,
+      todayCount,
+      incrementToday,
+      decrementToday,
+      clearLocalData,
+    }),
+    [
+      entries,
+      syncStatus,
+      pendingChanges,
+      today,
+      todayCount,
+      incrementToday,
+      decrementToday,
+      clearLocalData,
+    ],
+  );
+
   return (
-    <EntriesContext.Provider
-      value={{
-        entries,
-        syncStatus,
-        pendingChanges,
-        today,
-        todayCount,
-        incrementToday,
-        decrementToday,
-        clearLocalData,
-      }}
-    >
+    <EntriesContext.Provider value={value}>
       {children}
     </EntriesContext.Provider>
   );

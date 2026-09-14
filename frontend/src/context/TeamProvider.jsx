@@ -6,6 +6,8 @@ import { reportError } from "../utils/reportError";
 
 import { useAuth } from "../hooks/useAuth";
 
+import { useSettings } from "../hooks/useSettings";
+
 import { TeamContext } from "./team-context";
 
 import {
@@ -17,6 +19,8 @@ import {
 
 export function TeamProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
+
+  const { initialTeamActivityLimit } = useSettings();
 
   const [team, setTeam] = useState(null);
   const [members, setMembers] = useState([]);
@@ -74,7 +78,7 @@ export function TeamProvider({ children }) {
 
   const refreshActivity = useCallback(async () => {
     const generation = dashboardRequestRef.current;
-    const data = await getTeamActivity(20, 0);
+    const data = await getTeamActivity(initialTeamActivityLimit, 0);
 
     if (generation !== dashboardRequestRef.current) {
       return data ?? [];
@@ -83,7 +87,7 @@ export function TeamProvider({ children }) {
     setActivity(data ?? []);
 
     return data ?? [];
-  }, []);
+  }, [initialTeamActivityLimit]);
 
   const refreshDashboard = useCallback(
     async (requestedUserId = user?.id) => {
@@ -127,7 +131,7 @@ export function TeamProvider({ children }) {
           await Promise.allSettled([
             getTeamMembers(),
             getTeamLeaderboard(),
-            getTeamActivity(20, 0),
+            getTeamActivity(initialTeamActivityLimit, 0),
           ]);
 
         if (requestId !== dashboardRequestRef.current) {
@@ -205,7 +209,7 @@ export function TeamProvider({ children }) {
         }
       }
     },
-    [clearTeamData, user],
+    [clearTeamData, user, initialTeamActivityLimit],
   );
 
   useEffect(() => {

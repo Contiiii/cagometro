@@ -1,4 +1,4 @@
-import { BarChart3, Settings, UsersRound } from "lucide-react";
+import { UsersRound } from "lucide-react";
 
 export const APP_VERSION = "2.0.0";
 
@@ -15,12 +15,6 @@ export const RELEASE_FEATURES = [
     title: "Share eport migliorati",
     description:
       "Nuovo design per lo shere dei report! e nuove animazioni per gli achievements",
-    icon: BarChart3,
-  },
-  {
-    id: "reports-4",
-    title: "Nuovo Popup!",
-    description: "Nuovo popup motivazionale ad ogni registrazione!",
     icon: BarChart3,
   },
   {

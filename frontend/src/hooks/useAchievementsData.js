@@ -158,25 +158,34 @@ export function useAchievementsData({
     goalCompleted,
   ]);
 
-  const allAchievements =
-    section === "personali"
-      ? personalAchievements
-      : teamAchievements;
-
-  const unlocked = allAchievements.filter(
-    (achievement) =>
-      achievement.unlocked,
+  const allAchievements = useMemo(
+    () =>
+      section === "personali"
+        ? personalAchievements
+        : teamAchievements,
+    [section, personalAchievements, teamAchievements],
   );
 
-  const inProgress =
-    allAchievements.filter(
-      (achievement) =>
-        !achievement.unlocked &&
-        !achievement.secret,
-    );
+  const unlocked = useMemo(
+    () =>
+      allAchievements.filter(
+        (achievement) => achievement.unlocked,
+      ),
+    [allAchievements],
+  );
 
-  const filteredAchievements =
-    allAchievements
+  const inProgress = useMemo(
+    () =>
+      allAchievements.filter(
+        (achievement) =>
+          !achievement.unlocked &&
+          !achievement.secret,
+      ),
+    [allAchievements],
+  );
+
+  const filteredAchievements = useMemo(() => {
+    return allAchievements
       .filter((achievement) => {
         if (
           activeFilter === "Ottenuti"
@@ -218,40 +227,50 @@ export function useAchievementsData({
 
         return bRatio - aRatio;
       });
+  }, [allAchievements, activeFilter]);
 
-  const nextAchievement =
-    [...inProgress].sort((a, b) => {
-      const aRatio = a.target
-        ? a.progress / a.target
-        : 0;
+  const nextAchievement = useMemo(
+    () =>
+      [...inProgress].sort((a, b) => {
+        const aRatio = a.target
+          ? a.progress / a.target
+          : 0;
 
-      const bRatio = b.target
-        ? b.progress / b.target
-        : 0;
+        const bRatio = b.target
+          ? b.progress / b.target
+          : 0;
 
-      return bRatio - aRatio;
-    })[0] || null;
+        return bRatio - aRatio;
+      })[0] || null,
+    [inProgress],
+  );
 
-  const overallProgress =
-    allAchievements.length > 0
-      ? Math.round(
-          (unlocked.length /
-            allAchievements.length) *
-            100,
-        )
-      : 0;
-
-  const nextAchievementProgress =
-    nextAchievement?.target
-      ? Math.min(
-          100,
-          Math.round(
-            (nextAchievement.progress /
-              nextAchievement.target) *
+  const overallProgress = useMemo(
+    () =>
+      allAchievements.length > 0
+        ? Math.round(
+            (unlocked.length /
+              allAchievements.length) *
               100,
-          ),
-        )
-      : 0;
+          )
+        : 0,
+    [unlocked, allAchievements],
+  );
+
+  const nextAchievementProgress = useMemo(
+    () =>
+      nextAchievement?.target
+        ? Math.min(
+            100,
+            Math.round(
+              (nextAchievement.progress /
+                nextAchievement.target) *
+                100,
+            ),
+          )
+        : 0,
+    [nextAchievement],
+  );
 
   return {
     allAchievements,

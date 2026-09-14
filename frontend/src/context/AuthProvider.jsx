@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { AuthContext } from "./auth-context";
 
@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  async function login() {
+  const login = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -53,27 +53,26 @@ export function AuthProvider({ children }) {
     if (error) {
       console.error("Errore durante il login:", error);
     }
-  }
+  }, []);
 
-  async function logout() {
+  const logout = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw new Error(error.message);
-  }
+  }, []);
 
   const user = session?.user ?? null;
 
-  return (
-    <AuthContext.Provider
-      value={{
-        session,
-        user,
-        loading,
-        login,
-        logout,
-        isAuthenticated: Boolean(user),
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      session,
+      user,
+      loading,
+      login,
+      logout,
+      isAuthenticated: Boolean(user),
+    }),
+    [session, user, loading, login, logout],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
 import Header from "../components/Header";
@@ -61,25 +61,29 @@ export default function CagometroReport() {
     selectedPointId,
   });
 
-  const theme = isDark
-    ? {
-        app: "bg-[#0c0c0f] text-zinc-100",
-        surface: "border-white/[0.08] bg-zinc-900/80",
-        softSurface: "border-white/[0.07] bg-white/[0.035]",
-        text: "text-zinc-50",
-        muted: "text-zinc-400",
-        subtle: "text-zinc-500",
-        sheet: "border-white/[0.09] bg-[#17171b]",
-      }
-    : {
-        app: "bg-[#f8f5f3] text-zinc-900",
-        surface: "border-zinc-200/80 bg-white/85",
-        softSurface: "border-zinc-900/[0.07] bg-zinc-900/[0.035]",
-        text: "text-zinc-950",
-        muted: "text-zinc-600",
-        subtle: "text-zinc-500",
-        sheet: "border-zinc-900/[0.09] bg-[#fdfbf9]",
-      };
+  const theme = useMemo(
+    () =>
+      isDark
+        ? {
+            app: "bg-[#0c0c0f] text-zinc-100",
+            surface: "border-white/[0.08] bg-zinc-900/80",
+            softSurface: "border-white/[0.07] bg-white/[0.035]",
+            text: "text-zinc-50",
+            muted: "text-zinc-400",
+            subtle: "text-zinc-500",
+            sheet: "border-white/[0.09] bg-[#17171b]",
+          }
+        : {
+            app: "bg-[#f8f5f3] text-zinc-900",
+            surface: "border-zinc-200/80 bg-white/85",
+            softSurface: "border-zinc-900/[0.07] bg-zinc-900/[0.035]",
+            text: "text-zinc-950",
+            muted: "text-zinc-600",
+            subtle: "text-zinc-500",
+            sheet: "border-zinc-900/[0.09] bg-[#fdfbf9]",
+          },
+    [isDark],
+  );
 
   const changePeriod = (nextPeriod) => {
     setPeriod(nextPeriod);

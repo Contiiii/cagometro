@@ -125,14 +125,18 @@ export default function CagometroSettings() {
 
   const { entries, syncStatus, pendingChanges, clearLocalData } = useEntries();
 
-  const dayCount = Object.keys(entries).length;
-  const totalCount = Object.values(entries).reduce(
-    (acc, value) => acc + value,
-    0,
+  const dayCount = useMemo(() => Object.keys(entries).length, [entries]);
+  const totalCount = useMemo(
+    () =>
+      Object.values(entries).reduce(
+        (acc, value) => acc + value,
+        0,
+      ),
+    [entries],
   );
 
-  const totalXp = getTotalHistorical(entries) * 10;
-  const effectiveLevel = getLevel(totalXp).level;
+  const totalXp = useMemo(() => getTotalHistorical(entries) * 10, [entries]);
+  const effectiveLevel = useMemo(() => getLevel(totalXp).level, [totalXp]);
 
   const [activeSection, setActiveSection] = useState(settingsSections[0].id);
   const cloudEnabled = Boolean(user);
@@ -140,7 +144,10 @@ export default function CagometroSettings() {
     typeof navigator !== "undefined" &&
     typeof navigator.vibrate === "function";
 
-  const syncState = resolveSyncState(user, syncStatus, pendingChanges);
+  const syncState = useMemo(
+    () => resolveSyncState(user, syncStatus, pendingChanges),
+    [user, syncStatus, pendingChanges],
+  );
 
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [dangerModal, setDangerModal] = useState(null);
@@ -180,33 +187,37 @@ export default function CagometroSettings() {
     [accent],
   );
 
-  const theme = resolvedDark
-    ? {
-        app: "bg-[#09090c] text-zinc-100",
-        surface: "border-white/[0.08] bg-[#121216]",
-        elevated: "border-white/[0.09] bg-[#19191e]",
-        soft: "border-white/[0.07] bg-white/[0.035]",
-        text: "text-zinc-50",
-        muted: "text-zinc-400",
-        subtle: "text-zinc-500",
-        header: "border-white/[0.07] bg-[#09090c]/80",
-        modal: "border-white/[0.09] bg-[#17171b]",
-        dangerSoft: "border-rose-500/20 bg-rose-500/10 text-rose-300",
-        divider: "border-white/[0.07]",
-      }
-    : {
-        app: "bg-[#f6f1ec] text-zinc-900",
-        surface: "border-zinc-900/[0.08] bg-[#fffdfa]",
-        elevated: "border-zinc-900/[0.08] bg-[#fff8f4]",
-        soft: "border-zinc-900/[0.07] bg-zinc-900/[0.035]",
-        text: "text-zinc-950",
-        muted: "text-zinc-600",
-        subtle: "text-zinc-500",
-        header: "border-zinc-900/[0.07] bg-[#f6f1ec]/80",
-        modal: "border-zinc-900/[0.09] bg-[#fffaf6]",
-        dangerSoft: "border-rose-500/20 bg-rose-500/10 text-rose-600",
-        divider: "border-zinc-900/[0.07]",
-      };
+  const theme = useMemo(
+    () =>
+      resolvedDark
+        ? {
+            app: "bg-[#09090c] text-zinc-100",
+            surface: "border-white/[0.08] bg-[#121216]",
+            elevated: "border-white/[0.09] bg-[#19191e]",
+            soft: "border-white/[0.07] bg-white/[0.035]",
+            text: "text-zinc-50",
+            muted: "text-zinc-400",
+            subtle: "text-zinc-500",
+            header: "border-white/[0.07] bg-[#09090c]/80",
+            modal: "border-white/[0.09] bg-[#17171b]",
+            dangerSoft: "border-rose-500/20 bg-rose-500/10 text-rose-300",
+            divider: "border-white/[0.07]",
+          }
+        : {
+            app: "bg-[#f6f1ec] text-zinc-900",
+            surface: "border-zinc-900/[0.08] bg-[#fffdfa]",
+            elevated: "border-zinc-900/[0.08] bg-[#fff8f4]",
+            soft: "border-zinc-900/[0.07] bg-zinc-900/[0.035]",
+            text: "text-zinc-950",
+            muted: "text-zinc-600",
+            subtle: "text-zinc-500",
+            header: "border-zinc-900/[0.07] bg-[#f6f1ec]/80",
+            modal: "border-zinc-900/[0.09] bg-[#fffaf6]",
+            dangerSoft: "border-rose-500/20 bg-rose-500/10 text-rose-600",
+            divider: "border-zinc-900/[0.07]",
+          },
+    [resolvedDark],
+  );
 
   useEffect(() => {
     const activeTab = mobileTabButtonsRef.current[activeSection];
