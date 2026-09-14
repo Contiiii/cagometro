@@ -9,6 +9,58 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
+let bodyLockCount = 0;
+let savedBodyStyle = null;
+let savedScrollY = 0;
+
+function lockBodyScroll() {
+  bodyLockCount += 1;
+
+  if (bodyLockCount !== 1) return;
+
+  const body = document.body;
+
+  savedBodyStyle = {
+    overflow: body.style.overflow,
+    position: body.style.position,
+    top: body.style.top,
+    width: body.style.width,
+    paddingRight: body.style.paddingRight,
+  };
+
+  savedScrollY = window.scrollY;
+  const scrollbarWidth =
+    window.innerWidth - document.documentElement.clientWidth;
+
+  body.style.overflow = "hidden";
+  body.style.position = "fixed";
+  body.style.width = "100%";
+  body.style.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : "";
+  body.style.top = `-${savedScrollY}px`;
+}
+
+function unlockBodyScroll() {
+  if (bodyLockCount === 0) return;
+
+  bodyLockCount -= 1;
+
+  if (bodyLockCount !== 0) return;
+
+  if (!savedBodyStyle) return;
+
+  const body = document.body;
+
+  body.style.overflow = savedBodyStyle.overflow;
+  body.style.position = savedBodyStyle.position;
+  body.style.top = savedBodyStyle.top;
+  body.style.width = savedBodyStyle.width;
+  body.style.paddingRight = savedBodyStyle.paddingRight;
+
+  savedBodyStyle = null;
+  window.scrollTo(0, savedScrollY);
+  savedScrollY = 0;
+}
+
 export default function useModalFocusTrap({
   dialogRef,
   open = true,
@@ -33,21 +85,7 @@ export default function useModalFocusTrap({
 
     dialog.focus();
 
-    const previousOverflow = document.body.style.overflow;
-    const previousPosition = document.body.style.position;
-    const previousTop = document.body.style.top;
-    const previousWidth = document.body.style.width;
-    const previousPaddingRight = document.body.style.paddingRight;
-    const scrollY = window.scrollY;
-    const scrollbarWidth =
-      window.innerWidth - document.documentElement.clientWidth;
-
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.width = "100%";
-    document.body.style.paddingRight =
-      scrollbarWidth > 0 ? `${scrollbarWidth}px` : "";
-    document.body.style.top = `-${scrollY}px`;
+    lockBodyScroll();
 
     const getFocusable = () =>
       Array.from(dialog.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
@@ -101,12 +139,7 @@ export default function useModalFocusTrap({
     return () => {
       window.clearTimeout(timeout);
       window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      document.body.style.position = previousPosition;
-      document.body.style.width = previousWidth;
-      document.body.style.paddingRight = previousPaddingRight;
-      document.body.style.top = previousTop;
-      window.scrollTo(0, scrollY);
+      unlockBodyScroll();
       if (previouslyFocused?.isConnected) {
         previouslyFocused.focus();
       }

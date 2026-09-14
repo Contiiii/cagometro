@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { getTeamInvitePreview } from "../services/teamService";
+import { useAuth } from "../hooks/useAuth";
 import { useTeam } from "../hooks/useTeam";
 import { useTeamActions } from "../hooks/useTeamActions";
 import { notify } from "../utils/teamNotify";
@@ -9,6 +10,7 @@ import { notify } from "../utils/teamNotify";
 export default function JoinTeamPage() {
   const { code } = useParams();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
 
   const {
     refreshDashboard,
@@ -98,6 +100,16 @@ export default function JoinTeamPage() {
   }, [inviteCode]);
 
   async function handleJoin() {
+    if (authLoading) return;
+
+    if (!user) {
+      navigate(`/login?redirect=${encodeURIComponent(`/join/${inviteCode}`)}`, {
+        replace: true,
+      });
+
+      return;
+    }
+
     if (
       hasStartedJoinRef.current ||
       isJoining ||
@@ -112,7 +124,7 @@ export default function JoinTeamPage() {
     setErrorMessage("");
 
     try {
-      await handleJoinTeam(inviteCode, inviteTeam.name);
+      await handleJoinTeam(inviteCode, inviteTeam.name, { immediate: true });
     } catch (error) {
       console.error("Errore ingresso nella squadra:", error);
 
@@ -220,13 +232,18 @@ export default function JoinTeamPage() {
               isLoadingPreview ||
               isInvalidInvite ||
               isJoining ||
-              !inviteTeam
+              !inviteTeam ||
+              authLoading
             }
             className="min-h-12 rounded-2xl bg-accent px-4 text-sm font-extrabold text-white shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition-colors hover:bg-accent hover:brightness-110 disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/35"
           >
             {isJoining
               ? "Accesso in corso..."
-              : "Entra nella squadra"}
+              : authLoading
+                ? "Verifica..."
+                : user
+                  ? "Entra nella squadra"
+                  : "Accedi per entrare"}
           </button>
 
           <button

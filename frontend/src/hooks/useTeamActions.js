@@ -128,10 +128,37 @@ reportError(
     }
   }
 
-  async function handleJoinTeam(code, teamName = null) {
+  async function handleJoinTeam(code, teamName = null, options = {}) {
+    const immediate = Boolean(options?.immediate);
+
     await joinTeam(code);
 
     notify(teamName ? `Sei entrato in ${teamName}.` : "Sei entrato nella squadra");
+
+    if (immediate) {
+      refreshDashboard().catch((error) => {
+        reportError(error, {
+          feature: "team-join-dashboard",
+          userId,
+          message: "Ingresso riuscito, ma aggiornamento dashboard fallito:",
+        });
+
+        notify(
+          "Sei entrato nella squadra. Ricarica la pagina per aggiornare i dati.",
+          "error",
+        );
+      });
+
+      createTeamActivity("member_joined").catch((error) => {
+        reportError(error, {
+          feature: "team-join-activity",
+          userId,
+          message: "Ingresso riuscito, ma registrazione attività fallita:",
+        });
+      });
+
+      return;
+    }
 
     try {
       await createTeamActivity("member_joined");

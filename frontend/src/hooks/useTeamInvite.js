@@ -42,10 +42,10 @@ export default function useTeamInvite(team) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Unisciti a ${team?.team_name || "questa squadra"}`,
-          text: `Entra nella squadra ${
-            team?.team_name || ""
-          } su Cagometro.`,
+          title: `Unisciti a ${team?.team_name || "questa squadra"}!`,
+          text: `Ti ho invitato a ${
+            team?.team_name || "una squadra"
+          } su Cagometro 🏋️ Clicca il link per unirti al team!`,
           url: inviteLink,
         });
 

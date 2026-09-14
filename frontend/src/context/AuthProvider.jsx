@@ -42,11 +42,11 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const login = useCallback(async () => {
+  const login = useCallback(async (redirectTo) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: redirectTo || `${window.location.origin}/`,
       },
     });
 

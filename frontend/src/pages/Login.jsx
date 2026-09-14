@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Check, Cloud, CloudOff } from "lucide-react";
 
 import Header from "../components/Header";
@@ -17,6 +17,7 @@ const CLOUD_BENEFITS = [
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading, login } = useAuth();
   const { resolvedTheme } = useTheme();
 
@@ -24,13 +25,15 @@ export default function Login() {
 
   const isDark = resolvedTheme === "dark";
 
+  const redirectUrl = searchParams.get("redirect");
+
   useEffect(() => {
     if (authLoading) return;
 
     if (user) {
-      navigate("/", { replace: true });
+      navigate(redirectUrl || "/", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, redirectUrl]);
 
   async function handleLogin() {
     if (loggingIn) return;
@@ -38,11 +41,11 @@ export default function Login() {
     setLoggingIn(true);
 
     try {
-      await login();
-
-      if (user) {
-        navigate("/", { replace: true });
-      }
+      await login(
+        redirectUrl
+          ? `${window.location.origin}${redirectUrl}`
+          : undefined,
+      );
     } catch (error) {
       console.error("Errore durante il login:", error);
       toast.error("Non è stato possibile completare l'accesso");

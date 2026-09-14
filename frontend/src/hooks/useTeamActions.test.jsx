@@ -176,6 +176,31 @@ describe("useTeamActions", () => {
     expect(countErrorNotifies(notify)).toBe(0);
   });
 
+  it("T4b: join immediate => navigazione non bloccata da activity e refresh", async () => {
+    teamService.joinTeam.mockResolvedValue(undefined);
+
+    const { result, props, notify } = createHarness();
+
+    props.refreshDashboard.mockResolvedValue({
+      hasErrors: false,
+      failedSections: [],
+    });
+
+    await act(async () => {
+      await result.current.handleJoinTeam("CODE", "Squadra test", {
+        immediate: true,
+      });
+    });
+
+    expect(teamService.joinTeam).toHaveBeenCalledWith("CODE");
+    expect(teamService.createTeamActivity).toHaveBeenCalledWith(
+      "member_joined",
+    );
+    expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith("Sei entrato in Squadra test.");
+    expect(countErrorNotifies(notify)).toBe(0);
+  });
+
   it("T5: join riuscito con refreshDashboard parziale => successo parziale", async () => {
     teamService.joinTeam.mockResolvedValue(undefined);
 
