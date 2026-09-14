@@ -2,6 +2,7 @@ import { useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Share2, X } from "lucide-react";
 import { toBlob } from "html-to-image";
+import toast from "react-hot-toast";
 import poopIcon from "../../assets/poop.webp";
 import useModalFocusTrap from "../../hooks/useModalFocusTrap";
 
@@ -28,7 +29,6 @@ export default function ReportShareModal({
   const cardRef = useRef(null);
   const dialogRef = useRef(null);
   const titleId = useId();
-  const todayRegistrations = todayTotal ?? 0;
   const isWeekReport = period === "week";
   const isMonthReport = period === "month";
 
@@ -98,8 +98,8 @@ async function handleShareCard() {
 
     const blob = await withTimeout(
       toBlob(cardRef.current, {
-        pixelRatio: 1,
-        skipFonts: true,
+        pixelRatio: Math.min(window.devicePixelRatio || 2, 3),
+        cacheBust: true,
         backgroundColor: isDarkCard ? "#18181b" : "#fffaf8",
       }),
       15000,
@@ -110,6 +110,16 @@ async function handleShareCard() {
       throw new Error("Impossibile generare l'immagine");
     }
 
+    const file = new File([blob], "cagometro-report.png", {
+      type: "image/png",
+    });
+
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file] });
+      toast.success("Immagine condivisa");
+      return;
+    }
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -117,12 +127,16 @@ async function handleShareCard() {
     document.body.appendChild(link);
     link.click();
     link.remove();
+    toast.success("Immagine salvata");
 
     window.setTimeout(() => {
       URL.revokeObjectURL(url);
     }, 1000);
   } catch (error) {
+    if (error?.name === "AbortError") return;
+
     console.error("Errore durante la condivisione della card:", error);
+    toast.error("Errore durante la condivisione");
   } finally {
     setIsSharing(false);
   }
@@ -196,9 +210,11 @@ async function handleShareCard() {
             <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 sm:px-6 overscroll-contain">
               <div
                 ref={cardRef}
-                className={`mt-1 overflow-hidden rounded-[1.8rem] border ${exportCardClass}`}
+                className={`relative mt-1 overflow-hidden rounded-[1.8rem] border ${exportCardClass}`}
               >
-                <div className="relative p-5">
+                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-accent/[0.08] blur-3xl" />
+
+                <div className="relative p-5 sm:p-6">
                   <div className="relative flex items-start justify-between gap-3">
                     <div>
                       <div
@@ -219,28 +235,29 @@ async function handleShareCard() {
                     </div>
 
                     <span
-                      className={`rounded-full px-3 py-1 text-[11px] font-extrabold ${exportBadgeClass}`}
+                      className={`rounded-full border border-accent/20 px-3 py-1 text-[11px] font-extrabold ${exportBadgeClass}`}
                     >
                       {report.label}
                     </span>
                   </div>
-                  <div className="relative mt-6">
+
+                  <div className="relative mt-7">
                     <p className={`text-sm font-bold ${exportMutedClass}`}>
                       {totalLabel}
                     </p>
 
                     <p
-                      className={`mt-1 text-5xl font-black leading-none tracking-[-0.08em] ${exportStrongClass}`}
+                      className={`mt-1 text-[clamp(3rem,12vw,4rem)] font-black leading-none tracking-[-0.08em] ${exportStrongClass}`}
                     >
-                      {isWeekReport ? todayRegistrations : total}
+                      {isWeekReport ? (todayTotal ?? 0) : total}
                     </p>
                   </div>
 
                   <div
-                    className={`mt-5 grid gap-3 ${isMonthReport ? "grid-cols-3" : "grid-cols-2"}`}
+                    className={`mt-6 grid gap-3 ${isMonthReport ? "grid-cols-3" : "grid-cols-2"}`}
                   >
                     <div
-                      className={`rounded-2xl border p-3 ${exportPanelClass}`}
+                      className={`rounded-2xl border p-3.5 ${exportPanelClass}`}
                     >
                       <p
                         className={`text-[10px] font-bold uppercase tracking-[0.14em] ${exportSubtleClass}`}
@@ -249,15 +266,15 @@ async function handleShareCard() {
                       </p>
 
                       <p
-                        className={`mt-1 text-2xl font-black ${exportStrongClass}`}
+                        className={`mt-1.5 text-2xl font-black ${exportStrongClass}`}
                       >
-                        {todayRegistrations > 0 ? report.streak : 0} g
+                        {report.streak} g
                       </p>
                     </div>
 
                     {isMonthReport && (
                       <div
-                        className={`rounded-2xl border p-3 ${exportPanelClass}`}
+                        className={`rounded-2xl border p-3.5 ${exportPanelClass}`}
                       >
                         <p
                           className={`text-[10px] font-bold uppercase tracking-[0.14em] ${exportSubtleClass}`}
@@ -266,7 +283,7 @@ async function handleShareCard() {
                         </p>
 
                         <p
-                          className={`mt-1 text-2xl font-black ${exportStrongClass}`}
+                          className={`mt-1.5 text-2xl font-black ${exportStrongClass}`}
                         >
                           {report.bestMonthStreak ?? 0} g
                         </p>
@@ -274,7 +291,7 @@ async function handleShareCard() {
                     )}
 
                     <div
-                      className={`rounded-2xl border p-3 ${exportPanelClass}`}
+                      className={`rounded-2xl border p-3.5 ${exportPanelClass}`}
                     >
                       <p
                         className={`text-[10px] font-bold uppercase tracking-[0.14em] ${exportSubtleClass}`}
@@ -283,7 +300,7 @@ async function handleShareCard() {
                       </p>
 
                       <p
-                        className={`mt-1 text-2xl font-black ${exportStrongClass}`}
+                        className={`mt-1.5 text-2xl font-black ${exportStrongClass}`}
                       >
                         {safeBestPoint.value}
                       </p>
