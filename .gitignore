@@ -7,3 +7,7 @@ Dati.txt
 
 dist
 errori.txt
+test-results
+playwright-report
+.opencode/
+frontend/.playwright-mcp/

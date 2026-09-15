@@ -9,6 +9,11 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(packageJson.version),
   },
 
+  test: {
+    include: ["src/**/*.test.{js,jsx}"],
+    exclude: ["e2e/**", "node_modules/**"],
+  },
+
   plugins: [
     react(),
     tailwindcss(),
