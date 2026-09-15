@@ -35,6 +35,10 @@ import ModalShell from "../components/settings/ModalShell";
 import SessionsModal from "../components/settings/SessionsModal";
 
 import { submitFeedback } from "../services/feedbackService";
+import {
+  canSubmitFeedback,
+  recordFeedbackSubmission,
+} from "../utils/rateLimit";
 import { deleteAccount } from "../services/accountService";
 import { APP_VERSION, RELEASE_NOTES } from "../config/releaseNotes";
 import { accentOptions } from "../config/appearance";
@@ -282,6 +286,18 @@ export default function CagometroSettings() {
       return;
     }
 
+    const rateLimit = canSubmitFeedback();
+
+    if (!rateLimit.ok) {
+      if (rateLimit.waitMs > 0) {
+        const seconds = Math.ceil(rateLimit.waitMs / 1000);
+        showToast(`Attendi ancora ${seconds} secondi`);
+      } else {
+        showToast("Hai raggiunto il limite di segnalazioni oggi");
+      }
+      return;
+    }
+
     try {
       setFeedbackSending(true);
 
@@ -289,8 +305,9 @@ export default function CagometroSettings() {
         category: feedbackCategory,
         message: trimmedMessage,
         name: trimmedName,
-        userId: user?.id ?? null,
       });
+
+      recordFeedbackSubmission();
 
       setFeedbackOpen(false);
       setFeedbackMessage("");

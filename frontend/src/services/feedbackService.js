@@ -4,13 +4,11 @@ export async function submitFeedback({
   category,
   message,
   name,
-  userId,
 }) {
-  const { error } = await supabase.from("feedback").insert({
-    category,
-    message,
-    author_name: name,
-    user_id: userId ?? null,
+  const { error } = await supabase.rpc("submit_feedback", {
+    p_category: category,
+    p_message: message,
+    p_author_name: name,
   });
 
   if (error) throw error;
