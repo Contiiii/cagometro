@@ -13,7 +13,6 @@ vi.mock("../services/teamService", () => ({
   createTeam: vi.fn(),
   joinTeam: vi.fn(),
   leaveTeam: vi.fn(),
-  createTeamActivity: vi.fn(),
   transferOwnership: vi.fn(),
   removeTeamMember: vi.fn(),
   regenerateInviteCode: vi.fn(),
@@ -82,7 +81,6 @@ describe("useTeamActions", () => {
     teamService.createTeam.mockResolvedValue({});
     teamService.joinTeam.mockResolvedValue(undefined);
     teamService.leaveTeam.mockResolvedValue(undefined);
-    teamService.createTeamActivity.mockResolvedValue(undefined);
     teamService.transferOwnership.mockResolvedValue(undefined);
     teamService.removeTeamMember.mockResolvedValue(undefined);
     teamService.regenerateInviteCode.mockResolvedValue({ code: "NEW-CODE" });
@@ -157,9 +155,8 @@ describe("useTeamActions", () => {
     expect(props.refreshMembers).not.toHaveBeenCalled();
   });
 
-  it("T4: join riuscito con activity log fallito => l'ingresso resta valido", async () => {
+  it("T4: join riuscito => refresh dashboard e notify (log attività nella RPC)", async () => {
     teamService.joinTeam.mockResolvedValue(undefined);
-    teamService.createTeamActivity.mockRejectedValue(new Error("log"));
 
     const { result, props, notify } = createHarness();
 
@@ -168,15 +165,12 @@ describe("useTeamActions", () => {
     });
 
     expect(teamService.joinTeam).toHaveBeenCalledWith("CODE");
-    expect(teamService.createTeamActivity).toHaveBeenCalledWith(
-      "member_joined",
-    );
     expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenCalledWith("Sei entrato nella squadra");
     expect(countErrorNotifies(notify)).toBe(0);
   });
 
-  it("T4b: join immediate => navigazione non bloccata da activity e refresh", async () => {
+  it("T4b: join immediate => navigazione non bloccata dal refresh", async () => {
     teamService.joinTeam.mockResolvedValue(undefined);
 
     const { result, props, notify } = createHarness();
@@ -193,9 +187,6 @@ describe("useTeamActions", () => {
     });
 
     expect(teamService.joinTeam).toHaveBeenCalledWith("CODE");
-    expect(teamService.createTeamActivity).toHaveBeenCalledWith(
-      "member_joined",
-    );
     expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenCalledWith("Sei entrato in Squadra test.");
     expect(countErrorNotifies(notify)).toBe(0);
@@ -234,13 +225,11 @@ describe("useTeamActions", () => {
     ).rejects.toThrow("codice non valido");
 
     expect(notify).not.toHaveBeenCalled();
-    expect(teamService.createTeamActivity).not.toHaveBeenCalled();
     expect(props.refreshDashboard).not.toHaveBeenCalled();
   });
 
-  it("T7: leave riuscita con log member_left fallito", async () => {
+  it("T7: leave riuscita => refresh dashboard e notify", async () => {
     teamService.leaveTeam.mockResolvedValue(undefined);
-    teamService.createTeamActivity.mockRejectedValue(new Error("log"));
 
     const { result, props, notify, setSelectedMember } = createHarness();
 
@@ -296,11 +285,6 @@ describe("useTeamActions", () => {
     await runConfirm(result);
 
     expect(teamService.removeTeamMember).toHaveBeenCalledWith("u-x");
-    expect(teamService.createTeamActivity).toHaveBeenCalledWith(
-      "member_removed",
-      null,
-      { target_user_id: "u-x", target_display_name: "X" },
-    );
     expect(props.refreshMembers).toHaveBeenCalledTimes(1);
     expect(props.refreshLeaderboard).toHaveBeenCalledTimes(1);
     expect(props.refreshActivity).toHaveBeenCalledTimes(1);
@@ -311,10 +295,8 @@ describe("useTeamActions", () => {
     );
   });
 
-  it("T10: transfer riuscito con activity log fallito => successo", async () => {
+  it("T10: transfer riuscito => refresh team/members/activity e notifica successo", async () => {
     const member = { user_id: "u-x", display_name: "X", role: "member" };
-
-    teamService.createTeamActivity.mockRejectedValue(new Error("log"));
 
     const { result, props, notify } = createHarness();
 

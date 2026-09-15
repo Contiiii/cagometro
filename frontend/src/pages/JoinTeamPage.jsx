@@ -43,6 +43,18 @@ export default function JoinTeamPage() {
   const isJoining = joinStatus === "loading";
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!user) {
+      navigate(`/login?redirect=${encodeURIComponent(`/join/${inviteCode}`)}`, {
+        replace: true,
+      });
+
+      return;
+    }
+
     let cancelled = false;
 
     async function loadInvitePreview() {
@@ -97,7 +109,7 @@ export default function JoinTeamPage() {
     return () => {
       cancelled = true;
     };
-  }, [inviteCode]);
+  }, [inviteCode, authLoading, user, navigate]);
 
   async function handleJoin() {
     if (authLoading) return;

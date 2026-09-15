@@ -4,7 +4,6 @@ import {
   createTeam,
   joinTeam,
   leaveTeam,
-  createTeamActivity,
   transferOwnership,
   removeTeamMember,
   regenerateInviteCode,
@@ -149,25 +148,7 @@ reportError(
         );
       });
 
-      createTeamActivity("member_joined").catch((error) => {
-        reportError(error, {
-          feature: "team-join-activity",
-          userId,
-          message: "Ingresso riuscito, ma registrazione attività fallita:",
-        });
-      });
-
       return;
-    }
-
-    try {
-      await createTeamActivity("member_joined");
-    } catch (error) {
-reportError(error, {
-              feature: "team-join-activity",
-              userId,
-              message: "Ingresso riuscito, ma registrazione attività fallita:",
-            });
     }
 
     try {
@@ -206,22 +187,8 @@ reportError(error, {
         try {
           setLeaving(true);
 
-          // Il log member_left non è atomico con leave_team(): viene eseguito
-          // prima dell'uscita perché create_team_activity richiede una
-          // membership attiva. Se leaveTeam() fallisce dopo questo log può
-          // restare un evento member_left non corrispondente. Soluzione
-          // definitiva: spostare il log dentro la RPC leave_team() nella
-          // stessa transazione (nessuna modifica DB in questa task).
-          try {
-            await createTeamActivity("member_left");
-          } catch (error) {
-reportError(error, {
-            feature: "team-leave-activity",
-            userId,
-            message: "Registrazione attività member_left fallita:",
-          });
-          }
-
+          // member_left è loggato dalla RPC leave_team(), nella stessa
+          // transazione dell'uscita (nessuna chiamata client extra).
           await leaveTeam();
 
           setSelectedMember(null);
@@ -289,20 +256,6 @@ reportError(error, {
         try {
           await transferOwnership(member.user_id);
 
-          try {
-            await createTeamActivity("ownership_transferred", null, {
-              target_user_id: member.user_id,
-              target_display_name: member.display_name,
-            });
-          } catch (error) {
-            reportError(error, {
-              feature: "team-transfer-activity",
-              userId,
-              message:
-                "Proprietà trasferita, ma registrazione attività fallita:",
-            });
-          }
-
           const refreshResults = await Promise.allSettled([
             refreshTeam(),
             refreshMembers(),
@@ -359,19 +312,6 @@ reportError(error, {
       onConfirm: async () => {
         try {
           await removeTeamMember(member.user_id);
-
-          try {
-            await createTeamActivity("member_removed", null, {
-              target_user_id: member.user_id,
-              target_display_name: member.display_name,
-            });
-          } catch (error) {
-            reportError(error, {
-              feature: "team-member-remove-activity",
-              userId,
-              message: "Membro rimosso, ma registrazione attività fallita:",
-            });
-          }
 
           const refreshResults = await Promise.allSettled([
             refreshMembers(),
