@@ -101,6 +101,30 @@ export default function TeamMembersModal({
                     <p className={`text-xs ${theme.muted}`}>
                       {isOwner ? "Proprietario" : "Membro"}
                     </p>
+
+                    <div
+                      className={`mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium ${theme.muted}`}
+                    >
+                      <span className="whitespace-nowrap">
+                        🔥{" "}
+                        {Number(
+                          leaderboardData?.current_streak || 0,
+                        ).toLocaleString("it-IT")}{" "}
+                        {Number(
+                          leaderboardData?.current_streak || 0,
+                        ) === 1
+                          ? "giorno"
+                          : "giorni"}
+                      </span>
+
+                      <span className="whitespace-nowrap">
+                        ⭐{" "}
+                        {Number(
+                          leaderboardData?.xp || 0,
+                        ).toLocaleString("it-IT")}{" "}
+                        XP
+                      </span>
+                    </div>
                   </div>
 
                   <div className="text-right">

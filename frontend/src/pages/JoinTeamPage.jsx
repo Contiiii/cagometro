@@ -6,6 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useTeam } from "../hooks/useTeam";
 import { useTeamActions } from "../hooks/useTeamActions";
 import { notify } from "../utils/teamNotify";
+import { getFriendlyErrorMessage } from "../utils/friendlyError";
 
 export default function JoinTeamPage() {
   const { code } = useParams();
@@ -97,8 +98,10 @@ export default function JoinTeamPage() {
         if (!cancelled) {
           setPreviewStatus("error");
           setErrorMessage(
-            error?.message ??
+            getFriendlyErrorMessage(
+              error,
               "Non è stato possibile verificare il codice invito.",
+            ),
           );
         }
       }
@@ -142,8 +145,10 @@ export default function JoinTeamPage() {
 
       setJoinStatus("error");
       setErrorMessage(
-        error?.message ??
+        getFriendlyErrorMessage(
+          error,
           "Non è stato possibile entrare nella squadra.",
+        ),
       );
 
       hasStartedJoinRef.current = false;

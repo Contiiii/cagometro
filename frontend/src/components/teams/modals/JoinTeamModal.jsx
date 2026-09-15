@@ -6,6 +6,7 @@ import ModalShell from "./ModalShell";
 import CloseButton from "./CloseButton";
 
 import { useTeamUI } from "../../../hooks/useTeamUI";
+import { getFriendlyErrorMessage } from "../../../utils/friendlyError";
 
 export default function JoinTeamModal({
   onClose,
@@ -46,8 +47,10 @@ export default function JoinTeamModal({
       );
 
       toast.error(
-        error?.message ||
+        getFriendlyErrorMessage(
+          error,
           "Non è stato possibile entrare nella squadra",
+        ),
       );
     } finally {
       setJoining(false);

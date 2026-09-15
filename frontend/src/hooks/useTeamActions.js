@@ -13,6 +13,7 @@ import {
 
 import { useAuth } from "./useAuth";
 import { reportError } from "../utils/reportError";
+import { getFriendlyErrorMessage } from "../utils/friendlyError";
 
 export function useTeamActions({
   team = null,
@@ -120,7 +121,10 @@ reportError(
             message: "Errore durante la creazione della squadra:",
           });
       notify(
-        error?.message || "Non è stato possibile creare la squadra",
+        getFriendlyErrorMessage(
+          error,
+          "Non è stato possibile creare la squadra",
+        ),
         "error",
       );
       throw error;

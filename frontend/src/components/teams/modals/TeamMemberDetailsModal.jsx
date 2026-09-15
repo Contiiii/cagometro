@@ -122,6 +122,22 @@ export default function TeamMemberDetailsModal({ onClose }) {
           />
         </div>
 
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <MetricCard
+            label="Streak"
+            value={`${Number(member.current_streak || 0).toLocaleString(
+              "it-IT",
+            )} ${Number(member.current_streak || 0) === 1 ? "giorno" : "giorni"}`}
+            theme={theme}
+          />
+
+          <MetricCard
+            label="XP"
+            value={`${Number(member.xp || 0).toLocaleString("it-IT")} XP`}
+            theme={theme}
+          />
+        </div>
+
         <Panel theme={theme} className="mt-5">
           <div className="flex items-center justify-between gap-3">
             <p className={`text-sm font-bold ${theme.primaryText}`}>

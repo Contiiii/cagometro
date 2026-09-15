@@ -6,6 +6,7 @@ import CloseButton from "./CloseButton";
 import Panel from "../../ui/Panel";
 
 import { useTeamUI } from "../../../hooks/useTeamUI";
+import { getFriendlyErrorMessage } from "../../../utils/friendlyError";
 
 const TEAM_EMOJIS = [
   "🏆",
@@ -77,7 +78,10 @@ export default function EditTeamModal({
     } catch (error) {
       // L'errore della mutazione è già stato loggato dall'hook.
       toast.error(
-        error?.message || "Impossibile aggiornare la squadra",
+        getFriendlyErrorMessage(
+          error,
+          "Impossibile aggiornare la squadra",
+        ),
       );
     } finally {
       setSaving(false);

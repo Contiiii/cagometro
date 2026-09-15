@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import ModalShell from "./ModalShell";
 
 import { useTeamUI } from "../../../hooks/useTeamUI";
+import { getFriendlyErrorMessage } from "../../../utils/friendlyError";
 
 export default function ConfirmModal({
   open,
@@ -39,7 +40,10 @@ export default function ConfirmModal({
       onClose();
     } catch (error) {
       toast.error(
-        error?.message || "Impossibile completare l’operazione",
+        getFriendlyErrorMessage(
+          error,
+          "Impossibile completare l’operazione",
+        ),
       );
     } finally {
       setLoading(false);
