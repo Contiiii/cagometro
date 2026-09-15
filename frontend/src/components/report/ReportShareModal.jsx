@@ -183,7 +183,7 @@ async function handleShareCard() {
               stiffness: 360,
               damping: 30,
             }}
-            className={`flex w-full max-w-md max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-[2rem] border shadow-2xl sm:max-h-[calc(100vh-3rem)] ${theme.sheet}`}
+            className={`flex w-full max-w-md max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-[2rem] border shadow-2xl sm:max-h-[calc(100vh-3rem)] ${theme.modal}`}
           >
             <div className="flex items-start justify-between gap-4 px-5 pb-4 pt-5 sm:px-6 sm:pt-6">
               <div>

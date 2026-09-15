@@ -11,7 +11,7 @@ import TeamsLanding from "../components/teams/TeamsLanding";
 import TeamsDashboard from "../components/teams/TeamsDashboard";
 import { TeamUIProvider } from "../context/TeamUIContext";
 
-import { getTeamTheme } from "../config/teamTheme";
+import { getTheme } from "../config/theme";
 import { notify } from "../utils/teamNotify";
 
 export default function CagometroTeams() {
@@ -35,7 +35,7 @@ export default function CagometroTeams() {
 
   const isDark = resolvedTheme === "dark";
 
-  const theme = useMemo(() => getTeamTheme(isDark), [isDark]);
+  const theme = useMemo(() => getTheme(isDark), [isDark]);
 
   const [rankingMode, setRankingMode] = useState("week");
   const [selectedMember, setSelectedMember] = useState(null);

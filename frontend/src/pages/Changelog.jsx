@@ -9,6 +9,7 @@ import {
 
 import { useTheme } from "../hooks/useTheme";
 import { useSettings } from "../hooks/useSettings";
+import { getTheme } from "../config/theme";
 import { accentOptions } from "../config/appearance";
 import { RELEASE_NOTES } from "../config/releaseNotes";
 
@@ -38,27 +39,7 @@ export default function Changelog() {
     [accent],
   );
 
-  const theme = isDark
-    ? {
-        app: "bg-[#09090c] text-zinc-100",
-        surface: "border-white/[0.08] bg-[#121216]",
-        soft: "border-white/[0.07] bg-white/[0.035]",
-        text: "text-zinc-50",
-        muted: "text-zinc-400",
-        subtle: "text-zinc-500",
-        header: "border-white/[0.07] bg-[#09090c]/80",
-        divider: "border-white/[0.07]",
-      }
-    : {
-        app: "bg-[#f6f1ec] text-zinc-900",
-        surface: "border-zinc-900/[0.08] bg-[#fffdfa]",
-        soft: "border-zinc-900/[0.07] bg-zinc-900/[0.035]",
-        text: "text-zinc-950",
-        muted: "text-zinc-600",
-        subtle: "text-zinc-500",
-        header: "border-zinc-900/[0.07] bg-[#f6f1ec]/80",
-        divider: "border-zinc-900/[0.07]",
-      };
+  const theme = getTheme(isDark);
 
   return (
     <div
@@ -72,7 +53,7 @@ export default function Changelog() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
+            className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 ${theme.softSurface}`}
             style={{ "--tw-ring-color": accentColor }}
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
@@ -85,13 +66,13 @@ export default function Changelog() {
             >
               Cagometro
             </p>
-            <p className={`text-sm font-black tracking-tight ${theme.text}`}>
+            <p className={`text-sm font-black tracking-tight ${theme.primaryText}`}>
               Changelog
             </p>
           </div>
 
           <div
-            className={`grid h-11 w-11 place-items-center rounded-2xl border ${theme.soft}`}
+            className={`grid h-11 w-11 place-items-center rounded-2xl border ${theme.softSurface}`}
           >
             <History
               className="h-5 w-5"
@@ -118,7 +99,7 @@ export default function Changelog() {
               Versione per versione
             </p>
             <h1
-              className={`mt-2 flex items-center gap-2 text-2xl font-black tracking-[-0.05em] ${theme.text}`}
+              className={`mt-2 flex items-center gap-2 text-2xl font-black tracking-[-0.05em] ${theme.primaryText}`}
             >
               <ScrollText
                 className="h-6 w-6"
@@ -162,7 +143,7 @@ export default function Changelog() {
                     </span>
                   )}
 
-                  <span className={`text-lg font-black tracking-tight ${theme.text}`}>
+                  <span className={`text-lg font-black tracking-tight ${theme.primaryText}`}>
                     v{note.version}
                   </span>
 
@@ -181,7 +162,7 @@ export default function Changelog() {
                     return (
                       <div
                         key={feature.id ?? feature.title}
-                        className={`flex items-start gap-3 rounded-[1.35rem] border p-4 ${theme.soft}`}
+                        className={`flex items-start gap-3 rounded-[1.35rem] border p-4 ${theme.softSurface}`}
                       >
                         {Icon && (
                           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
@@ -190,7 +171,7 @@ export default function Changelog() {
                         )}
 
                         <div className="min-w-0">
-                          <p className={`text-sm font-black ${theme.text}`}>
+                          <p className={`text-sm font-black ${theme.primaryText}`}>
                             {feature.title}
                           </p>
 

@@ -30,7 +30,7 @@ export default function AchievementsHero({
           </p>
 
           <p
-            className={`mt-2 text-4xl font-black tracking-[-0.06em] ${theme.text}`}
+            className={`mt-2 text-4xl font-black tracking-[-0.06em] ${theme.primaryText}`}
           >
             {unlocked.length}
             <span className={`text-xl ${theme.subtle}`}>

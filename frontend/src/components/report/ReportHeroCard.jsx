@@ -43,14 +43,14 @@ export default function ReportHeroCard({
               prefersReducedMotion ? false : { opacity: 0, y: 8, scale: 0.95 }
             }
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className={`mt-2 block text-[clamp(5rem,19vw,8rem)] font-black leading-[0.8] tracking-[-0.02em] ${theme.text}`}
+            className={`mt-2 block text-[clamp(5rem,19vw,8rem)] font-black leading-[0.8] tracking-[-0.02em] ${theme.primaryText}`}
           >
             {total}
           </motion.output>
 
           <p className={`mt-5 text-sm font-semibold ${theme.muted}`}>
             Media:{" "}
-            <span className={theme.text}>
+            <span className={theme.primaryText}>
               {average.toFixed(1)} {averageLabel}
             </span>
           </p>
@@ -96,7 +96,7 @@ export default function ReportHeroCard({
         }`}
       >
         <p
-          className={`max-w-[48ch] text-base font-bold leading-relaxed ${theme.text}`}
+          className={`max-w-[48ch] text-base font-bold leading-relaxed ${theme.primaryText}`}
         >
           Hai registrato{" "}
 <span

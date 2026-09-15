@@ -21,7 +21,7 @@ export default function HeroMetric({
         {label}
       </p>
 
-      <p className={`mt-1 text-xl font-black tracking-tight ${theme.text}`}>
+      <p className={`mt-1 text-xl font-black tracking-tight ${theme.primaryText}`}>
         {value}
       </p>
     </div>

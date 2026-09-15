@@ -36,7 +36,7 @@ export default function ReportDetailsModal({
 
                 <h2
                   id={titleId}
-                  className={`mt-1 text-2xl font-black tracking-tight ${theme.text}`}
+                  className={`mt-1 text-2xl font-black tracking-tight ${theme.primaryText}`}
                 >
                   {selectedPoint.date}
                 </h2>
@@ -59,7 +59,7 @@ export default function ReportDetailsModal({
               </p>
 
               <p
-                className={`mt-2 text-6xl font-black leading-none tracking-[-0.08em] ${theme.text}`}
+                className={`mt-2 text-6xl font-black leading-none tracking-[-0.08em] ${theme.primaryText}`}
               >
                 {selectedPoint.value}
               </p>

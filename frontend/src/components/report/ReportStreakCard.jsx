@@ -24,7 +24,7 @@ export default function ReportStreakCard({
 
       <div className="relative flex items-center justify-between gap-4">
         <div>
-          <p className={`text-sm font-bold ${theme.text}`}>
+          <p className={`text-sm font-bold ${theme.primaryText}`}>
             Streak attuale
           </p>
 

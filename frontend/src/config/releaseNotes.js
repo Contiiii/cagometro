@@ -1,10 +1,10 @@
 import { BarChart3, CalendarDays, Settings, Smartphone, UsersRound, Zap } from "lucide-react";
 
-export const APP_VERSION = "2.1.0";
+export const APP_VERSION = __APP_VERSION__;
 
 export const RELEASE_NOTES = [
   {
-    version: "2.1.0",
+    version: APP_VERSION,
     date: "2026-09-14",
     features: [
       {
@@ -16,7 +16,7 @@ export const RELEASE_NOTES = [
       {
         id: "pwa-1",
         title: "Installabile come app",
-        description: "Aggiungi Cagometro a schermata home: si apre a schermo intero e resta disponibile anche offline.",
+        description: "Aggiungi Cagometro alla schermata home: si apre a schermo intero e resta disponibile anche offline.",
         icon: Smartphone,
       },
       {
@@ -35,7 +35,7 @@ export const RELEASE_NOTES = [
       {
         id: "teams-0",
         title: "Aggiunta schermata di login!",
-        description: "E' stata aggiunta una nuova schermata per il login!",
+        description: "È stata aggiunta una nuova schermata per il login!",
         icon: UsersRound,
       },
       {
@@ -56,12 +56,12 @@ export const RELEASE_NOTES = [
         id: "teams-3",
         title: "Schermata di accesso da link!",
         description:
-          "Nuova schermata di accesso al teams quando si entra con il link! e aggiunta opzione per disattivare il codice di invito",
+          "Nuova schermata di accesso ai team quando si entra con il link! È stata aggiunta l'opzione per disattivare il codice di invito.",
         icon: UsersRound,
       },
       {
         id: "teams-4",
-        title: "Nuova card spiegazione quando si crea una squadra!",
+        title: "Nuova card di spiegazione quando si crea una squadra!",
         description:
           "Nuova schermata che ti spiega come funzionano le squadre non appena ne crei una!",
         icon: UsersRound,
@@ -70,7 +70,7 @@ export const RELEASE_NOTES = [
         id: "reports-1",
         title: "Share report migliorati",
         description:
-          "Nuovo design per lo share dei report! e nuove animazioni per gli achievements",
+          "Nuovo design per lo share dei report e nuove animazioni per gli achievements!",
         icon: BarChart3,
       },
       {
@@ -83,7 +83,7 @@ export const RELEASE_NOTES = [
         id: "reports-3",
         title: "Grafici modificati!",
         description:
-          "I grafici della settimana e del totale sono stati modificati! ora rappresenteranno rispettivamente dal lunedi alla domenica e almeno 3 grafici anche se nulli!",
+          "I grafici della settimana e del totale sono stati modificati! Ora rappresenteranno rispettivamente dal lunedì alla domenica e almeno 3 grafici anche se nulli!",
         icon: BarChart3,
       },
       {
@@ -96,13 +96,13 @@ export const RELEASE_NOTES = [
         id: "settings-1",
         title: "Aggiunto cambio stile applicazione",
         description:
-          "Aggiunta selezione stile dell'applicazione nelle impostazioni!",
+          "Aggiunta la selezione dello stile dell'applicazione nelle impostazioni!",
         icon: Settings,
       },
       {
         id: "settings-2",
-        title: "Implementata schermata impostazioni!",
-        description: "Creata schermata impostazioni implementandola!",
+        title: "Implementata la schermata delle impostazioni!",
+        description: "Implementata la schermata delle impostazioni!",
         icon: Settings,
       },
     ],

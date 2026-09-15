@@ -64,7 +64,7 @@ export default function AchievementCard({
             <h3
               className={`text-base font-black tracking-tight ${
                 achievement.unlocked
-                  ? theme.text
+                  ? theme.primaryText
                   : theme.muted
               }`}
             >
@@ -93,7 +93,7 @@ export default function AchievementCard({
       </div>
 
       <div
-        className={`mt-4 rounded-[1.1rem] border p-3 ${theme.surfaceAlt}`}
+        className={`mt-4 rounded-[1.1rem] border p-3 ${theme.softSurface}`}
       >
         {achievement.unlocked ? (
           <div className="flex items-center justify-between">

@@ -68,14 +68,14 @@ export default function ReleaseNotesModal({
           delay: prefersReducedMotion ? 0 : 0.08 + index * 0.06,
           duration: prefersReducedMotion ? 0 : 0.22,
         }}
-        className={`flex items-start gap-3 rounded-[1.35rem] border p-4 ${theme.soft}`}
+        className={`flex items-start gap-3 rounded-[1.35rem] border p-4 ${theme.softSurface}`}
       >
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
           <Icon className="h-[18px] w-[18px]" strokeWidth={2.3} />
         </span>
 
         <div className="min-w-0">
-          <p className={`text-sm font-black ${theme.text}`}>
+          <p className={`text-sm font-black ${theme.primaryText}`}>
             {feature.title}
           </p>
 
@@ -101,7 +101,7 @@ export default function ReleaseNotesModal({
               <Sparkles className="h-3.5 w-3.5" strokeWidth={2.4} />
               Ultima versione
             </span>
-            <span className={`text-lg font-bold ${theme.text}`}>
+            <span className={`text-lg font-bold ${theme.primaryText}`}>
               v{note.version}
             </span>
             {note.date && (
@@ -118,7 +118,7 @@ export default function ReleaseNotesModal({
           <button
             type="button"
             onClick={() => setShowAllVersions((current) => !current)}
-            className={`mt-2 flex items-center justify-center gap-1.5 text-sm font-bold transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.soft}`}
+            className={`mt-2 flex items-center justify-center gap-1.5 text-sm font-bold transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.softSurface}`}
           >
             <span className="flex items-center gap-1">
               {showAllVersions ? "Mostra meno" : `Mostra altre ${hiddenFeaturesCount} novità`}
@@ -183,7 +183,7 @@ export default function ReleaseNotesModal({
               damping: 30,
               duration: prefersReducedMotion ? 0 : undefined,
             }}
-            className={`relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-x-hidden overflow-y-auto overscroll-contain rounded-[2rem] border shadow-2xl ${theme.panel}`}
+            className={`relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-x-hidden overflow-y-auto overscroll-contain rounded-[2rem] border shadow-2xl ${theme.modal}`}
           >
             <div className="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-accent/[0.12] blur-3xl" />
 
@@ -197,7 +197,7 @@ export default function ReleaseNotesModal({
 
                   <h2
                     id={titleId}
-                    className={`mt-4 text-3xl font-black tracking-[-0.06em] ${theme.text}`}
+                    className={`mt-4 text-3xl font-black tracking-[-0.06em] ${theme.primaryText}`}
                   >
                     Cosa c’è di nuovo
                   </h2>
@@ -207,7 +207,7 @@ export default function ReleaseNotesModal({
                     className={`mt-2 text-sm leading-relaxed ${theme.muted}`}
                   >
                     Cagometro è stato aggiornato alla versione{" "}
-                    <span className={`font-bold ${theme.text}`}>{latestVersion}</span>
+                    <span className={`font-bold ${theme.primaryText}`}>{latestVersion}</span>
                     .
                   </p>
                 </div>
@@ -216,7 +216,7 @@ export default function ReleaseNotesModal({
                   type="button"
                   onClick={onClose}
                   aria-label="Chiudi novità"
-                  className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.soft}`}
+                  className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.softSurface}`}
                 >
                   <X className="h-5 w-5" strokeWidth={2.2} />
                 </button>
@@ -232,7 +232,7 @@ export default function ReleaseNotesModal({
                       onClose();
                       navigate("/changelog");
                     }}
-                    className={`mt-3 flex items-center justify-center gap-1.5 text-sm font-bold transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.soft}`}
+                    className={`mt-3 flex items-center justify-center gap-1.5 text-sm font-bold transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.softSurface}`}
                   >
                     <span className="flex items-center gap-1">
                       Versioni precedenti

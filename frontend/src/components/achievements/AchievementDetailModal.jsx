@@ -78,7 +78,7 @@ export default function AchievementDetailModal({
             type="button"
             onClick={onClose}
             aria-label="Chiudi dettaglio traguardo"
-            className={`grid h-11 w-11 place-items-center rounded-2xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.surfaceAlt}`}
+            className={`grid h-11 w-11 place-items-center rounded-2xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.softSurface}`}
           >
             <X className="h-5 w-5" strokeWidth={2.2} />
           </button>
@@ -92,7 +92,7 @@ export default function AchievementDetailModal({
 
         <h2
           id={titleId}
-          className={`mt-2 text-3xl font-black tracking-[-0.06em] ${theme.text}`}
+          className={`mt-2 text-3xl font-black tracking-[-0.06em] ${theme.primaryText}`}
         >
           {achievement.title}
         </h2>
@@ -107,7 +107,7 @@ export default function AchievementDetailModal({
 
         {isUnlocked ? (
           <div
-            className={`mt-7 rounded-[1.5rem] border p-5 ${theme.surfaceAlt}`}
+            className={`mt-7 rounded-[1.5rem] border p-5 ${theme.softSurface}`}
           >
             <div className="flex items-center justify-between gap-4">
               <span className="flex items-center gap-2 text-sm font-extrabold text-emerald-500">
@@ -115,7 +115,7 @@ export default function AchievementDetailModal({
                 Traguardo ottenuto
               </span>
 
-              <span className={`text-sm font-black ${theme.text}`}>
+              <span className={`text-sm font-black ${theme.primaryText}`}>
                 +{achievement.xp} XP
               </span>
             </div>
@@ -126,10 +126,10 @@ export default function AchievementDetailModal({
           </div>
         ) : !achievement.secret ? (
           <div
-            className={`mt-7 rounded-[1.5rem] border p-5 ${theme.surfaceAlt}`}
+            className={`mt-7 rounded-[1.5rem] border p-5 ${theme.softSurface}`}
           >
             <div className="flex items-center justify-between">
-              <span className={`text-sm font-bold ${theme.text}`}>
+              <span className={`text-sm font-bold ${theme.primaryText}`}>
                 Progresso attuale
               </span>
               <span
@@ -160,7 +160,7 @@ export default function AchievementDetailModal({
           </div>
         ) : (
           <div
-            className={`mt-7 rounded-[1.5rem] border p-5 ${theme.surfaceAlt}`}
+            className={`mt-7 rounded-[1.5rem] border p-5 ${theme.softSurface}`}
           >
             <LockKeyhole
               className={`h-6 w-6 ${theme.muted}`}

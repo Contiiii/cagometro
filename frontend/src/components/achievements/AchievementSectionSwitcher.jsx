@@ -8,7 +8,7 @@ export default function AchievementSectionSwitcher({
     <div
       role="group"
       aria-label="Seleziona tipo di traguardi"
-      className={`mt-5 inline-grid grid-cols-2 rounded-2xl border p-1 ${theme.surfaceAlt}`}
+      className={`mt-5 inline-grid grid-cols-2 rounded-2xl border p-1 ${theme.softSurface}`}
     >
       <button
         type="button"

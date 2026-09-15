@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { TEAM_WEEKLY_GOAL } from "../config/team";
+import { rankLeaderboard } from "../utils/ranking";
 
 export function useTeamDashboard({
   team,
@@ -33,28 +34,10 @@ export function useTeamDashboard({
 
   const weeklyGoal = TEAM_WEEKLY_GOAL;
 
-  const ranking = useMemo(() => {
-    return [...scores].sort((a, b) => {
-      const aScore =
-        rankingMode === "week"
-          ? Number(a.weekly_total || 0)
-          : Number(a.lifetime_total || 0);
-
-      const bScore =
-        rankingMode === "week"
-          ? Number(b.weekly_total || 0)
-          : Number(b.lifetime_total || 0);
-
-      if (bScore !== aScore) {
-        return bScore - aScore;
-      }
-
-      return String(a.display_name || "").localeCompare(
-        String(b.display_name || ""),
-        "it",
-      );
-    });
-  }, [scores, rankingMode]);
+  const ranking = useMemo(
+    () => rankLeaderboard(scores, rankingMode),
+    [scores, rankingMode],
+  );
 
   const currentUserPosition = useMemo(() => {
     const index = ranking.findIndex((member) => member.user_id === user?.id);

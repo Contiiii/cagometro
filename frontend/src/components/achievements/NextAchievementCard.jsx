@@ -39,7 +39,7 @@ export default function NextAchievementCard({
               </p>
 
               <h2
-                className={`mt-1 text-xl font-black tracking-[-0.04em] ${theme.text}`}
+                className={`mt-1 text-xl font-black tracking-[-0.04em] ${theme.primaryText}`}
               >
                 {nextAchievement.title}
               </h2>
@@ -54,7 +54,7 @@ export default function NextAchievementCard({
             <button
               type="button"
               onClick={() => onOpen(nextAchievement)}
-              className={`group shrink-0 grid h-11 w-11 place-items-center rounded-2xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.surfaceAlt}`}
+              className={`group shrink-0 grid h-11 w-11 place-items-center rounded-2xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.softSurface}`}
             >
               <ChevronRight
                 className={`h-5 w-5 transition-transform group-hover:translate-x-0.5 ${

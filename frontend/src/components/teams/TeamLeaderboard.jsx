@@ -3,6 +3,7 @@ import { ChevronRight, Crown, Medal, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { getAvatarGradient, getInitials } from "../../utils/avatar";
+import { rankLeaderboard } from "../../utils/ranking";
 import { useTeamUI } from "../../hooks/useTeamUI";
 import { useTeamSelection } from "../../hooks/useTeamSelection";
 
@@ -72,28 +73,10 @@ export default function TeamLeaderboard({
 }) {
   const { theme, isDark, prefersReducedMotion } = useTeamUI();
   const { selectMember } = useTeamSelection();
-  const ranking = useMemo(() => {
-    return [...leaderboard].sort((a, b) => {
-      const aScore =
-        rankingMode === "week"
-          ? Number(a.weekly_total || 0)
-          : Number(a.lifetime_total || 0);
-
-      const bScore =
-        rankingMode === "week"
-          ? Number(b.weekly_total || 0)
-          : Number(b.lifetime_total || 0);
-
-      if (bScore !== aScore) {
-        return bScore - aScore;
-      }
-
-      return String(a.display_name || "").localeCompare(
-        String(b.display_name || ""),
-        "it",
-      );
-    });
-  }, [leaderboard, rankingMode]);
+  const ranking = useMemo(
+    () => rankLeaderboard(leaderboard, rankingMode),
+    [leaderboard, rankingMode],
+  );
 
   return (
     <Section spacing="md">

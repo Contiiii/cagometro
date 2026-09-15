@@ -13,6 +13,7 @@ import {
 
 import { useTheme } from "../hooks/useTheme";
 import { useSettings } from "../hooks/useSettings";
+import { getTheme } from "../config/theme";
 import { accentOptions } from "../config/appearance";
 
 const privacySections = [
@@ -74,27 +75,7 @@ export default function Privacy() {
     [accent],
   );
 
-  const theme = isDark
-    ? {
-        app: "bg-[#09090c] text-zinc-100",
-        surface: "border-white/[0.08] bg-[#121216]",
-        soft: "border-white/[0.07] bg-white/[0.035]",
-        text: "text-zinc-50",
-        muted: "text-zinc-400",
-        subtle: "text-zinc-500",
-        header: "border-white/[0.07] bg-[#09090c]/80",
-        divider: "border-white/[0.07]",
-      }
-    : {
-        app: "bg-[#f6f1ec] text-zinc-900",
-        surface: "border-zinc-900/[0.08] bg-[#fffdfa]",
-        soft: "border-zinc-900/[0.07] bg-zinc-900/[0.035]",
-        text: "text-zinc-950",
-        muted: "text-zinc-600",
-        subtle: "text-zinc-500",
-        header: "border-zinc-900/[0.07] bg-[#f6f1ec]/80",
-        divider: "border-zinc-900/[0.07]",
-      };
+  const theme = getTheme(isDark);
 
   return (
     <div
@@ -108,7 +89,7 @@ export default function Privacy() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 ${theme.soft}`}
+            className={`flex min-h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 ${theme.softSurface}`}
             style={{ "--tw-ring-color": accentColor }}
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
@@ -121,13 +102,13 @@ export default function Privacy() {
             >
               Cagometro
             </p>
-            <p className={`text-sm font-black tracking-tight ${theme.text}`}>
+            <p className={`text-sm font-black tracking-tight ${theme.primaryText}`}>
               Privacy
             </p>
           </div>
 
           <div
-            className={`grid h-11 w-11 place-items-center rounded-2xl border ${theme.soft}`}
+            className={`grid h-11 w-11 place-items-center rounded-2xl border ${theme.softSurface}`}
           >
             <Shield
               className="h-5 w-5"
@@ -154,7 +135,7 @@ export default function Privacy() {
               Trasparenza
             </p>
             <h1
-              className={`mt-2 text-2xl font-black tracking-[-0.05em] ${theme.text}`}
+              className={`mt-2 text-2xl font-black tracking-[-0.05em] ${theme.primaryText}`}
             >
               Informativa privacy
             </h1>
@@ -188,7 +169,7 @@ export default function Privacy() {
                   </div>
 
                   <h2
-                    className={`text-base font-black tracking-[-0.02em] ${theme.text}`}
+                    className={`text-base font-black tracking-[-0.02em] ${theme.primaryText}`}
                   >
                     {section.title}
                   </h2>
@@ -209,7 +190,7 @@ export default function Privacy() {
           })}
         </div>
 
-        <div className={`mt-3 rounded-[1.5rem] border p-5 ${theme.soft}`}>
+        <div className={`mt-3 rounded-[1.5rem] border p-5 ${theme.softSurface}`}>
           <p className={`text-xs font-medium leading-relaxed ${theme.muted}`}>
             Questa informativa può essere aggiornata quando cambiano le
             funzionalità dell'app. In caso di modifiche rilevanti, la nuova

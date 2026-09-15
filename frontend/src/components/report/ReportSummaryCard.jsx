@@ -47,7 +47,7 @@ export default function ReportSummaryCard({
 
   return (
     <Card as="article" theme={theme} radius="panel" padding="none" className="p-5">
-      <p className={`text-sm font-bold ${theme.text}`}>
+      <p className={`text-sm font-bold ${theme.primaryText}`}>
         {periodTitle}
       </p>
 
@@ -59,7 +59,7 @@ export default function ReportSummaryCard({
       {bestDayLabel}
     </p>
 
-    <p className={`mt-1 text-base font-black ${theme.text}`}>
+    <p className={`mt-1 text-base font-black ${theme.primaryText}`}>
       {safeBestPoint.date}
     </p>
 
@@ -75,7 +75,7 @@ export default function ReportSummaryCard({
       {averageLabel}
     </p>
 
-    <p className={`mt-1 text-base font-black ${theme.text}`}>
+    <p className={`mt-1 text-base font-black ${theme.primaryText}`}>
       {safeAverage.toFixed(1)}
     </p>
 
@@ -91,7 +91,7 @@ export default function ReportSummaryCard({
       Streak attuale
     </p>
 
-    <p className={`mt-1 text-base font-black ${theme.text}`}>
+    <p className={`mt-1 text-base font-black ${theme.primaryText}`}>
       {currentStreak} giorni
     </p>
 
@@ -107,7 +107,7 @@ export default function ReportSummaryCard({
       Streak migliore
     </p>
 
-    <p className={`mt-1 text-base font-black ${theme.text}`}>
+    <p className={`mt-1 text-base font-black ${theme.primaryText}`}>
       {bestStreak} giorni
     </p>
 

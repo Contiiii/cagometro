@@ -6,6 +6,7 @@ import Header from "../components/Header";
 
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
+import { getTheme } from "../config/theme";
 
 import toast from "react-hot-toast";
 
@@ -53,25 +54,7 @@ export default function Login() {
     }
   }
 
-  const theme = isDark
-    ? {
-        app: "bg-[#0c0c0f] text-zinc-100",
-        surface: "bg-zinc-900/80 border-white/[0.08]",
-        soft: "bg-white/[0.035] border-white/[0.07]",
-        muted: "text-zinc-400",
-        subtle: "text-zinc-500",
-        primaryText: "text-zinc-50",
-        overlay: "bg-zinc-950/60",
-      }
-    : {
-        app: "bg-[#f8f5f3] text-zinc-900",
-        surface: "bg-white/85 border-zinc-200/80",
-        soft: "bg-zinc-900/[0.035] border-zinc-900/[0.07]",
-        muted: "text-zinc-600",
-        subtle: "text-zinc-500",
-        primaryText: "text-zinc-950",
-        overlay: "bg-zinc-950/55",
-      };
+  const theme = getTheme(isDark);
 
   return (
     <div
@@ -135,7 +118,7 @@ export default function Login() {
                 </button>
 
                 <div
-                  className={`mt-6 rounded-[1.4rem] border p-4 ${theme.soft}`}
+                  className={`mt-6 rounded-[1.4rem] border p-4 ${theme.softSurface}`}
                 >
                   <div className="flex items-start gap-3">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-400/15 text-amber-500">

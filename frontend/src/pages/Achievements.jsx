@@ -19,10 +19,7 @@ import AchievementUnlockModal from "../components/achievements/AchievementUnlock
 
 import { useAchievements } from "../hooks/useAchievements";
 
-import {
-  getAchievementTheme,
-  getAchievementAccentStyles,
-} from "../config/achievementTheme";
+import { getTheme, getAccentStyles } from "../config/theme";
 
 import { useAchievementsData } from "../hooks/useAchievementsData";
 
@@ -72,10 +69,10 @@ export default function Achievements() {
     activeFilter,
   });
 
-  const theme = useMemo(() => getAchievementTheme(isDark), [isDark]);
+  const theme = useMemo(() => getTheme(isDark), [isDark]);
 
   const accentStyles = useMemo(
-    () => getAchievementAccentStyles(isDark),
+    () => getAccentStyles(isDark),
     [isDark],
   );
 
@@ -102,7 +99,7 @@ export default function Achievements() {
           </p>
 
           <h1
-            className={`mt-1 text-[clamp(2.15rem,7vw,4rem)] font-black leading-[0.95] tracking-[-0.075em] ${theme.text}`}
+            className={`mt-1 text-[clamp(2.15rem,7vw,4rem)] font-black leading-[0.95] tracking-[-0.075em] ${theme.primaryText}`}
           >
             I tuoi traguardi,
             <br />
@@ -148,7 +145,7 @@ export default function Achievements() {
                   : "Archivio della squadra"}
               </p>
               <h2
-                className={`mt-1 text-2xl font-black tracking-[-0.05em] ${theme.text}`}
+                className={`mt-1 text-2xl font-black tracking-[-0.05em] ${theme.primaryText}`}
               >
                 Bacheca completa
               </h2>

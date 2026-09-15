@@ -83,7 +83,7 @@ export default function AchievementUnlockModal({
               stiffness: 360,
               damping: 24,
             }}
-            className={`relative z-10 w-full max-w-sm overflow-hidden rounded-[2rem] border shadow-2xl ${theme.sheet}`}
+            className={`relative z-10 w-full max-w-sm overflow-hidden rounded-[2rem] border shadow-2xl ${theme.modal}`}
           >
             <div className="p-8 text-center">
               {typeof Icon === "string" ? (
@@ -98,7 +98,7 @@ export default function AchievementUnlockModal({
 
               <h2
                 id={titleId}
-                className={`mt-3 text-3xl font-black tracking-[-0.06em] ${theme.text}`}
+                className={`mt-3 text-3xl font-black tracking-[-0.06em] ${theme.primaryText}`}
               >
                 {achievement.title}
               </h2>

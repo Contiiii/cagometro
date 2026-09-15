@@ -3,6 +3,7 @@ import { useReducedMotion } from "framer-motion";
 
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
+import { getTheme } from "../config/theme";
 import { useTheme } from "../hooks/useTheme";
 
 import { useEntries } from "../hooks/useEntries";
@@ -72,29 +73,7 @@ export default function CagometroReport() {
     selectedPointId,
   });
 
-  const theme = useMemo(
-    () =>
-      isDark
-        ? {
-            app: "bg-[#0c0c0f] text-zinc-100",
-            surface: "border-white/[0.08] bg-zinc-900/80",
-            softSurface: "border-white/[0.07] bg-white/[0.035]",
-            text: "text-zinc-50",
-            muted: "text-zinc-400",
-            subtle: "text-zinc-500",
-            sheet: "border-white/[0.09] bg-[#17171b]",
-          }
-        : {
-            app: "bg-[#f8f5f3] text-zinc-900",
-            surface: "border-zinc-200/80 bg-white/85",
-            softSurface: "border-zinc-900/[0.07] bg-zinc-900/[0.035]",
-            text: "text-zinc-950",
-            muted: "text-zinc-600",
-            subtle: "text-zinc-500",
-            sheet: "border-zinc-900/[0.09] bg-[#fdfbf9]",
-          },
-    [isDark],
-  );
+  const theme = useMemo(() => getTheme(isDark), [isDark]);
 
   const changePeriod = (nextPeriod) => {
     setPeriod(nextPeriod);
@@ -149,7 +128,7 @@ export default function CagometroReport() {
           <p className={`text-sm font-medium ${theme.muted}`}>{report.label}</p>
 
           <h1
-            className={`mt-1 text-[clamp(2.15rem,7vw,4rem)] font-black leading-[0.95] tracking-[-0.075em] ${theme.text}`}
+            className={`mt-1 text-[clamp(2.15rem,7vw,4rem)] font-black leading-[0.95] tracking-[-0.075em] ${theme.primaryText}`}
           >
             Il tuo ritmo,
             <br />

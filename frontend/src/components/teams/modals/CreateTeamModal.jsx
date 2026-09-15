@@ -158,7 +158,7 @@ export default function CreateTeamModal({
               damping: 30,
               duration: prefersReducedMotion ? 0 : undefined,
             }}
-            className={`relative max-h-[calc(100dvh-3rem)] w-full max-w-lg overflow-x-hidden overflow-y-auto overscroll-contain rounded-[2rem] border shadow-2xl ${theme.panel}`}
+            className={`relative max-h-[calc(100dvh-3rem)] w-full max-w-lg overflow-x-hidden overflow-y-auto overscroll-contain rounded-[2rem] border shadow-2xl ${theme.modal}`}
           >
             <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-accent/[0.10] blur-3xl" />
             <div className="pointer-events-none absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-amber-400/[0.08] blur-3xl" />
@@ -171,7 +171,7 @@ export default function CreateTeamModal({
                   </p>
                   <h2
                     id={titleId}
-                    className={`mt-1 text-3xl font-black tracking-[-0.06em] ${theme.text}`}
+                    className={`mt-1 text-3xl font-black tracking-[-0.06em] ${theme.primaryText}`}
                   >
                     Crea squadra
                   </h2>
@@ -188,13 +188,13 @@ export default function CreateTeamModal({
                   disabled={submitting}
                   onClick={handleClose}
                   aria-label="Chiudi modale crea squadra"
-                  className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.soft}`}
+                  className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.softSurface}`}
                 >
                   <X className="h-5 w-5" strokeWidth={2.2} />
                 </button>
               </div>
 
-              <div className={`mt-6 rounded-[1.5rem] border p-4 ${theme.soft}`}>
+              <div className={`mt-6 rounded-[1.5rem] border p-4 ${theme.softSurface}`}>
                 <div className="flex items-center gap-3">
                   <div
                     className={`grid h-11 w-11 place-items-center rounded-[1rem] ${accentClasses[accent]}`}
@@ -203,7 +203,7 @@ export default function CreateTeamModal({
                   </div>
 
                   <div className="min-w-0">
-                    <p className={`text-sm font-black ${theme.text}`}>
+                    <p className={`text-sm font-black ${theme.primaryText}`}>
                       Anteprima squadra
                     </p>
 
@@ -275,7 +275,7 @@ export default function CreateTeamModal({
                         setMaxMembers((current) => Math.max(2, current - 1))
                       }
                       aria-label="Riduci dimensione squadra"
-                      className={`grid h-10 w-10 place-items-center rounded-xl text-lg font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40 ${theme.soft}`}
+                      className={`grid h-10 w-10 place-items-center rounded-xl text-lg font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40 ${theme.softSurface}`}
                     >
                       −
                     </button>
@@ -293,7 +293,7 @@ export default function CreateTeamModal({
                             Number.isNaN(next) ? 2 : Math.min(50, Math.max(2, next)),
                           );
                         }}
-                        className={`w-14 bg-transparent text-center text-sm font-black outline-none disabled:opacity-60 ${theme.text}`}
+                        className={`w-14 bg-transparent text-center text-sm font-black outline-none disabled:opacity-60 ${theme.primaryText}`}
                       />
                       <span className={`text-xs font-medium ${theme.subtle}`}>
                         membri
@@ -307,7 +307,7 @@ export default function CreateTeamModal({
                         setMaxMembers((current) => Math.min(50, current + 1))
                       }
                       aria-label="Aumenta dimensione squadra"
-                      className={`grid h-10 w-10 place-items-center rounded-xl text-lg font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40 ${theme.soft}`}
+                      className={`grid h-10 w-10 place-items-center rounded-xl text-lg font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40 ${theme.softSurface}`}
                     >
                       +
                     </button>
@@ -340,14 +340,14 @@ export default function CreateTeamModal({
                           className={`flex min-w-[92px] shrink-0 items-center gap-2 rounded-full border px-3 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                             active
                               ? "border-accent bg-accent/10"
-                              : theme.soft
+                              : theme.softSurface
                           }`}
                         >
                           <span
                             className={`h-5 w-5 rounded-full ${option.color}`}
                           />
                           <span
-                            className={`text-xs font-extrabold ${theme.text}`}
+                            className={`text-xs font-extrabold ${theme.primaryText}`}
                           >
                             {option.label}
                           </span>
@@ -362,7 +362,7 @@ export default function CreateTeamModal({
                     type="button"
                     disabled={submitting}
                     onClick={onClose}
-                    className={`min-h-12 rounded-2xl border px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.soft}`}
+                    className={`min-h-12 rounded-2xl border px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${theme.softSurface}`}
                   >
                     Annulla
                   </button>

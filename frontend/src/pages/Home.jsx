@@ -23,6 +23,7 @@ import { pickRandomPhrase } from "../config/motivation";
 
 
 import { useTheme } from "../hooks/useTheme.js";
+import { getTheme } from "../config/theme.js";
 import { useEntries } from "../hooks/useEntries.js";
 import { useStats } from "../hooks/useStats.js";
 import { useAchievements } from "../hooks/useAchievements.js";
@@ -143,35 +144,7 @@ export default function Home() {
     }
   };
 
-  const theme = useMemo(
-    () =>
-      isDark
-        ? {
-            app: "bg-[#0c0c0f] text-zinc-100",
-            surface: "bg-zinc-900/80 border-white/[0.08]",
-            softSurface: "bg-white/[0.035] border-white/[0.07]",
-            muted: "text-zinc-400",
-            primaryText: "text-zinc-50",
-            secondary:
-              "bg-white/[0.055] border-white/[0.08] text-zinc-300 hover:bg-white/[0.09]",
-            counterRing: "border-white/[0.07]",
-            buttonShadow: "shadow-[0_16px_45px_color-mix(in_oklab,var(--accent)_30%,transparent)]",
-            buttonOuter: "border-accent/30",
-          }
-        : {
-            app: "bg-[#f8f5f3] text-zinc-900",
-            surface: "bg-white/85 border-zinc-200/80",
-            softSurface: "bg-zinc-900/[0.035] border-zinc-900/[0.07]",
-            muted: "text-zinc-500",
-            primaryText: "text-zinc-950",
-            secondary:
-              "bg-zinc-900/[0.045] border-zinc-900/[0.08] text-zinc-600 hover:bg-zinc-900/[0.08]",
-            counterRing: "border-zinc-900/[0.07]",
-            buttonShadow: "shadow-[0_16px_45px_color-mix(in_oklab,var(--accent)_28%,transparent)]",
-            buttonOuter: "border-accent/20",
-          },
-    [isDark],
-  );
+  const theme = useMemo(() => getTheme(isDark), [isDark]);
 
   const formattedDate = HOME_DATE_FORMATTER.format(new Date());
 

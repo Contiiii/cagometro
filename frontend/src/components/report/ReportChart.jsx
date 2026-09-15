@@ -27,7 +27,7 @@ export default function ReportChart({
           </p>
 
           <h2
-            className={`mt-1 text-2xl font-black tracking-[-0.055em] ${theme.text}`}
+            className={`mt-1 text-2xl font-black tracking-[-0.055em] ${theme.primaryText}`}
           >
             Il tuo ritmo nel tempo
           </h2>

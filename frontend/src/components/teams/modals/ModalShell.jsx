@@ -10,7 +10,7 @@ export default function ModalShell({
   labelledBy,
   describedBy,
   maxWidth = "max-w-lg",
-  tone = "sheet",
+  tone = "modal",
   overlayClass = "bg-zinc-950/55",
   maxHeight = "max-h-[calc(100dvh-3rem)]",
   overflowClass = "overflow-x-hidden overflow-y-auto overscroll-contain",
