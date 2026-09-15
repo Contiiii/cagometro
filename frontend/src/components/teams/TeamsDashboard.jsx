@@ -64,15 +64,9 @@ export default function TeamsDashboard({
 
   return (
     <TeamSelectionProvider value={selectionValue}>
-      <div
-        className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
-      >
-        <div
-          id="team-live-region"
-          aria-live="polite"
-          aria-atomic="true"
-          className="sr-only"
-        />
+<div
+          className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
+        >
         <Header
           eyebrow="Squadra attiva"
           title={team?.team_name || "Squadra"}

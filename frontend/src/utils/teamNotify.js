@@ -1,5 +1,7 @@
 import toast from "react-hot-toast";
 
+import { announce } from "./announce";
+
 export function notify(message, variant = "success") {
   if (variant === "error") {
     toast.error(message);
@@ -7,9 +9,5 @@ export function notify(message, variant = "success") {
     toast.success(message);
   }
 
-  const liveRegion = document.getElementById("team-live-region");
-
-  if (liveRegion) {
-    liveRegion.textContent = message;
-  }
+  announce(message);
 }

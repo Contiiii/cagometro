@@ -25,6 +25,8 @@ import {
 
 import { getLocalDateKey } from "../utils/date";
 
+import { announce } from "../utils/announce";
+
 function formatEntries(entriesList) {
   return entriesList.reduce((acc, entry) => {
     acc[entry.date] = entry.count;
@@ -48,6 +50,8 @@ export function EntriesProvider({ children }) {
   const entriesRef = useRef(entries);
 
   const entriesOwnerRef = useRef(null);
+
+  const prevSyncStatusRef = useRef("synced");
 
   useEffect(() => {
     entriesRef.current = entries;
@@ -125,12 +129,19 @@ export function EntriesProvider({ children }) {
         setPendingChanges([]);
         setSyncStatus("synced");
 
+        if (prevSyncStatusRef.current === "error") {
+          announce("Sincronizzazione ripristinata");
+        }
+
+        prevSyncStatusRef.current = "synced";
+
         return true;
       } catch (error) {
         console.error("Errore sincronizzazione pending:", error);
 
         savePendingSync(userId, changes);
         setSyncStatus("error");
+        prevSyncStatusRef.current = "error";
 
         return false;
       }
@@ -164,6 +175,7 @@ export function EntriesProvider({ children }) {
         entriesOwnerRef.current = null;
         setPendingChanges([]);
         setSyncStatus("synced");
+        prevSyncStatusRef.current = "synced";
         setEntries(loadAnonymousEntries());
         return;
       }
@@ -175,6 +187,7 @@ export function EntriesProvider({ children }) {
       if (previousOwner !== userId) {
         setPendingChanges([]);
         setSyncStatus("synced");
+        prevSyncStatusRef.current = "synced";
         setEntries({});
       }
 
@@ -298,12 +311,14 @@ export function EntriesProvider({ children }) {
         await flushPendingChanges();
 
         setSyncStatus("synced");
+        prevSyncStatusRef.current = "synced";
       } catch (error) {
         console.error(error);
 
         createPendingChanges(date, count);
 
         setSyncStatus("pending");
+        prevSyncStatusRef.current = "pending";
       }
     },
     [userId, flushPendingChanges, createPendingChanges],
@@ -360,7 +375,12 @@ export function EntriesProvider({ children }) {
     entriesRef.current = {};
     setPendingChanges([]);
     setSyncStatus("synced");
+    prevSyncStatusRef.current = "synced";
   }, []);
+
+  const retrySync = useCallback(async () => {
+    return flushPendingChanges();
+  }, [flushPendingChanges]);
 
   const value = useMemo(
     () => ({
@@ -372,6 +392,7 @@ export function EntriesProvider({ children }) {
       incrementToday,
       decrementToday,
       clearLocalData,
+      retrySync,
     }),
     [
       entries,
@@ -382,6 +403,7 @@ export function EntriesProvider({ children }) {
       incrementToday,
       decrementToday,
       clearLocalData,
+      retrySync,
     ],
   );
 

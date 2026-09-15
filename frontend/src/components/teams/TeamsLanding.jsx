@@ -24,12 +24,6 @@ export default function TeamsLanding({ onCreate, onJoin }) {
     <div
       className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
     >
-      <div
-        id="team-live-region"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      />
       <Header eyebrow="Cagometro" title="Squadre" />
 
       <main className="mx-auto flex min-h-[calc(100vh-72px)] max-w-2xl items-center px-5 pb-36 pt-8 sm:px-8">

@@ -278,6 +278,101 @@ describe("EntriesProvider", () => {
     expect(latest.syncStatus).toBe("synced");
   });
 
+  it("retrySync espone un flush manuale che recupera i pending a 'synced'", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    setOnline(false);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    const today = getLocalDateKey();
+
+    expect(latest.syncStatus).toBe("pending");
+
+    setOnline(true);
+
+    let ok;
+
+    await act(async () => {
+      ok = await latest.retrySync();
+    });
+
+    await flushAsync();
+
+    expect(ok).toBe(true);
+    expect(importEntries).toHaveBeenCalledWith("user-1", { [today]: 1 });
+    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.syncStatus).toBe("synced");
+  });
+
+  it("retrySync fallito mantiene 'error' e restituisce false", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    setOnline(false);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    importEntries.mockRejectedValueOnce(new Error("rete"));
+
+    let ok;
+
+    await act(async () => {
+      ok = await latest.retrySync();
+    });
+
+    await flushAsync();
+
+    expect(ok).toBe(false);
+    expect(latest.syncStatus).toBe("error");
+    expect(latest.pendingChanges.length).toBeGreaterThan(0);
+  });
+
+  it("retrySync senza pending non chiama importEntries", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    let ok;
+
+    await act(async () => {
+      ok = await latest.retrySync();
+    });
+
+    expect(ok).toBe(true);
+    expect(importEntries).not.toHaveBeenCalled();
+    expect(latest.syncStatus).toBe("synced");
+  });
+
   it("due increment offline sulla stessa data producono un unico pending con il conteggio finale", async () => {
     useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
 

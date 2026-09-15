@@ -1,4 +1,6 @@
-import { Cloud, Download, Gauge, Save, Vibrate } from "lucide-react";
+import { useState } from "react";
+import { Cloud, Download, Gauge, RefreshCw, Save, Vibrate } from "lucide-react";
+import toast from "react-hot-toast";
 
 import { APP_VERSION } from "../../config/releaseNotes";
 import IconTile from "../ui/IconTile";
@@ -8,22 +10,64 @@ import TinySwitch from "./TinySwitch";
 import InfoRow from "./InfoRow";
 import VersionInfoButton from "./VersionInfoButton";
 
+import { announce } from "../../utils/announce";
+import { getFriendlyErrorMessage } from "../../utils/friendlyError";
+
 export default function SystemPanel({
   theme,
   accentColor,
   cloudEnabled,
   syncState,
+  syncTone,
   syncDotClass,
   syncPing,
   dayCount,
   totalCount,
   pendingCount,
+  onRetrySync,
   vibrationEnabled,
   setVibrationEnabled,
   canVibrate,
   onExportTech,
   onShowReleaseNotes,
 }) {
+  const [retrying, setRetrying] = useState(false);
+
+  const canRetrySync =
+    Boolean(onRetrySync) &&
+    Boolean(cloudEnabled) &&
+    (syncTone === "error" || pendingCount > 0);
+
+  async function handleRetrySync() {
+    if (retrying) return;
+
+    try {
+      setRetrying(true);
+
+      const ok = await onRetrySync();
+
+      if (ok) {
+        announce("Sincronizzazione ripristinata");
+        toast.success("Sincronizzazione ripristinata");
+      } else {
+        toast.error(
+          getFriendlyErrorMessage(
+            null,
+            "Non è stato possibile sincronizzare. Riprova tra poco.",
+          ),
+        );
+      }
+    } catch (error) {
+      toast.error(
+        getFriendlyErrorMessage(
+          error,
+          "Non è stato possibile sincronizzare. Riprova tra poco.",
+        ),
+      );
+    } finally {
+      setRetrying(false);
+    }
+  }
   return (
     <PanelFrame
       eyebrow="Dati e sincronizzazione"
@@ -71,23 +115,46 @@ export default function SystemPanel({
             </div>
           </div>
 
-          <span
-            className="inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.06em]"
-            style={{
-              borderColor: `${accentColor}33`,
-              backgroundColor: `${accentColor}12`,
-              color: accentColor,
-            }}
-          >
-            <span className={`relative inline-flex h-2 w-2 rounded-full ${syncDotClass}`}>
-              {syncPing && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-              )}
-            </span>
+          <span className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.06em]`}
+              style={{
+                borderColor: `${accentColor}33`,
+                backgroundColor: `${accentColor}12`,
+                color: accentColor,
+              }}
+            >
+              <span className={`relative inline-flex h-2 w-2 rounded-full ${syncDotClass}`}>
+                {syncPing && (
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                )}
+              </span>
 
-            {cloudEnabled ? "Collegato" : "Non collegato"}
-          </span>
-        </div>
+              {cloudEnabled ? "Collegato" : "Non collegato"}
+            </span>
+          </div>
+
+          {canRetrySync && (
+            <button
+              type="button"
+              onClick={handleRetrySync}
+              disabled={retrying}
+              className="relative mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border px-4 text-xs font-bold transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
+              style={{
+                borderColor: `${accentColor}40`,
+                backgroundColor: `${accentColor}12`,
+                color: accentColor,
+                "--tw-ring-color": `${accentColor}55`,
+              }}
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${retrying ? "animate-spin" : ""}`}
+                strokeWidth={2.2}
+              />
+
+              {retrying
+                ? "Sincronizzazione in corso..."
+                : "Riprova ora"}
+            </button>
+          )}
       </div>
 
       {canVibrate && (

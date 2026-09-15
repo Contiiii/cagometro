@@ -112,7 +112,8 @@ export default function CagometroSettings() {
     updateSetting,
   } = useSettings();
 
-  const { entries, syncStatus, pendingChanges, clearLocalData } = useEntries();
+  const { entries, syncStatus, pendingChanges, clearLocalData, retrySync } =
+    useEntries();
 
   const dayCount = useMemo(() => Object.keys(entries).length, [entries]);
   const totalCount = useMemo(
@@ -703,12 +704,14 @@ export default function CagometroSettings() {
                   theme={theme}
                   accentColor={accentColor}
                   syncState={syncState.label}
+                  syncTone={syncState.tone}
                   syncDotClass={syncState.dotClass}
                   syncPing={syncState.ping}
                   cloudEnabled={cloudEnabled}
                   dayCount={dayCount}
                   totalCount={totalCount}
                   pendingCount={pendingChanges.length}
+                  onRetrySync={retrySync}
                   vibrationEnabled={vibrationEnabled}
                   setVibrationEnabled={(value) =>
                     updateSetting("vibrationEnabled", value)

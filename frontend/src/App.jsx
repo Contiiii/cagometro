@@ -30,6 +30,13 @@ export default function App() {
         }}
       />
 
+      <div
+        id="global-live-region"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      />
+
       <MotionConfig reducedMotion="user">
         <Suspense
         fallback={
