@@ -21,6 +21,11 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
 
+      strategies: "injectManifest",
+
+      srcDir: "src",
+      filename: "sw.js",
+
       includeAssets: [
         "favicon-32.png",
         "apple-touch-icon-180.png",
@@ -74,33 +79,6 @@ export default defineConfig({
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
-          },
-        ],
-      },
-
-      workbox: {
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.pathname.match(/^\/rest\/v1\/(entries|profiles)\//),
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "tracker-read",
-              expiration: {
-                maxAgeSeconds: 30 * 24 * 60 * 60,
-                maxEntries: 50,
-              },
-            },
-          },
-          {
-            urlPattern: /\.(?:woff2|webp)$/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "static-assets",
-              expiration: {
-                maxAgeSeconds: 7 * 24 * 60 * 60,
-                maxEntries: 16,
-              },
-            },
           },
         ],
       },

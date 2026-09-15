@@ -1,8 +1,10 @@
-import { BellRing, TrendingUp, Trophy, UsersRound } from "lucide-react";
+import { BellRing, BellOff, BellPlus, TrendingUp, Trophy, UsersRound } from "lucide-react";
 
 import IconTile from "../ui/IconTile";
 import PanelFrame from "./PanelFrame";
 import TinySwitch from "./TinySwitch";
+
+import { usePush } from "../../hooks/usePush";
 
 function SettingToggleCard({
   icon: Icon,
@@ -12,13 +14,15 @@ function SettingToggleCard({
   onChange,
   theme,
   accentColor,
+  disabled,
 }) {
   return (
     <button
       type="button"
       onClick={() => onChange(!value)}
       aria-pressed={value}
-      className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2"
+      disabled={disabled}
+      className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
       style={{ "--tw-ring-color": accentColor }}
     >
       <span className="flex min-w-0 items-center gap-3">
@@ -60,6 +64,19 @@ export default function NotificationsPanel({
   teamAlerts,
   updateSetting,
 }) {
+  const { isSupported, permission, isSubscribed, isBusy, subscribe, unsubscribe } =
+    usePush();
+
+  const pushActive = permission === "granted" && isSubscribed;
+
+  function handleToggleDevicePush() {
+    if (pushActive) {
+      unsubscribe();
+    } else {
+      subscribe();
+    }
+  }
+
   return (
     <PanelFrame
       eyebrow="Notifiche"
@@ -69,25 +86,62 @@ export default function NotificationsPanel({
     >
       <div className={`rounded-2xl border p-4 ${theme.softSurface}`}>
         <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className={`text-sm font-black ${theme.primaryText}`}>
-              Notifiche del dispositivo
-            </p>
+          <div className="flex min-w-0 items-center gap-3">
+            <IconTile
+              size="md"
+              rounded="rounded-xl"
+              style={{
+                backgroundColor: `${accentColor}15`,
+              }}
+            >
+              {pushActive ? (
+                <BellRing
+                  className="h-5 w-5"
+                  strokeWidth={2.2}
+                  style={{ color: accentColor }}
+                />
+              ) : (
+                <BellOff
+                  className="h-5 w-5"
+                  strokeWidth={2.2}
+                  style={{ color: accentColor }}
+                />
+              )}
+            </IconTile>
 
-            <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
-              La consegna dei messaggi arriverà presto.
-            </p>
+            <div className="min-w-0">
+              <p className={`text-sm font-black ${theme.primaryText}`}>
+                Notifiche del dispositivo
+              </p>
+
+              <p className={`mt-1 text-xs font-medium ${theme.muted}`}>
+                {!isSupported
+                  ? "Questo browser non supporta le notifiche."
+                  : pushActive
+                    ? "Le notifiche sono attive su questo dispositivo."
+                    : permission === "denied"
+                      ? "Permesso negato. Aggiornalo dalle impostazioni del browser."
+                      : "Attiva le notifiche per ricevere gli avvisi scelti qui sotto."}
+              </p>
+            </div>
           </div>
 
-          <span
-            className="shrink-0 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em]"
-            style={{
-              backgroundColor: `${accentColor}18`,
-              color: accentColor,
-            }}
-          >
-            Prossimamente
-          </span>
+          {isSupported && (
+            <button
+              type="button"
+              onClick={() => handleToggleDevicePush()}
+              disabled={isBusy || (permission === "denied" && !pushActive)}
+              className="shrink-0 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em] transition enabled:hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2"
+              style={{
+                backgroundColor: pushActive
+                  ? `${accentColor}18`
+                  : "rgba(120,120,120,0.15)",
+                color: pushActive ? accentColor : theme.subtle,
+              }}
+            >
+              {pushActive ? "Disattiva" : "Attiva"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -100,13 +154,14 @@ export default function NotificationsPanel({
 
         <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
           <SettingToggleCard
-            icon={BellRing}
+            icon={BellPlus}
             title="Promemoria giornaliero"
             description="Un promemoria ogni giorno per non dimenticare."
             value={dailyReminder}
             onChange={(value) => updateSetting("dailyReminder", value)}
             theme={theme}
             accentColor={accentColor}
+            disabled={!pushActive}
           />
 
           <SettingToggleCard
@@ -117,6 +172,7 @@ export default function NotificationsPanel({
             onChange={(value) => updateSetting("streakAlerts", value)}
             theme={theme}
             accentColor={accentColor}
+            disabled={!pushActive}
           />
 
           <SettingToggleCard
@@ -127,6 +183,7 @@ export default function NotificationsPanel({
             onChange={(value) => updateSetting("achievementAlerts", value)}
             theme={theme}
             accentColor={accentColor}
+            disabled={!pushActive}
           />
 
           <SettingToggleCard
@@ -137,6 +194,7 @@ export default function NotificationsPanel({
             onChange={(value) => updateSetting("teamAlerts", value)}
             theme={theme}
             accentColor={accentColor}
+            disabled={!pushActive}
           />
         </div>
       </div>

@@ -28,6 +28,8 @@ import { useEntries } from "../hooks/useEntries.js";
 import { useStats } from "../hooks/useStats.js";
 import { useAchievements } from "../hooks/useAchievements.js";
 import { useSettings } from "../hooks/useSettings.js";
+import { usePush } from "../hooks/usePush.js";
+import { sendMyPushNotification } from "../services/pushService.js";
 import { calculateStreak } from "../utils/stats.js";
 
 const CURRENT_APP_VERSION = APP_VERSION;
@@ -66,7 +68,9 @@ export default function Home() {
     resetLockedAchievements,
   } = useAchievements();
 
-  const { triggerHapticFeedback } = useSettings();
+  const { triggerHapticFeedback, achievementAlerts, streakAlerts } = useSettings();
+
+  const { isSubscribed: pushSubscribed } = usePush();
 
   const { streak, bestStreak } = useStats(entries);
 
@@ -102,7 +106,33 @@ export default function Home() {
 
         const updatedStreak = calculateStreak(newEntries);
 
-        checkAchievements(total, updatedStreak);
+        const newAchievements = checkAchievements(total, updatedStreak);
+
+        if (pushSubscribed && achievementAlerts && newAchievements.length > 0) {
+          const achievementNames = newAchievements
+            .map((achievement) => achievement.name)
+            .join(", ");
+
+          sendMyPushNotification({
+            type: "achievement",
+            title: "Traguardo sbloccato!",
+            body: `Hai sbloccato ${achievementNames}.`,
+            url: "/achievements",
+          }).catch((error) => {
+            console.error("Errore invio notifica traguardo:", error);
+          });
+        }
+
+        if (pushSubscribed && streakAlerts && updatedStreak > bestStreak) {
+          sendMyPushNotification({
+            type: "streak",
+            title: "Nuovo record di serie!",
+            body: `Hai raggiunto una serie di ${updatedStreak} giorni consecutivi.`,
+            url: "/",
+          }).catch((error) => {
+            console.error("Errore invio notifica streak:", error);
+          });
+        }
       }
     } catch (error) {
       console.error("Errore durante la registrazione:", error);
