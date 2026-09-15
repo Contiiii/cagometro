@@ -88,10 +88,21 @@ describe("getAccentStyles", () => {
     }
   });
 
-  it("varia lo zinc in base alla modalità", () => {
-    const dark = getAccentStyles(true).zinc;
-    const light = getAccentStyles(false).zinc;
+  it("varia pink, amber, emerald e zinc tra le modalità", () => {
+    const dark = getAccentStyles(true);
+    const light = getAccentStyles(false);
 
-    expect(dark.solid).not.toBe(light.solid);
+    for (const color of ["pink", "amber", "emerald", "zinc"]) {
+      expect(dark[color].text, `${color}.text`).not.toBe(light[color].text);
+      expect(dark[color].soft, `${color}.soft`).not.toBe(light[color].soft);
+    }
+  });
+
+  it("in light evita le tinte -500 per i testi colorati", () => {
+    const light = getAccentStyles(false);
+
+    for (const color of ["pink", "amber", "emerald"]) {
+      expect(light[color].text, `${color}.text`).not.toMatch(/-500\b/);
+    }
   });
 });

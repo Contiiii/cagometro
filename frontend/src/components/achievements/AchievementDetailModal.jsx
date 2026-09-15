@@ -26,19 +26,23 @@ export default function AchievementDetailModal({
     pink: {
       solid: "bg-accent text-white",
       soft: "bg-accent/10 text-accent",
-      text: "text-accent",
+      text: isDark ? "text-accent" : "text-pink-600",
       progress: "bg-accent",
     },
     amber: {
       solid: "bg-amber-500 text-zinc-950",
-      soft: "bg-amber-400/15 text-amber-500",
-      text: "text-amber-500",
+      soft: isDark
+        ? "bg-amber-400/15 text-amber-500"
+        : "bg-amber-400/15 text-amber-700",
+      text: isDark ? "text-amber-500" : "text-amber-700",
       progress: "bg-amber-500",
     },
     emerald: {
       solid: "bg-emerald-500 text-white",
-      soft: "bg-emerald-500/10 text-emerald-500",
-      text: "text-emerald-500",
+      soft: isDark
+        ? "bg-emerald-500/10 text-emerald-500"
+        : "bg-emerald-500/10 text-emerald-700",
+      text: isDark ? "text-emerald-500" : "text-emerald-700",
       progress: "bg-emerald-500",
     },
     zinc: {

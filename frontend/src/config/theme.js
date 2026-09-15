@@ -50,29 +50,41 @@ export function getAccentStyles(isDark) {
   return {
     pink: {
       solid: "bg-pink-500 text-white",
-      soft: "bg-pink-500/10 text-pink-500",
-      text: "text-pink-500",
+      soft: isDark
+        ? "bg-pink-500/10 text-pink-500"
+        : "bg-pink-500/10 text-pink-600",
+      text: isDark ? "text-pink-500" : "text-pink-600",
       line: "bg-pink-500",
       ring: "stroke-pink-500",
-      border: "border-pink-500/20",
+      border: isDark
+        ? "border-pink-500/20"
+        : "border-pink-500/25",
     },
 
     amber: {
       solid: "bg-amber-500 text-zinc-950",
-      soft: "bg-amber-400/15 text-amber-500",
-      text: "text-amber-500",
+      soft: isDark
+        ? "bg-amber-400/15 text-amber-500"
+        : "bg-amber-400/15 text-amber-700",
+      text: isDark ? "text-amber-500" : "text-amber-700",
       line: "bg-amber-500",
       ring: "stroke-amber-500",
-      border: "border-amber-500/20",
+      border: isDark
+        ? "border-amber-500/20"
+        : "border-amber-600/25",
     },
 
     emerald: {
       solid: "bg-emerald-500 text-white",
-      soft: "bg-emerald-500/10 text-emerald-500",
-      text: "text-emerald-500",
+      soft: isDark
+        ? "bg-emerald-500/10 text-emerald-500"
+        : "bg-emerald-500/10 text-emerald-700",
+      text: isDark ? "text-emerald-500" : "text-emerald-700",
       line: "bg-emerald-500",
       ring: "stroke-emerald-500",
-      border: "border-emerald-500/20",
+      border: isDark
+        ? "border-emerald-500/20"
+        : "border-emerald-600/25",
     },
 
     zinc: {
