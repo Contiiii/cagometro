@@ -16,10 +16,13 @@ export default function NotFound() {
         className="
           mt-6
           rounded-2xl
-          bg-accent
+          bg-rose-600
           px-6
           py-3
           font-semibold
+          text-white
+          transition-colors
+          hover:bg-rose-500
         "
       >
         Torna alla Home
