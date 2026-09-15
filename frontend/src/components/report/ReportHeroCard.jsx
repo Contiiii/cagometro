@@ -43,7 +43,7 @@ export default function ReportHeroCard({
               prefersReducedMotion ? false : { opacity: 0, y: 8, scale: 0.95 }
             }
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className={`mt-2 block text-[clamp(5rem,19vw,8rem)] font-black leading-[0.8] tracking-[-0.11em] ${theme.text}`}
+            className={`mt-2 block text-[clamp(5rem,19vw,8rem)] font-black leading-[0.8] tracking-[-0.02em] ${theme.text}`}
           >
             {total}
           </motion.output>

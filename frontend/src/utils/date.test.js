@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   getLocalDateKey,
+  getWeekRangeLabel,
   parseLocalDateKey,
 } from "./date";
 
@@ -70,6 +71,32 @@ describe("getLocalDateKey", () => {
     if (localRepresentation !== utcRepresentation) {
       expect(getLocalDateKey(date)).not.toBe(utcRepresentation);
     }
+  });
+});
+
+describe("getWeekRangeLabel", () => {
+  it("mostra l'intervallo della settimana di riferimento", () => {
+    expect(getWeekRangeLabel(new Date(2026, 8, 9))).toBe(
+      "7 – 13 settembre 2026",
+    );
+  });
+
+  it("normalizza a lunedì qualunque giorno della settimana", () => {
+    expect(getWeekRangeLabel(new Date(2026, 8, 13))).toBe(
+      "7 – 13 settembre 2026",
+    );
+  });
+
+  it("gestisce una settimana a cavallo di due mesi", () => {
+    expect(getWeekRangeLabel(new Date(2026, 8, 2))).toBe(
+      "31 agosto – 6 settembre 2026",
+    );
+  });
+
+  it("gestisce una settimana a cavallo di due anni", () => {
+    expect(getWeekRangeLabel(new Date(2026, 0, 2))).toBe(
+      "29 dicembre 2025 – 4 gennaio 2026",
+    );
   });
 });
 

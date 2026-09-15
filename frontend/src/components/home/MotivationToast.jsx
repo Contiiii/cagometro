@@ -10,6 +10,7 @@ export default function MotivationToast({
   toast,
   prefersReducedMotion,
   onClose,
+  isDark = true,
 }) {
   useEffect(() => {
     if (!toast) return;
@@ -49,11 +50,15 @@ export default function MotivationToast({
                 ? { duration: 0 }
                 : { type: "spring", stiffness: 380, damping: 26 }
             }
-            className="flex w-full max-w-sm items-start gap-3 rounded-2xl border border-white/10 bg-zinc-950/85 px-5 py-4 text-left shadow-2xl backdrop-blur-md"
+            className={`flex w-full max-w-sm items-start gap-3 rounded-2xl border px-5 py-4 text-left shadow-[0_0_0_1px_rgba(0,0,0,0.2),0_16px_48px_rgba(0,0,0,0.55),0_0_24px_color-mix(in_oklab,var(--accent)_35%,transparent)] ${
+              isDark
+                ? "border-accent/40 bg-white"
+                : "border-accent/40 bg-zinc-950"
+            }`}
           >
             <IconTile
               size="sm"
-              className="border border-accent/25 bg-accent/15"
+              className="border border-accent/40 bg-accent/20"
             >
               <Sparkles
                 className="h-4 w-4 text-accent"
@@ -67,7 +72,11 @@ export default function MotivationToast({
                 Registrazione aggiunta
               </span>
 
-              <p className="mt-0.5 text-sm font-semibold leading-snug text-zinc-100">
+              <p
+                className={`mt-0.5 text-sm font-bold leading-snug ${
+                  isDark ? "text-zinc-950" : "text-white"
+                }`}
+              >
                 {toast.phrase}
               </p>
             </div>

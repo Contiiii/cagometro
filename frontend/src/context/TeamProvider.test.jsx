@@ -12,7 +12,7 @@ import {
   getTeamLeaderboard,
   getTeamActivity,
 } from "../services/teamService";
-import { TeamProvider } from "./TeamProvider";
+import { TeamProvider, TEAM_REALTIME_DEBOUNCE_MS } from "./TeamProvider";
 import { useTeam } from "../hooks/useTeam";
 
 vi.mock("../hooks/useAuth", () => ({
@@ -105,6 +105,14 @@ function Probe() {
 async function settleInitialLoad() {
   await act(async () => {
     await new Promise((resolve) => window.setTimeout(resolve, 0));
+  });
+}
+
+async function flushRealtimeDebounce() {
+  await act(async () => {
+    await new Promise((resolve) =>
+      window.setTimeout(resolve, TEAM_REALTIME_DEBOUNCE_MS + 10),
+    );
   });
 }
 
@@ -393,7 +401,7 @@ describe("TeamProvider", () => {
     expect(latest.team?.team_id).toBe("team-b");
   });
 
-  it("T8: realtime usa filtro team_id e aggiorna membri solo su eventi membro", async () => {
+  it("T8: realtime usa filtro team_id, fa coalescing e aggiorna membri solo su eventi membro", async () => {
     useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
     getMyTeam.mockResolvedValue(TEAM_A);
 
@@ -421,20 +429,30 @@ describe("TeamProvider", () => {
     getTeamLeaderboard.mockClear();
 
     await act(async () => {
-      await realtime.onEvent({ new: { activity_type: "member_joined" } });
+      await realtime.onEvent({ new: { activity_type: "entry_created" } });
+      await realtime.onEvent({ new: { activity_type: "entry_created" } });
+      await realtime.onEvent({ new: { activity_type: "entry_created" } });
     });
 
-    expect(getTeamMembers).toHaveBeenCalledTimes(1);
+    await flushRealtimeDebounce();
+
+    expect(getTeamMembers).not.toHaveBeenCalled();
     expect(getTeamActivity).toHaveBeenCalledTimes(1);
     expect(getTeamLeaderboard).toHaveBeenCalledTimes(1);
 
     getTeamMembers.mockClear();
+    getTeamActivity.mockClear();
+    getTeamLeaderboard.mockClear();
 
     await act(async () => {
-      await realtime.onEvent({ new: { activity_type: "entry_created" } });
+      await realtime.onEvent({ new: { activity_type: "member_joined" } });
     });
 
-    expect(getTeamMembers).not.toHaveBeenCalled();
+    await flushRealtimeDebounce();
+
+    expect(getTeamMembers).toHaveBeenCalledTimes(1);
+    expect(getTeamActivity).toHaveBeenCalledTimes(1);
+    expect(getTeamLeaderboard).toHaveBeenCalledTimes(1);
 
     unmount();
 
@@ -463,11 +481,46 @@ describe("TeamProvider", () => {
       await realtime.onEvent({ new: { activity_type: "member_joined" } });
     });
 
+    await flushRealtimeDebounce();
+
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining("Errore aggiornamento realtime Team:"),
       expect.any(Error),
       expect.any(Object),
     );
+  });
+
+  it("T8e: ownership_transferred non ricarica la leaderboard", async () => {
+    useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+    getMyTeam.mockResolvedValue(TEAM_A);
+
+    const realtime = createChannelMock();
+
+    render(
+      <TeamProvider>
+        <Probe />
+      </TeamProvider>,
+    );
+
+    await waitFor(() => {
+      expect(realtime.filter).toBeTruthy();
+    });
+
+    getTeamMembers.mockClear();
+    getTeamActivity.mockClear();
+    getTeamLeaderboard.mockClear();
+
+    await act(async () => {
+      await realtime.onEvent({
+        new: { activity_type: "ownership_transferred" },
+      });
+    });
+
+    await flushRealtimeDebounce();
+
+    expect(getTeamActivity).toHaveBeenCalledTimes(1);
+    expect(getTeamMembers).toHaveBeenCalledTimes(1);
+    expect(getTeamLeaderboard).not.toHaveBeenCalled();
   });
 
   it("T8c: nessun canale se l'utente non ha squadra", async () => {

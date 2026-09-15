@@ -32,7 +32,7 @@ export default function DailyCounter({
               stiffness: 450,
               damping: 24,
             }}
-            className={`text-[clamp(4.5rem,17vw,7rem)] font-black leading-none tracking-[-0.09em] ${theme.primaryText}`}
+            className={`text-[clamp(4.5rem,17vw,7rem)] font-black leading-none tracking-[-0.02em] ${theme.primaryText}`}
           >
             {todayCount}
           </motion.output>

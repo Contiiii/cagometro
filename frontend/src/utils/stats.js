@@ -130,8 +130,8 @@ export function getMonthBestStreak(entries, date) {
   return calculateBestStreak(monthEntries);
 }
 
-export function getWeeklyChartData(entries) {
-  const today = new Date();
+export function getWeeklyChartData(entries, referenceDate = new Date()) {
+  const today = new Date(referenceDate);
   today.setHours(12, 0, 0, 0);
 
   const dayNames = [
@@ -195,8 +195,8 @@ export function getMonthChartData(entries, date) {
   return data;
 }
 
-export function getPreviousWeekTotal(entries) {
-  const today = new Date();
+export function getPreviousWeekTotal(entries, referenceDate = new Date()) {
+  const today = new Date(referenceDate);
   today.setHours(12, 0, 0, 0);
 
   const daysFromMonday = (today.getDay() + 6) % 7;

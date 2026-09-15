@@ -50,7 +50,7 @@ import {
   revokeOtherSessions,
   revokeSession,
 } from "../services/accountService";
-import { APP_VERSION, RELEASE_FEATURES } from "../config/releaseNotes";
+import { APP_VERSION, RELEASE_NOTES } from "../config/releaseNotes";
 import { accentOptions } from "../config/appearance";
 import { resolveSyncState } from "../config/syncState";
 import { getLevel } from "../config/levels";
@@ -855,7 +855,7 @@ export default function CagometroSettings() {
                     }
                     placeholder={profileName}
                     autoComplete="off"
-                    className={`min-h-12 rounded-2xl border px-4 text-sm font-medium outline-none transition ${
+                    className={`min-h-12 rounded-2xl border px-4 text-base font-medium outline-none transition ${
                       resolvedDark
                         ? "border-white/10 bg-white/[0.06] text-zinc-100 placeholder:text-zinc-500"
                         : "border-zinc-300/70 bg-white/80 text-zinc-900"
@@ -905,8 +905,7 @@ export default function CagometroSettings() {
       <ReleaseNotesModal
         open={releaseNotesOpen}
         onClose={closeReleaseNotes}
-        version={APP_VERSION}
-        features={RELEASE_FEATURES}
+        notes={RELEASE_NOTES}
         isDark={resolvedDark}
         prefersReducedMotion={prefersReducedMotion}
       />
@@ -958,7 +957,7 @@ export default function CagometroSettings() {
                   onChange={(event) => setFeedbackMessage(event.target.value)}
                   placeholder="Miglioria, aggiornamento, bug… dimmi tutto."
                   rows={5}
-                  className={`min-h-32 resize-y rounded-2xl border p-4 text-sm font-medium outline-none transition focus-visible:ring-2 ${
+                  className={`min-h-32 resize-y rounded-2xl border p-4 text-base font-medium outline-none transition focus-visible:ring-2 ${
                     resolvedDark
                       ? "border-white/10 bg-white/[0.06] text-zinc-100 placeholder:text-zinc-500"
                       : "border-zinc-300/70 bg-white/80 text-zinc-900"
@@ -1282,33 +1281,22 @@ function AccountPanel({
       description="Segnalazioni, informazioni chiave e le azioni più delicate."
       theme={theme}
     >
-      <div className={`overflow-hidden rounded-2xl border ${theme.soft}`}>
-        <p
-          className={`px-4 pb-3 pt-4 text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
-        >
-          Supporto e informazioni
-        </p>
-
-        <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-          <ActionRow
-            icon={Lightbulb}
-            title="Segnala un'idea"
-            description="Migliorie, aggiornamenti o qualsiasi cosa vuoi farmi sapere."
-            actionLabel="Scrivi"
-            onClick={onFeedback}
-            theme={theme}
-            accentColor={accentColor}
-          />
-
-          <ActionRow
-            icon={Info}
-            title="Informativa privacy"
-            description="Come vengono trattati i dati dell'account."
-            onClick={onPrivacy}
-            theme={theme}
-            accentColor={accentColor}
-          />
-        </div>
+      <div
+        className="overflow-hidden rounded-2xl border"
+        style={{
+          borderColor: `${accentColor}33`,
+          backgroundColor: `${accentColor}0d`,
+        }}
+      >
+        <ActionRow
+          icon={Lightbulb}
+          title="Segnala un'idea"
+          description="Migliorie, aggiornamenti o qualsiasi cosa vuoi farmi sapere."
+          actionLabel="Scrivi"
+          onClick={onFeedback}
+          theme={theme}
+          accentColor={accentColor}
+        />
       </div>
 
       <div className={`mt-4 overflow-hidden rounded-2xl border ${theme.soft}`}>
@@ -1355,6 +1343,17 @@ function AccountPanel({
           />
           <InfoRow label="Stile" value={accentLabel} theme={theme} />
         </div>
+      </div>
+
+      <div className={`mt-4 overflow-hidden rounded-2xl border ${theme.soft}`}>
+        <ActionRow
+          icon={Info}
+          title="Informativa privacy"
+          description="Come vengono trattati i dati dell'account."
+          onClick={onPrivacy}
+          theme={theme}
+          accentColor={accentColor}
+        />
       </div>
 
       <div className={`mt-4 overflow-hidden rounded-2xl border ${theme.dangerSoft}`}>
@@ -1653,7 +1652,7 @@ function Field({
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className={`min-h-12 rounded-2xl border px-4 text-sm font-medium outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
+        className={`min-h-12 rounded-2xl border px-4 text-base font-medium outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
           dark
             ? "border-white/10 bg-white/[0.06] text-zinc-100 placeholder:text-zinc-500"
             : "border-zinc-300/70 bg-white/80 text-zinc-900"
@@ -1698,7 +1697,7 @@ function ModalShell({ title, theme, onClose, prefersReducedMotion, children }) {
             : { opacity: 0, y: 20, scale: 0.98 }
         }
         transition={{ type: "spring", stiffness: 380, damping: 30 }}
-        className={`max-h-[calc(100dvh-3rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-[2rem] border p-6 shadow-2xl sm:p-7 ${theme.modal}`}
+        className={`max-h-[calc(100dvh-3rem)] w-full max-w-md overflow-x-hidden overflow-y-auto overscroll-contain rounded-[2rem] border p-6 shadow-2xl sm:p-7 ${theme.modal}`}
       >
         <div className="flex items-start justify-between gap-5">
           <div>

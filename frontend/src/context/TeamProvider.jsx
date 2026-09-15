@@ -17,6 +17,22 @@ import {
   getTeamActivity,
 } from "../services/teamService";
 
+export const TEAM_REALTIME_DEBOUNCE_MS = 500;
+
+const REALTIME_LEADERBOARD_EVENT_TYPES = new Set([
+  "entry_created",
+  "member_joined",
+  "member_left",
+  "member_removed",
+]);
+
+const REALTIME_MEMBERS_EVENT_TYPES = new Set([
+  "member_joined",
+  "member_left",
+  "member_removed",
+  "ownership_transferred",
+]);
+
 export function TeamProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
 
@@ -29,6 +45,9 @@ export function TeamProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [loadedUserId, setLoadedUserId] = useState(null);
   const dashboardRequestRef = useRef(0);
+  const realtimeDebounceTimerRef = useRef(null);
+  const realtimeLeaderboardDirtyRef = useRef(false);
+  const realtimeMembersDirtyRef = useRef(false);
 
   const clearTeamData = useCallback(() => {
     setTeam(null);
@@ -262,33 +281,56 @@ export function TeamProvider({ children }) {
           table: "team_activity",
           filter: `team_id=eq.${currentTeamId}`,
         },
-        async (payload) => {
+        (payload) => {
           const activityType = payload.new?.activity_type;
 
-          const shouldRefreshMembers = [
-            "member_joined",
-            "member_left",
-            "member_removed",
-            "ownership_transferred",
-          ].includes(activityType);
-
-          const operations = [refreshActivity(), refreshLeaderboard()];
-
-          if (shouldRefreshMembers) {
-            operations.push(refreshMembers());
+          if (REALTIME_LEADERBOARD_EVENT_TYPES.has(activityType)) {
+            realtimeLeaderboardDirtyRef.current = true;
           }
 
-          const results = await Promise.allSettled(operations);
+          if (REALTIME_MEMBERS_EVENT_TYPES.has(activityType)) {
+            realtimeMembersDirtyRef.current = true;
+          }
 
-          results.forEach((result) => {
-            if (result.status === "rejected") {
-            reportError(result.reason, {
-              feature: "team-realtime-refresh",
-              userId: user?.id ?? null,
-              message: "Errore aggiornamento realtime Team:",
-            });
+          if (realtimeDebounceTimerRef.current) {
+            window.clearTimeout(realtimeDebounceTimerRef.current);
+          }
+
+          realtimeDebounceTimerRef.current = window.setTimeout(() => {
+            realtimeDebounceTimerRef.current = null;
+
+            const operations = [refreshActivity()];
+
+            if (realtimeLeaderboardDirtyRef.current) {
+              realtimeLeaderboardDirtyRef.current = false;
+              operations.push(refreshLeaderboard());
             }
-          });
+
+            if (realtimeMembersDirtyRef.current) {
+              realtimeMembersDirtyRef.current = false;
+              operations.push(refreshMembers());
+            }
+
+            Promise.allSettled(operations)
+              .then((results) => {
+                results.forEach((result) => {
+                  if (result.status === "rejected") {
+                    reportError(result.reason, {
+                      feature: "team-realtime-refresh",
+                      userId: user?.id ?? null,
+                      message: "Errore aggiornamento realtime Team:",
+                    });
+                  }
+                });
+              })
+              .catch((error) => {
+                reportError(error, {
+                  feature: "team-realtime-refresh",
+                  userId: user?.id ?? null,
+                  message: "Errore aggiornamento realtime Team:",
+                });
+              });
+          }, TEAM_REALTIME_DEBOUNCE_MS);
         },
       )
       .subscribe((status, error) => {
@@ -310,6 +352,14 @@ export function TeamProvider({ children }) {
       });
 
     return () => {
+      if (realtimeDebounceTimerRef.current) {
+        window.clearTimeout(realtimeDebounceTimerRef.current);
+        realtimeDebounceTimerRef.current = null;
+      }
+
+      realtimeLeaderboardDirtyRef.current = false;
+      realtimeMembersDirtyRef.current = false;
+
       supabase.removeChannel(channel);
     };
   }, [

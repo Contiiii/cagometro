@@ -14,6 +14,7 @@ import ReportHeroCard from "../components/report/ReportHeroCard";
 import ReportChart from "../components/report/ReportChart";
 import ReportPeriodSelector from "../components/report/ReportPeriodSelector";
 import ReportMonthSelector from "../components/report/ReportMonthSelector";
+import ReportWeekSelector from "../components/report/ReportWeekSelector";
 import ReportShareModal from "../components/report/ReportShareModal";
 
 import { getLocalDateKey } from "../utils/date";
@@ -38,6 +39,15 @@ export default function CagometroReport() {
   const [shareOpen, setShareOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
+  const [selectedWeek, setSelectedWeek] = useState(() => {
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    const daysFromMonday = (today.getDay() + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - daysFromMonday);
+    return monday;
+  });
+
   const {
     report,
     total,
@@ -58,6 +68,7 @@ export default function CagometroReport() {
     entries,
     period,
     selectedMonth,
+    selectedWeek,
     selectedPointId,
   });
 
@@ -118,6 +129,15 @@ export default function CagometroReport() {
     selectedMonth.getMonth() === currentMonth.getMonth() &&
     selectedMonth.getFullYear() === currentMonth.getFullYear();
 
+  const isCurrentWeek = useMemo(() => {
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    const daysFromMonday = (today.getDay() + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - daysFromMonday);
+    return getLocalDateKey(monday) === getLocalDateKey(selectedWeek);
+  }, [selectedWeek]);
+
   return (
     <div
       className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
@@ -142,6 +162,15 @@ export default function CagometroReport() {
             isDark={isDark}
             theme={theme}
           />
+
+          {period === "week" && (
+            <ReportWeekSelector
+              selectedWeek={selectedWeek}
+              setSelectedWeek={setSelectedWeek}
+              isCurrentWeek={isCurrentWeek}
+              theme={theme}
+            />
+          )}
 
           {period === "month" && (
             <ReportMonthSelector

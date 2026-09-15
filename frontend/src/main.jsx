@@ -10,6 +10,7 @@ import { EntriesProvider } from "./context/EntriesProvider";
 import { ProfileProvider } from "./context/ProfileProvider";
 import { ThemeProvider } from "./context/ThemeProvider";
 import { SettingsProvider } from "./context/SettingsProvider";
+import { TeamProvider } from "./context/TeamProvider";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -25,7 +26,9 @@ createRoot(document.getElementById("root")).render(
           <EntriesProvider>
             <ThemeProvider>
               <SettingsProvider>
-                <App />
+                <TeamProvider>
+                  <App />
+                </TeamProvider>
               </SettingsProvider>
             </ThemeProvider>
           </EntriesProvider>

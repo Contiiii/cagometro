@@ -13,13 +13,19 @@ import {
   getYearlyChartData,
 } from "../utils/stats";
 
+import { getWeekRangeLabel } from "../utils/date";
+
 export function useReportData({
   entries,
   period,
   selectedMonth,
+  selectedWeek,
   selectedPointId,
 }) {
-  const weeklyChartData = useMemo(() => getWeeklyChartData(entries), [entries]);
+  const weeklyChartData = useMemo(
+    () => getWeeklyChartData(entries, selectedWeek),
+    [entries, selectedWeek],
+  );
 
   const weekPoints = useMemo(
     () =>
@@ -47,8 +53,8 @@ export function useReportData({
   );
 
   const previousWeekTotal = useMemo(
-    () => getPreviousWeekTotal(entries),
-    [entries],
+    () => getPreviousWeekTotal(entries, selectedWeek),
+    [entries, selectedWeek],
   );
 
   const previousMonthTotal = useMemo(
@@ -173,7 +179,7 @@ export function useReportData({
     }
 
     return {
-      label: "Ultimi 7 giorni",
+      label: getWeekRangeLabel(selectedWeek),
 
       previousLabel: "settimana precedente",
 
@@ -195,6 +201,7 @@ export function useReportData({
     monthPoints,
     yearPoints,
     selectedMonth,
+    selectedWeek,
     allPoints,
     currentStreak,
     bestStreak,

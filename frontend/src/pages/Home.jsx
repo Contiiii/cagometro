@@ -16,7 +16,7 @@ import ReleaseNotesModal from "../components/ReleaseNotesModal";
 
 import {
   APP_VERSION,
-  RELEASE_FEATURES,
+  RELEASE_NOTES,
 } from "../config/releaseNotes";
 
 import { pickRandomPhrase } from "../config/motivation";
@@ -280,6 +280,7 @@ export default function Home() {
         toast={motivationToast}
         onClose={() => setMotivationToast(null)}
         prefersReducedMotion={prefersReducedMotion}
+        isDark={isDark}
       />
 
       <BottomNav />
@@ -287,8 +288,7 @@ export default function Home() {
       <ReleaseNotesModal
         open={releaseNotesOpen}
         onClose={closeReleaseNotes}
-        version={CURRENT_APP_VERSION}
-        features={RELEASE_FEATURES}
+        notes={RELEASE_NOTES}
         isDark={isDark}
         prefersReducedMotion={prefersReducedMotion}
       />

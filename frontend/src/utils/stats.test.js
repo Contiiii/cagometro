@@ -493,6 +493,33 @@ describe("stats", () => {
       expect(result[3].date).toBe("2026-01-01");
       expect(result[3].day).toBe("Gio");
     });
+
+    it("accetta una data di riferimento differente", () => {
+      const result = getWeeklyChartData(
+        {},
+        new Date(2026, 8, 13, 12, 0, 0),
+      );
+
+      expect(result[0].date).toBe("2026-09-07");
+      expect(result[0].day).toBe("Lun");
+      expect(result[6].date).toBe("2026-09-13");
+      expect(result[6].day).toBe("Dom");
+    });
+
+    it("usa i dati della settimana di riferimento", () => {
+      const entries = {
+        "2026-09-07": 4,
+        "2026-09-13": 2,
+      };
+
+      const result = getWeeklyChartData(
+        entries,
+        new Date(2026, 8, 13, 12, 0, 0),
+      );
+
+      expect(result[0].count).toBe(4);
+      expect(result[6].count).toBe(2);
+    });
   });
 
   describe("getYearlyChartData", () => {
@@ -706,6 +733,24 @@ describe("stats", () => {
       };
 
       expect(getPreviousWeekTotal(entries)).toBe(28);
+    });
+
+    it("calcola la settimana precedente rispetto alla data di riferimento", () => {
+      const entries = {
+        "2026-09-13": 100,
+        "2026-09-07": 1,
+        "2026-09-06": 7,
+        "2026-09-05": 6,
+        "2026-09-04": 5,
+        "2026-09-03": 4,
+        "2026-09-02": 3,
+        "2026-09-01": 2,
+        "2026-08-31": 1,
+      };
+
+      expect(
+        getPreviousWeekTotal(entries, new Date(2026, 8, 13, 12, 0, 0)),
+      ).toBe(28);
     });
   });
 

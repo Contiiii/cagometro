@@ -7,7 +7,14 @@ import { useAuth } from "../hooks/useAuth";
 import { EntriesProvider } from "./EntriesProvider";
 import { useEntries } from "../hooks/useEntries";
 
-import { getEntries } from "../services/entriesService";
+import { getEntries, saveEntry, importEntries } from "../services/entriesService";
+import { createTeamActivity } from "../services/teamService";
+
+import { getLocalDateKey } from "../utils/date";
+import {
+  saveAnonymousEntries,
+  saveUserEntries,
+} from "../utils/storage";
 
 vi.mock("../hooks/useAuth", () => ({
   useAuth: vi.fn(),
@@ -17,6 +24,10 @@ vi.mock("../services/entriesService", () => ({
   getEntries: vi.fn().mockResolvedValue([]),
   saveEntry: vi.fn().mockRejectedValue(new Error("offline")),
   importEntries: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("../services/teamService", () => ({
+  createTeamActivity: vi.fn().mockResolvedValue(undefined),
 }));
 
 let latest = null;
@@ -31,12 +42,33 @@ function Probe() {
   return null;
 }
 
+function setOnline(value) {
+  Object.defineProperty(navigator, "onLine", {
+    value,
+    configurable: true,
+  });
+}
+
+function flushAsync() {
+  return act(async () => {
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 
   latest = null;
 
   window.localStorage.clear();
+
+  setOnline(true);
+
+  // reset implementazioni per evitare leak tra test
+  getEntries.mockResolvedValue([]);
+  saveEntry.mockRejectedValue(new Error("offline"));
+  importEntries.mockResolvedValue([]);
+  createTeamActivity.mockResolvedValue(undefined);
 
   useAuth.mockReturnValue({ user: null, loading: false });
 });
@@ -54,9 +86,7 @@ describe("EntriesProvider", () => {
       </EntriesProvider>,
     );
 
-    await act(async () => {
-      await new Promise((resolve) => window.setTimeout(resolve, 0));
-    });
+    await flushAsync();
 
     expect(latest.syncStatus).toBe("synced");
     expect(latest.pendingChanges).toEqual([]);
@@ -71,17 +101,13 @@ describe("EntriesProvider", () => {
       </EntriesProvider>,
     );
 
-    await act(async () => {
-      await new Promise((resolve) => window.setTimeout(resolve, 0));
-    });
+    await flushAsync();
 
     await act(async () => {
       await latest.incrementToday();
     });
 
-    await act(async () => {
-      await new Promise((resolve) => window.setTimeout(resolve, 0));
-    });
+    await flushAsync();
 
     expect(latest.syncStatus).toBe("pending");
     expect(latest.pendingChanges.length).toBeGreaterThan(0);
@@ -115,9 +141,7 @@ describe("EntriesProvider", () => {
       </EntriesProvider>,
     );
 
-    await act(async () => {
-      await new Promise((resolve) => window.setTimeout(resolve, 0));
-    });
+    await flushAsync();
 
     // L'utente passa all'account B mentre il fetch di A è ancora in volo
     useAuth.mockReturnValue({ user: { id: "user-b" }, loading: false });
@@ -137,10 +161,324 @@ describe("EntriesProvider", () => {
       resolveOldFetch([{ date: "2026-09-12", count: 7 }]);
     });
 
+    await flushAsync();
+
+    expect(latest.entries).toEqual({ "2026-09-13": 3 });
+  });
+
+  it("incrementToday offline accumula pendingChanges e passa a 'pending'", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    setOnline(false);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
     await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    const today = getLocalDateKey();
+
+    expect(latest.entries).toEqual({ [today]: 1 });
+    expect(latest.pendingChanges).toEqual([{ date: today, count: 1 }]);
+    expect(latest.syncStatus).toBe("pending");
+    expect(saveEntry).toHaveBeenCalledWith({
+      userId: "user-1",
+      date: today,
+      count: 1,
+    });
+  });
+
+  it("al ritorno online flusha i pendingChanges e torna 'synced'", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    setOnline(false);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    const today = getLocalDateKey();
+
+    setOnline(true);
+
+    await act(async () => {
+      window.dispatchEvent(new Event("online"));
       await new Promise((resolve) => window.setTimeout(resolve, 0));
     });
 
-    expect(latest.entries).toEqual({ "2026-09-13": 3 });
+    await flushAsync();
+
+    expect(importEntries).toHaveBeenCalledWith("user-1", { [today]: 1 });
+    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.syncStatus).toBe("synced");
+  });
+
+  it("se il flush fallisce passa a 'error' e un nuovo flush recupera a 'synced'", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    setOnline(false);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    const today = getLocalDateKey();
+
+    importEntries.mockRejectedValueOnce(new Error("rete"));
+
+    setOnline(true);
+
+    await act(async () => {
+      window.dispatchEvent(new Event("online"));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    await flushAsync();
+
+    expect(latest.syncStatus).toBe("error");
+    expect(latest.pendingChanges).toEqual([{ date: today, count: 1 }]);
+
+    await act(async () => {
+      window.dispatchEvent(new Event("online"));
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    await flushAsync();
+
+    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.syncStatus).toBe("synced");
+  });
+
+  it("due increment offline sulla stessa data producono un unico pending con il conteggio finale", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    setOnline(false);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    const today = getLocalDateKey();
+
+    expect(latest.entries).toEqual({ [today]: 2 });
+    expect(latest.pendingChanges).toEqual([{ date: today, count: 2 }]);
+  });
+
+  it("incrementToday online chiama saveEntry e createTeamActivity", async () => {
+    saveEntry.mockResolvedValue([]);
+
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    const today = getLocalDateKey();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    expect(saveEntry).toHaveBeenCalledWith({
+      userId: "user-1",
+      date: today,
+      count: 1,
+    });
+    expect(createTeamActivity).toHaveBeenCalledWith("entry_created", 1);
+    expect(latest.syncStatus).toBe("synced");
+    expect(latest.pendingChanges).toEqual([]);
+  });
+
+  it("decrementToday a zero non modifica nulla", async () => {
+    saveEntry.mockResolvedValue([]);
+
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.decrementToday();
+    });
+
+    await flushAsync();
+
+    expect(latest.entries).toEqual({});
+    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.syncStatus).toBe("synced");
+    expect(saveEntry).not.toHaveBeenCalled();
+  });
+
+  it("decrementToday offline accumula pending", async () => {
+    setOnline(false);
+
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    const today = getLocalDateKey();
+
+    saveUserEntries("user-1", { [today]: 2 });
+    getEntries.mockResolvedValue([{ date: today, count: 2 }]);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.decrementToday();
+    });
+
+    await flushAsync();
+
+    expect(latest.entries).toEqual({ [today]: 1 });
+    expect(latest.pendingChanges).toEqual([{ date: today, count: 1 }]);
+    expect(latest.syncStatus).toBe("pending");
+  });
+
+  it("al primo login migra le entries anonime e rimuove la chiave locale", async () => {
+    const anonymousEntries = { "2026-09-13": 5, "2026-09-14": 2 };
+
+    saveAnonymousEntries(anonymousEntries);
+
+    importEntries.mockResolvedValue([
+      { date: "2026-09-13", count: 5 },
+      { date: "2026-09-14", count: 2 },
+    ]);
+
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    expect(importEntries).toHaveBeenCalledWith("user-1", anonymousEntries);
+    expect(latest.entries).toEqual(anonymousEntries);
+    expect(window.localStorage.getItem("entries_anonymous")).toBeNull();
+  });
+
+  it("cambio account rapido non contamina i dati tra utenti", async () => {
+    getEntries
+      .mockResolvedValueOnce([{ date: "2026-09-10", count: 1 }])
+      .mockResolvedValueOnce([{ date: "2026-09-11", count: 2 }])
+      .mockResolvedValueOnce([{ date: "2026-09-12", count: 3 }]);
+
+    useAuth.mockReturnValue({ user: { id: "user-a" }, loading: false });
+
+    const view = render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    expect(latest.entries).toEqual({ "2026-09-10": 1 });
+
+    useAuth.mockReturnValue({ user: { id: "user-b" }, loading: false });
+
+    await act(async () => {
+      view.rerender(
+        <EntriesProvider>
+          <Probe />
+        </EntriesProvider>,
+      );
+
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    await flushAsync();
+
+    expect(latest.entries).toEqual({ "2026-09-11": 2 });
+
+    useAuth.mockReturnValue({ user: { id: "user-c" }, loading: false });
+
+    await act(async () => {
+      view.rerender(
+        <EntriesProvider>
+          <Probe />
+        </EntriesProvider>,
+      );
+
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    await flushAsync();
+
+    expect(latest.entries).toEqual({ "2026-09-12": 3 });
+
+    const entriesOfA = JSON.parse(
+      window.localStorage.getItem("entries_user_user-a"),
+    );
+    const entriesOfB = JSON.parse(
+      window.localStorage.getItem("entries_user_user-b"),
+    );
+    const entriesOfC = JSON.parse(
+      window.localStorage.getItem("entries_user_user-c"),
+    );
+
+    expect(entriesOfA).toEqual({ "2026-09-10": 1 });
+    expect(entriesOfB).toEqual({ "2026-09-11": 2 });
+    expect(entriesOfC).toEqual({ "2026-09-12": 3 });
   });
 });

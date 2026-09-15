@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Share2, X } from "lucide-react";
 import { toBlob } from "html-to-image";
 import toast from "react-hot-toast";
-import poopIcon from "../../assets/poop.webp";
+import poopIcon from "../../assets/poop.webp?inline";
 import useModalFocusTrap from "../../hooks/useModalFocusTrap";
 
 function withTimeout(promise, ms, message) {
@@ -96,9 +96,17 @@ async function handleShareCard() {
       return;
     }
 
+    const images = Array.from(
+      cardRef.current.querySelectorAll("img"),
+    );
+    await Promise.all(
+      images.map((img) => img.decode?.().catch(() => {})),
+    );
+    await document.fonts?.ready;
+
     const blob = await withTimeout(
       toBlob(cardRef.current, {
-        pixelRatio: Math.min(window.devicePixelRatio || 2, 3),
+        pixelRatio: Math.min(window.devicePixelRatio || 2, 3) * 1.5,
         cacheBust: true,
         backgroundColor: isDarkCard ? "#18181b" : "#fffaf8",
       }),
@@ -216,9 +224,9 @@ async function handleShareCard() {
 
                 <div className="relative p-5 sm:p-6">
                   <div className="relative flex items-start justify-between gap-3">
-                    <div>
+                    <div className="flex min-w-0 items-center gap-3">
                       <div
-                        className={`grid h-12 w-12 place-items-center overflow-hidden rounded-[1.1rem] border shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_16%,transparent)] ${exportIconTileClass}`}
+                        className={`grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[1.1rem] border shadow-[0_10px_24px_rgba(236,72,153,0.16)] ${exportIconTileClass}`}
                       >
                         <img
                           src={poopIcon}
@@ -228,14 +236,14 @@ async function handleShareCard() {
                       </div>
 
                       <p
-                        className={`mt-3 text-[11px] font-bold uppercase tracking-[0.16em] ${exportSubtleClass}`}
+                        className={`min-w-0 text-[11px] font-bold uppercase leading-tight tracking-[0.16em] ${exportSubtleClass}`}
                       >
                         {summaryTitle}
                       </p>
                     </div>
 
                     <span
-                      className={`rounded-full border border-accent/20 px-3 py-1 text-[11px] font-extrabold ${exportBadgeClass}`}
+                      className={`shrink-0 whitespace-nowrap rounded-full border border-accent/20 px-3 py-1.5 text-[11px] font-extrabold ${exportBadgeClass}`}
                     >
                       {report.label}
                     </span>
