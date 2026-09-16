@@ -114,7 +114,7 @@ export default function CagometroSettings() {
     updateSetting,
   } = useSettings();
 
-  const { entries, syncStatus, pendingChanges, clearLocalData, retrySync } =
+  const { entries, syncStatus, pendingOps, clearLocalData, retrySync } =
     useEntries();
 
   const dayCount = useMemo(() => Object.keys(entries).length, [entries]);
@@ -137,8 +137,8 @@ export default function CagometroSettings() {
     typeof navigator.vibrate === "function";
 
   const syncState = useMemo(
-    () => resolveSyncState(user, syncStatus, pendingChanges),
-    [user, syncStatus, pendingChanges],
+    () => resolveSyncState(user, syncStatus, pendingOps),
+    [user, syncStatus, pendingOps],
   );
 
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
@@ -184,7 +184,7 @@ export default function CagometroSettings() {
   useEffect(() => {
     const activeTab = mobileTabButtonsRef.current[activeSection];
 
-    if (!activeTab) return;
+    if (!activeTab?.scrollIntoView) return;
 
     activeTab.scrollIntoView({
       behavior: "smooth",
@@ -209,7 +209,7 @@ export default function CagometroSettings() {
       utenteLoggato: Boolean(user),
       syncStatus,
       label: syncState.label,
-      modificheInAttesa: pendingChanges,
+      modificheInAttesa: pendingOps,
       giorniRegistrati: dayCount,
       totaleSegnalazioni: totalCount,
       entries,
@@ -714,7 +714,7 @@ export default function CagometroSettings() {
                   cloudEnabled={cloudEnabled}
                   dayCount={dayCount}
                   totalCount={totalCount}
-                  pendingCount={pendingChanges.length}
+                  pendingCount={pendingOps.length}
                   onRetrySync={retrySync}
                   vibrationEnabled={vibrationEnabled}
                   setVibrationEnabled={(value) =>

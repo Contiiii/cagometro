@@ -244,12 +244,20 @@ export function SettingsProvider({ children }) {
 
         const nextSettings = {
           ...currentSettings,
-          dailyReminder: serverSettings.daily_reminder,
-          streakAlerts: serverSettings.streak_alerts,
-          achievementAlerts: serverSettings.achievement_alerts,
-          teamEntryAlerts: serverSettings.team_entry_alerts,
-          teamMemberAlerts: serverSettings.team_member_alerts,
-          teamAchievementAlerts: serverSettings.team_achievement_alerts,
+          dailyReminder:
+            serverSettings.daily_reminder ?? currentSettings.dailyReminder,
+          streakAlerts:
+            serverSettings.streak_alerts ?? currentSettings.streakAlerts,
+          achievementAlerts:
+            serverSettings.achievement_alerts ??
+            currentSettings.achievementAlerts,
+          teamEntryAlerts:
+            serverSettings.team_entry_alerts ?? currentSettings.teamEntryAlerts,
+          teamMemberAlerts:
+            serverSettings.team_member_alerts ?? currentSettings.teamMemberAlerts,
+          teamAchievementAlerts:
+            serverSettings.team_achievement_alerts ??
+            currentSettings.teamAchievementAlerts,
         };
 
         const settingsChanged =

@@ -28,13 +28,17 @@ export function usePush() {
         return;
       }
 
-      const subscription = await getPushSubscription();
+      try {
+        const subscription = await getPushSubscription();
 
-      if (cancelled) {
-        return;
+        if (cancelled) {
+          return;
+        }
+
+        setIsSubscribed(Boolean(subscription));
+      } catch (error) {
+        console.error("Errore stato sottoscrizione push:", error);
       }
-
-      setIsSubscribed(Boolean(subscription));
     }
 
     syncSubscriptionState();
