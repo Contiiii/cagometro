@@ -25,8 +25,6 @@ import {
 
 import {
   loadPendingOps,
-  savePendingOps,
-  clearPendingOps,
   enqueueOp,
   dequeueOp,
 } from "../utils/pendingQueue";
@@ -122,7 +120,7 @@ function loadStoredSettings() {
   }
 }
 
-function flushSettingsQueue(userId, skipNextSyncRef) {
+function flushSettingsQueue(userId) {
   const pendingOps = loadPendingOps(userId);
   const settingsOps = pendingOps.filter((op) => op.type === SETTINGS_OP_TYPE);
 
@@ -148,6 +146,7 @@ function flushSettingsQueue(userId, skipNextSyncRef) {
 
 export function SettingsProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
+  const authUserId = user?.id ?? null;
 
   const [settings, setSettings] = useState(loadStoredSettings);
 
@@ -158,15 +157,19 @@ export function SettingsProvider({ children }) {
   }, [settings]);
 
   const skipNextSyncRef = useRef(false);
+  const serverSyncSettledRef = useRef(false);
+  const localEditDuringSyncRef = useRef(false);
+
+  const [syncEpoch, setSyncEpoch] = useState(0);
 
   const isOnlineRef = useRef(typeof navigator !== "undefined" ? navigator.onLine : true);
 
   const setOnlineStatus = useCallback((online) => {
     isOnlineRef.current = online;
-    if (online && user?.id) {
-      flushSettingsQueue(user.id, skipNextSyncRef);
+    if (online && authUserId) {
+      flushSettingsQueue(authUserId);
     }
-  }, [user?.id]);
+  }, [authUserId]);
 
   useEffect(() => {
     function handleOnline() {
@@ -192,19 +195,21 @@ export function SettingsProvider({ children }) {
     }
 
     let cancelled = false;
+    serverSyncSettledRef.current = false;
+    localEditDuringSyncRef.current = false;
 
     async function syncSettingsFromAccount() {
       try {
         const serverSettings = await getMySettings();
 
-        if (cancelled) {
+        if (cancelled || localEditDuringSyncRef.current) {
           return;
         }
 
         if (!serverSettings) {
           await ensureMySettings();
 
-          if (cancelled) {
+          if (cancelled || localEditDuringSyncRef.current) {
             return;
           }
 
@@ -249,7 +254,13 @@ export function SettingsProvider({ children }) {
       }
     }
 
-    syncSettingsFromAccount();
+    syncSettingsFromAccount().finally(() => {
+      serverSyncSettledRef.current = true;
+
+      if (!cancelled) {
+        setSyncEpoch((n) => n + 1);
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -263,6 +274,10 @@ export function SettingsProvider({ children }) {
 
     if (skipNextSyncRef.current) {
       skipNextSyncRef.current = false;
+      return;
+    }
+
+    if (!serverSyncSettledRef.current) {
       return;
     }
 
@@ -296,6 +311,7 @@ export function SettingsProvider({ children }) {
   }, [
     user?.id,
     authLoading,
+    syncEpoch,
     settings.dailyReminder,
     settings.streakAlerts,
     settings.achievementAlerts,
@@ -315,6 +331,10 @@ export function SettingsProvider({ children }) {
 
   const updateSetting = useCallback(
     (settingName, value) => {
+      if (!serverSyncSettledRef.current) {
+        localEditDuringSyncRef.current = true;
+      }
+
       setSettings((currentSettings) => {
         const updatedSettings = {
           ...currentSettings,

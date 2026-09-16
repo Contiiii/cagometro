@@ -51,6 +51,7 @@ export function TeamProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [loadedUserId, setLoadedUserId] = useState(null);
   const dashboardRequestRef = useRef(0);
+  const hydratedUserIdRef = useRef(null);
   const realtimeDebounceTimerRef = useRef(null);
   const realtimeLeaderboardDirtyRef = useRef(false);
   const realtimeMembersDirtyRef = useRef(false);
@@ -263,16 +264,21 @@ export function TeamProvider({ children }) {
     const requestedUserId = user.id;
     let cancelled = false;
 
-    // Load cached snapshot immediately for offline support
-    const snapshot = loadTeamSnapshot(requestedUserId);
-    if (snapshot && !cancelled) {
-      setTeam(snapshot.team ?? null);
-      setMembers(snapshot.members ?? []);
-      setLeaderboard(snapshot.leaderboard ?? []);
-      setActivity(snapshot.activity ?? []);
-    }
-
     const timeoutId = window.setTimeout(() => {
+      // Hydrate dallo snapshot locale una sola volta per utente, poi rigenera.
+      if (!cancelled && hydratedUserIdRef.current !== requestedUserId) {
+        hydratedUserIdRef.current = requestedUserId;
+
+        const snapshot = loadTeamSnapshot(requestedUserId);
+
+        if (snapshot) {
+          setTeam(snapshot.team ?? null);
+          setMembers(snapshot.members ?? []);
+          setLeaderboard(snapshot.leaderboard ?? []);
+          setActivity(snapshot.activity ?? []);
+        }
+      }
+
       refreshDashboard(requestedUserId).catch((error) => {
         if (!cancelled) {
           reportError(error, {

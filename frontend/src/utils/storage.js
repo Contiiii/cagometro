@@ -89,7 +89,7 @@ export function clearAllLocalData(userId) {
   }
 }
 
-const TEAM_SNAPSHOT_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const TEAM_SNAPSHOT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function getTeamSnapshotKey(userId) {
   return `team_snapshot_${userId}`;

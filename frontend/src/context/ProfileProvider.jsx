@@ -93,8 +93,8 @@ export function ProfileProvider({ children }) {
       if (updatedProfile?.queued) {
         const optimisticProfile = {
           user_id: userId,
-          display_name: displayName,
-          avatar_url: avatarUrl,
+          ...(displayName !== undefined && { display_name: displayName }),
+          ...(avatarUrl !== undefined && { avatar_url: avatarUrl }),
         };
 
         setProfile((current) => ({ ...(current ?? {}), ...optimisticProfile }));
