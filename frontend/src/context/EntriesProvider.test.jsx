@@ -321,6 +321,73 @@ describe("EntriesProvider", () => {
     expect(latest.syncStatus).toBe("synced");
   });
 
+  it("non perde le operazioni accodate durante un flush in corso", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    setOnline(false);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    const today = getLocalDateKey();
+
+    expect(latest.syncStatus).toBe("pending");
+
+    let resolveImport;
+    importEntries.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveImport = resolve;
+        }),
+    );
+
+    let flushPromise;
+    let flushDone = false;
+    await act(async () => {
+      flushPromise = latest.retrySync();
+      flushPromise.then(() => {
+        flushDone = true;
+      });
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    expect(flushDone).toBe(false);
+
+    // Durante l'await del flush accodo un'altra operazione, senza rete
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await act(async () => {
+      resolveImport([]);
+      const ok = await flushPromise;
+      expect(ok).toBe(true);
+    });
+
+    await flushAsync();
+
+    // La prima operazione è andata a buon fine, la seconda resta in coda
+    expect(importEntries).toHaveBeenCalledWith("user-1", { [today]: 1 });
+
+    const remaining = latest.pendingOps.filter(
+      (op) => op.type === "saveEntry",
+    );
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].payload).toEqual({ date: today, count: 2 });
+    expect(latest.syncStatus).toBe("pending");
+  });
+
   it("retrySync fallito mantiene 'error' e restituisce false", async () => {
     useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
 

@@ -24,6 +24,7 @@ import {
   loadPendingOps,
   savePendingOps,
   clearPendingOps,
+  removePendingOps,
 } from "../utils/pendingQueue";
 
 import { getLocalDateKey } from "../utils/date";
@@ -126,9 +127,12 @@ export function EntriesProvider({ children }) {
         return true;
       }
 
+      const batch = pendingOps;
+      const batchIds = batch.map((op) => op.id);
+
       try {
-        const saveEntryOps = pendingOps.filter((op) => op.type === OP_TYPES.SAVE_ENTRY);
-        const activityOps = pendingOps.filter((op) => op.type === OP_TYPES.CREATE_TEAM_ACTIVITY);
+        const saveEntryOps = batch.filter((op) => op.type === OP_TYPES.SAVE_ENTRY);
+        const activityOps = batch.filter((op) => op.type === OP_TYPES.CREATE_TEAM_ACTIVITY);
 
         if (saveEntryOps.length > 0) {
           const entriesByDate = Object.fromEntries(
@@ -142,15 +146,17 @@ export function EntriesProvider({ children }) {
           await createTeamActivity(op.payload.activityType, op.payload.points);
         }
 
-        clearPendingOps(userId);
-        setPendingOps([]);
-        setSyncStatus("synced");
+        // Rimuove SOLO le operazioni del batch: quelle accodate durante
+        // l'await (es. nuovo tap offline) restano nella coda.
+        const remainingOps = removePendingOps(userId, batchIds);
+        setPendingOps((prev) => prev.filter((op) => !batchIds.includes(op.id)));
+        setSyncStatus(remainingOps.length > 0 ? "pending" : "synced");
 
         if (prevSyncStatusRef.current === "error") {
           announce("Sincronizzazione ripristinata");
         }
 
-        prevSyncStatusRef.current = "synced";
+        prevSyncStatusRef.current = remainingOps.length > 0 ? "pending" : "synced";
 
         return true;
       } catch (error) {
@@ -220,6 +226,8 @@ export function EntriesProvider({ children }) {
 
       // 3. Se online prova a sincronizzarli
       if (navigator.onLine && savedPendingOps.length > 0) {
+        const bootstrapIds = savedPendingOps.map((op) => op.id);
+
         try {
           for (const op of savedPendingOps) {
             if (op.type === "saveEntry") {
@@ -235,8 +243,10 @@ export function EntriesProvider({ children }) {
 
           if (cancelled) return;
 
-          clearPendingOps(userId);
-          setPendingOps([]);
+          removePendingOps(userId, bootstrapIds);
+          setPendingOps((prev) =>
+            prev.filter((op) => !bootstrapIds.includes(op.id)),
+          );
         } catch (error) {
           console.error("Errore sync pending:", error);
         }
@@ -299,8 +309,14 @@ export function EntriesProvider({ children }) {
 
   const createPendingOps = useCallback(
     (ops) => {
+      const datedOps = ops.map((op) => ({
+        ...op,
+        timestamp: Date.now(),
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      }));
+
       setPendingOps((prev) => {
-        const nextOps = [...prev, ...ops];
+        const nextOps = [...prev, ...datedOps];
 
         if (userId) {
           savePendingOps(userId, nextOps);

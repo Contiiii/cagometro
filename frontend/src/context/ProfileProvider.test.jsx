@@ -165,4 +165,110 @@ describe("ProfileProvider", () => {
 
     await waitFor(() => expect(getProfile).toHaveBeenCalledWith("user-1"));
   });
+
+  it("mostra subito lo snapshot locale se presente", async () => {
+    localStorage.setItem(
+      "profile_snapshot_user-1",
+      JSON.stringify({
+        timestamp: Date.now(),
+        data: {
+          user_id: "user-1",
+          display_name: "Snapshot",
+          avatar_url: null,
+        },
+      }),
+    );
+
+    let resolveProfile;
+    getProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveProfile = resolve;
+        }),
+    );
+
+    const { getLatest } = renderProvider();
+
+    await waitFor(() =>
+      expect(getLatest().profile?.display_name).toBe("Snapshot"),
+    );
+
+    await act(async () => {
+      resolveProfile(SERVER_PROFILE);
+    });
+
+    await waitFor(() => expect(getLatest().profile).toEqual(SERVER_PROFILE));
+  });
+
+  it("salva lo snapshot quando il profilo cambia", async () => {
+    const serverResult = {
+      user_id: "user-1",
+      display_name: "Luca",
+      avatar_url: "https://example.com/luca.png",
+    };
+
+    updateProfile.mockResolvedValue(serverResult);
+
+    const { getLatest } = renderProvider();
+
+    await waitFor(() => expect(getLatest().profile).toEqual(SERVER_PROFILE));
+
+    await act(async () => {
+      await getLatest().updateProfile({ displayName: "Luca" });
+    });
+
+    const stored = JSON.parse(
+      localStorage.getItem("profile_snapshot_user-1"),
+    );
+
+    expect(stored.data.display_name).toBe("Luca");
+    expect(stored.data.avatar_url).toBe("https://example.com/luca.png");
+  });
+
+  it("persiste anche l'aggiornamento ottimistico offline", async () => {
+    updateProfile.mockResolvedValue({ queued: true });
+
+    const { getLatest } = renderProvider();
+
+    await waitFor(() => expect(getLatest().profile).toEqual(SERVER_PROFILE));
+
+    await act(async () => {
+      await getLatest().updateProfile({ displayName: "Pino" });
+    });
+
+    const stored = JSON.parse(
+      localStorage.getItem("profile_snapshot_user-1"),
+    );
+
+    expect(stored.data.display_name).toBe("Pino");
+  });
+
+  it("i dati di un account precedente non finiscono nel suo snapshot", async () => {
+    localStorage.setItem(
+      "profile_snapshot_user-1",
+      JSON.stringify({
+        timestamp: Date.now(),
+        data: { user_id: "user-1", display_name: "Vecchio", avatar_url: null },
+      }),
+    );
+
+    useAuth.mockReturnValue({ user: { id: "user-2" }, loading: false });
+
+    getProfile.mockResolvedValue({
+      ...SERVER_PROFILE,
+      user_id: "user-2",
+      display_name: "Giorgio",
+    });
+
+    const { getLatest } = renderProvider();
+
+    await waitFor(() => expect(getLatest().profile).toBeTruthy());
+
+    await waitFor(() =>
+      expect(
+        JSON.parse(localStorage.getItem("profile_snapshot_user-2")).data
+          .user_id,
+      ).toBe("user-2"),
+    );
+  });
 });

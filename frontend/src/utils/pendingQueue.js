@@ -29,6 +29,14 @@ export function clearPendingOps(userId) {
   localStorage.removeItem(getPendingQueueKey(userId));
 }
 
+export function removePendingOps(userId, opIds) {
+  if (!userId || !opIds?.length) return [];
+  const ops = loadPendingOps(userId);
+  const remaining = ops.filter((op) => !opIds.includes(op.id));
+  savePendingOps(userId, remaining);
+  return remaining;
+}
+
 export function enqueueOp(userId, op) {
   if (!userId) return;
   const ops = loadPendingOps(userId);

@@ -151,38 +151,47 @@ begin
       when 'member_joined' then 'Un nuovo membro si è unito alla squadra'
       when 'member_left' then 'Un membro ha lasciato la squadra'
       when 'achievement_unlocked' then 'Un membro ha sbloccato un traguardo'
-      else 'C\'è una novità nella tua squadra'
+      else 'C''è una novità nella tua squadra'
     end
   into v_title, v_body;
 
-  perform net.http_post(
-    url => 'https://ojxqrboyxzkkgiiycluk.supabase.co/functions/v1/send-push',
-    body => jsonb_build_object(
-      'to', v_members,
-      'type', 'team',
-      'title', v_title,
-      'body', v_body,
-      'url', '/team'
-    ),
-    headers => jsonb_build_object(
-      'Content-Type', 'application/json',
-      'x-push-key', v_key
-    )
-  );
-
-  if v_entry_like then
-    update public.user_settings
-    set last_team_entry_push_at = now()
-    where user_id in (
-      select m.value::uuid
-      from jsonb_array_elements_text(v_members) m
+  begin
+    perform net.http_post(
+      url => 'https://ojxqrboyxzkkgiiycluk.supabase.co/functions/v1/send-push',
+      body => jsonb_build_object(
+        'to', v_members,
+        'type', 'team',
+        'title', v_title,
+        'body', v_body,
+        'url', '/team'
+      ),
+      headers => jsonb_build_object(
+        'Content-Type', 'application/json',
+        'x-push-key', v_key
+      )
     );
-  end if;
+
+    if v_entry_like then
+      update public.user_settings
+      set last_team_entry_push_at = now()
+      where user_id in (
+        select m.value::uuid
+        from jsonb_array_elements_text(v_members) m
+      );
+    end if;
+  exception
+    when others then
+      raise warning
+        'notify_team_activity_push ignorato (team_activity insert proseguire): %',
+        sqlerrm;
+  end;
 
   return new;
 end;
 $function$
 ;
+
+set check_function_bodies = on;
 
 grant execute on function "public"."get_my_settings"() to "authenticated";
 

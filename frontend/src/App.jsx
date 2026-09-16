@@ -3,6 +3,7 @@ import { MotionConfig } from "framer-motion";
 
 import { Suspense, lazy } from "react";
 import { Toaster } from "react-hot-toast";
+import OfflineBanner from "./components/OfflineBanner";
 
 const Home = lazy(() => import("./pages/Home"));
 const Report = lazy(() => import("./pages/Report"));
@@ -36,6 +37,8 @@ export default function App() {
         aria-atomic="true"
         className="sr-only"
       />
+
+      <OfflineBanner />
 
       <MotionConfig reducedMotion="user">
         <Suspense

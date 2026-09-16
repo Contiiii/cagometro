@@ -86,6 +86,7 @@ export function clearAllLocalData(userId) {
     localStorage.removeItem(getUserEntriesKey(userId));
     localStorage.removeItem(getPendingSyncKey(userId));
     localStorage.removeItem(getTeamSnapshotKey(userId));
+    localStorage.removeItem(getProfileSnapshotKey(userId));
   }
 }
 
@@ -131,4 +132,48 @@ export function saveTeamSnapshot(userId, data) {
 export function clearTeamSnapshot(userId) {
   if (!userId) return;
   localStorage.removeItem(getTeamSnapshotKey(userId));
+}
+
+const PROFILE_SNAPSHOT_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function getProfileSnapshotKey(userId) {
+  return `profile_snapshot_${userId}`;
+}
+
+export function loadProfileSnapshot(userId) {
+  if (!userId) return null;
+  try {
+    const stored = localStorage.getItem(getProfileSnapshotKey(userId));
+    if (!stored) return null;
+    const snapshot = JSON.parse(stored);
+    const age = Date.now() - snapshot.timestamp;
+    if (age > PROFILE_SNAPSHOT_TTL_MS) {
+      localStorage.removeItem(getProfileSnapshotKey(userId));
+      return null;
+    }
+    return snapshot.data;
+  } catch (error) {
+    console.error("Errore caricamento snapshot profilo:", error);
+    return null;
+  }
+}
+
+export function saveProfileSnapshot(userId, data) {
+  if (!userId) return;
+  try {
+    localStorage.setItem(
+      getProfileSnapshotKey(userId),
+      JSON.stringify({
+        timestamp: Date.now(),
+        data,
+      }),
+    );
+  } catch (error) {
+    console.error("Errore salvataggio snapshot profilo:", error);
+  }
+}
+
+export function clearProfileSnapshot(userId) {
+  if (!userId) return;
+  localStorage.removeItem(getProfileSnapshotKey(userId));
 }

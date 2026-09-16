@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ProfileContext } from "./profile-context";
 
 import { useAuth } from "../hooks/useAuth";
+
+import { loadProfileSnapshot, saveProfileSnapshot } from "../utils/storage";
 
 import {
   getProfile,
@@ -17,6 +19,10 @@ export function ProfileProvider({ children }) {
 
   const userId = user?.id ?? null;
 
+  // Evita che lo snapshot di un account precedente venga salvato
+  // sotto la chiave del nuovo account durante il cambio utente.
+  const profileOwnerRef = useRef(null);
+
   useEffect(() => {
     if (authLoading || !userId) {
       return;
@@ -24,11 +30,27 @@ export function ProfileProvider({ children }) {
 
     let cancelled = false;
 
+    // Idrata dallo snapshot locale PRIMA della risposta di rete, così la
+    // UI mostra subito l'ultimo profilo conosciuto e poi quello fresco.
+    const cached = loadProfileSnapshot(userId);
+
     async function loadProfile() {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+
+      if (cancelled) {
+        return;
+      }
+
+      if (cached) {
+        profileOwnerRef.current = userId;
+        setProfile(cached);
+      }
+
       try {
         const data = await getProfile(userId);
 
         if (!cancelled) {
+          profileOwnerRef.current = userId;
           setProfile(data);
         }
       } catch (error) {
@@ -61,6 +83,7 @@ export function ProfileProvider({ children }) {
         const data = await getProfile(userId);
 
         if (!cancelled) {
+          profileOwnerRef.current = userId;
           setProfile(data);
         }
       } catch (error) {
@@ -77,6 +100,16 @@ export function ProfileProvider({ children }) {
       window.removeEventListener("online", syncQueuedProfile);
     };
   }, [userId, authLoading]);
+
+  // Persiste l'ultimo profilo noto per la modalità offline, solo se appartiene
+  // davvero all'utente corrente.
+  useEffect(() => {
+    if (!userId || profileOwnerRef.current !== userId || !profile) {
+      return;
+    }
+
+    saveProfileSnapshot(userId, profile);
+  }, [profile, userId]);
 
   const updateProfile = useCallback(
     async ({ displayName, avatarUrl }) => {
@@ -97,11 +130,13 @@ export function ProfileProvider({ children }) {
           ...(avatarUrl !== undefined && { avatar_url: avatarUrl }),
         };
 
+        profileOwnerRef.current = userId;
         setProfile((current) => ({ ...(current ?? {}), ...optimisticProfile }));
 
         return optimisticProfile;
       }
 
+      profileOwnerRef.current = userId;
       setProfile(updatedProfile);
 
       return updatedProfile;
