@@ -48,7 +48,9 @@ function renderPanel(overrides) {
       dailyReminder={false}
       streakAlerts={false}
       achievementAlerts={false}
-      teamAlerts={false}
+      teamEntryAlerts={false}
+      teamMemberAlerts={false}
+      teamAchievementAlerts={false}
       updateSetting={vi.fn()}
     />,
   );
@@ -129,7 +131,9 @@ describe("NotificationsPanel", () => {
         dailyReminder={false}
         streakAlerts={false}
         achievementAlerts={false}
-        teamAlerts={false}
+        teamEntryAlerts={false}
+        teamMemberAlerts={false}
+        teamAchievementAlerts={false}
         updateSetting={updateSetting}
       />,
     );
@@ -144,7 +148,8 @@ describe("NotificationsPanel", () => {
   it("disabilita i toggle delle preferenze quando il push non è attivo", () => {
     renderPanel({ permission: "default", isSubscribed: false });
 
+    expect(cardButton("^TraguardiQuando")).toBeDefined();
     expect(cardButton("Promemoria giornaliero").disabled).toBe(true);
-    expect(cardButton("Traguardi").disabled).toBe(true);
+    expect(cardButton("Traguardi in squadra").disabled).toBe(true);
   });
 });

@@ -1,4 +1,12 @@
-import { BellRing, BellOff, BellPlus, TrendingUp, Trophy, UsersRound } from "lucide-react";
+import {
+  BellRing,
+  BellOff,
+  BellPlus,
+  TrendingUp,
+  Trophy,
+  UserPlus,
+  ListChecks,
+} from "lucide-react";
 
 import IconTile from "../ui/IconTile";
 import PanelFrame from "./PanelFrame";
@@ -61,7 +69,9 @@ export default function NotificationsPanel({
   dailyReminder,
   streakAlerts,
   achievementAlerts,
-  teamAlerts,
+  teamEntryAlerts,
+  teamMemberAlerts,
+  teamAchievementAlerts,
   updateSetting,
 }) {
   const { isSupported, permission, isSubscribed, isBusy, subscribe, unsubscribe } =
@@ -187,11 +197,33 @@ export default function NotificationsPanel({
           />
 
           <SettingToggleCard
-            icon={UsersRound}
-            title="Squadra"
-            description="Attività e novità dalla tua squadra."
-            value={teamAlerts}
-            onChange={(value) => updateSetting("teamAlerts", value)}
+            icon={ListChecks}
+            title="Registrazioni in squadra"
+            description="Quando un membro registra un nuovo traguardo."
+            value={teamEntryAlerts}
+            onChange={(value) => updateSetting("teamEntryAlerts", value)}
+            theme={theme}
+            accentColor={accentColor}
+            disabled={!pushActive}
+          />
+
+          <SettingToggleCard
+            icon={UserPlus}
+            title="Membri in squadra"
+            description="Quando qualcuno entra o lascia la squadra."
+            value={teamMemberAlerts}
+            onChange={(value) => updateSetting("teamMemberAlerts", value)}
+            theme={theme}
+            accentColor={accentColor}
+            disabled={!pushActive}
+          />
+
+          <SettingToggleCard
+            icon={Trophy}
+            title="Traguardi in squadra"
+            description="Quando un membro sblocca un traguardo."
+            value={teamAchievementAlerts}
+            onChange={(value) => updateSetting("teamAchievementAlerts", value)}
             theme={theme}
             accentColor={accentColor}
             disabled={!pushActive}

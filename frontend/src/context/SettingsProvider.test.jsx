@@ -90,7 +90,9 @@ describe("SettingsProvider", () => {
     expect(latest.dailyReminder).toBe(true);
     expect(latest.streakAlerts).toBe(true);
     expect(latest.achievementAlerts).toBe(true);
-    expect(latest.teamAlerts).toBe(false);
+    expect(latest.teamEntryAlerts).toBe(false);
+    expect(latest.teamMemberAlerts).toBe(false);
+    expect(latest.teamAchievementAlerts).toBe(false);
   });
 
   it("updateSetting aggiorna lo stato e persiste su localStorage", () => {
@@ -105,20 +107,21 @@ describe("SettingsProvider", () => {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
 
     expect(stored.accent).toBe("violet");
-    expect(stored.teamAlerts).toBe(false);
+    expect(stored.teamEntryAlerts).toBe(false);
   });
 
   it("carica dal storage fondendo i default con gli override parziali", () => {
     seedStorage({
       accent: "emerald",
-      teamAlerts: true,
+      teamMemberAlerts: true,
     });
 
     const { getLatest } = renderProvider();
     const latest = getLatest();
 
     expect(latest.accent).toBe("emerald");
-    expect(latest.teamAlerts).toBe(true);
+    expect(latest.teamMemberAlerts).toBe(true);
+    expect(latest.teamEntryAlerts).toBe(false);
     expect(latest.dailyReminder).toBe(true);
   });
 
@@ -127,7 +130,7 @@ describe("SettingsProvider", () => {
 
     act(() => {
       first.getLatest().updateSetting("accent", "violet");
-      first.getLatest().updateSetting("teamAlerts", true);
+      first.getLatest().updateSetting("teamEntryAlerts", true);
     });
 
     cleanup();
@@ -136,7 +139,7 @@ describe("SettingsProvider", () => {
     const latest = getLatest();
 
     expect(latest.accent).toBe("violet");
-    expect(latest.teamAlerts).toBe(true);
+    expect(latest.teamEntryAlerts).toBe(true);
     expect(latest.dailyReminder).toBe(true);
   });
 
@@ -151,13 +154,13 @@ describe("SettingsProvider", () => {
   it("recupera i default quando un booleano non e un booleano", () => {
     seedStorage({
       dailyReminder: "si",
-      teamAlerts: 1,
+      teamEntryAlerts: 1,
     });
 
     const { getLatest } = renderProvider();
 
     expect(getLatest().dailyReminder).toBe(true);
-    expect(getLatest().teamAlerts).toBe(false);
+    expect(getLatest().teamEntryAlerts).toBe(false);
   });
 
   it("resetSettings ripristina tutti i default", () => {
@@ -165,7 +168,7 @@ describe("SettingsProvider", () => {
 
     act(() => {
       getLatest().updateSetting("accent", "amber");
-      getLatest().updateSetting("teamAlerts", true);
+      getLatest().updateSetting("teamEntryAlerts", true);
     });
 
     act(() => {
@@ -175,12 +178,12 @@ describe("SettingsProvider", () => {
     const latest = getLatest();
 
     expect(latest.accent).toBe("pink");
-    expect(latest.teamAlerts).toBe(false);
+    expect(latest.teamEntryAlerts).toBe(false);
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
 
     expect(stored.accent).toBe("pink");
-    expect(stored.teamAlerts).toBe(false);
+    expect(stored.teamEntryAlerts).toBe(false);
   });
 
   it("setAccent aggiorna lo stato e persiste su localStorage", () => {
@@ -273,7 +276,9 @@ describe("SettingsProvider", () => {
       daily_reminder: false,
       streak_alerts: true,
       achievement_alerts: false,
-      team_alerts: true,
+      team_entry_alerts: true,
+      team_member_alerts: false,
+      team_achievement_alerts: true,
     });
 
     const { getLatest } = renderProvider();
@@ -287,7 +292,9 @@ describe("SettingsProvider", () => {
     expect(latest.dailyReminder).toBe(false);
     expect(latest.streakAlerts).toBe(true);
     expect(latest.achievementAlerts).toBe(false);
-    expect(latest.teamAlerts).toBe(true);
+    expect(latest.teamEntryAlerts).toBe(true);
+    expect(latest.teamMemberAlerts).toBe(false);
+    expect(latest.teamAchievementAlerts).toBe(true);
 
     expect(upsertMySettings).not.toHaveBeenCalled();
   });
@@ -307,7 +314,9 @@ describe("SettingsProvider", () => {
       dailyReminder: true,
       streakAlerts: true,
       achievementAlerts: true,
-      teamAlerts: false,
+      teamEntryAlerts: false,
+      teamMemberAlerts: false,
+      teamAchievementAlerts: false,
     });
   });
 
@@ -321,7 +330,9 @@ describe("SettingsProvider", () => {
         daily_reminder: true,
         streak_alerts: true,
         achievement_alerts: true,
-        team_alerts: false,
+        team_entry_alerts: false,
+        team_member_alerts: false,
+        team_achievement_alerts: false,
       });
 
       const { getLatest } = renderProvider();
@@ -331,7 +342,7 @@ describe("SettingsProvider", () => {
       });
 
       act(() => {
-        getLatest().updateSetting("teamAlerts", true);
+        getLatest().updateSetting("teamEntryAlerts", true);
       });
 
       await act(async () => {
@@ -342,7 +353,9 @@ describe("SettingsProvider", () => {
         dailyReminder: true,
         streakAlerts: true,
         achievementAlerts: true,
-        teamAlerts: true,
+        teamEntryAlerts: true,
+        teamMemberAlerts: false,
+        teamAchievementAlerts: false,
       });
     } finally {
       vi.useRealTimers();
@@ -394,7 +407,7 @@ describe("SettingsProvider", () => {
       });
 
       act(() => {
-        getLatest().updateSetting("teamAlerts", true);
+        getLatest().updateSetting("teamEntryAlerts", true);
       });
 
       await act(async () => {
@@ -411,7 +424,9 @@ describe("SettingsProvider", () => {
           dailyReminder: true,
           streakAlerts: true,
           achievementAlerts: true,
-          teamAlerts: true,
+          teamEntryAlerts: true,
+          teamMemberAlerts: false,
+          teamAchievementAlerts: false,
         },
       });
 
@@ -423,7 +438,9 @@ describe("SettingsProvider", () => {
         daily_reminder: true,
         streak_alerts: true,
         achievement_alerts: true,
-        team_alerts: false,
+        team_entry_alerts: false,
+        team_member_alerts: false,
+        team_achievement_alerts: false,
       });
 
       const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -437,7 +454,7 @@ describe("SettingsProvider", () => {
       upsertMySettings.mockRejectedValueOnce(new Error("Failed to fetch"));
 
       act(() => {
-        getLatest().updateSetting("teamAlerts", true);
+        getLatest().updateSetting("teamEntryAlerts", true);
       });
 
       await act(async () => {
@@ -469,7 +486,7 @@ describe("SettingsProvider", () => {
       });
 
       act(() => {
-        getLatest().updateSetting("teamAlerts", true);
+        getLatest().updateSetting("teamEntryAlerts", true);
       });
 
       await act(async () => {
@@ -507,7 +524,7 @@ describe("SettingsProvider", () => {
       });
 
       act(() => {
-        getLatest().updateSetting("teamAlerts", true);
+        getLatest().updateSetting("teamEntryAlerts", true);
       });
 
       await act(async () => {

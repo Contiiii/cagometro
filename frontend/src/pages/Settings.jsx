@@ -108,7 +108,9 @@ export default function CagometroSettings() {
     dailyReminder,
     streakAlerts,
     achievementAlerts,
-    teamAlerts,
+    teamEntryAlerts,
+    teamMemberAlerts,
+    teamAchievementAlerts,
     updateSetting,
   } = useSettings();
 
@@ -694,7 +696,9 @@ export default function CagometroSettings() {
                   dailyReminder={dailyReminder}
                   streakAlerts={streakAlerts}
                   achievementAlerts={achievementAlerts}
-                  teamAlerts={teamAlerts}
+                  teamEntryAlerts={teamEntryAlerts}
+                  teamMemberAlerts={teamMemberAlerts}
+                  teamAchievementAlerts={teamAchievementAlerts}
                   updateSetting={updateSetting}
                 />
               )}

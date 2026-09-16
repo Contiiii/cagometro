@@ -42,7 +42,9 @@ const DEFAULT_SETTINGS = {
   dailyReminder: true,
   streakAlerts: true,
   achievementAlerts: true,
-  teamAlerts: false,
+  teamEntryAlerts: false,
+  teamMemberAlerts: false,
+  teamAchievementAlerts: false,
 };
 
 const VALID_ACTIVITY_LIMITS = [3, 5, 10];
@@ -107,10 +109,22 @@ function loadStoredSettings() {
         DEFAULT_SETTINGS.achievementAlerts,
       ),
 
-      teamAlerts: booleanSetting(
+      teamEntryAlerts: booleanSetting(
         parsedSettings,
-        "teamAlerts",
-        DEFAULT_SETTINGS.teamAlerts,
+        "teamEntryAlerts",
+        DEFAULT_SETTINGS.teamEntryAlerts,
+      ),
+
+      teamMemberAlerts: booleanSetting(
+        parsedSettings,
+        "teamMemberAlerts",
+        DEFAULT_SETTINGS.teamMemberAlerts,
+      ),
+
+      teamAchievementAlerts: booleanSetting(
+        parsedSettings,
+        "teamAchievementAlerts",
+        DEFAULT_SETTINGS.teamAchievementAlerts,
       ),
     };
   } catch (error) {
@@ -217,7 +231,10 @@ export function SettingsProvider({ children }) {
             dailyReminder: settingsRef.current.dailyReminder,
             streakAlerts: settingsRef.current.streakAlerts,
             achievementAlerts: settingsRef.current.achievementAlerts,
-            teamAlerts: settingsRef.current.teamAlerts,
+            teamEntryAlerts: settingsRef.current.teamEntryAlerts,
+            teamMemberAlerts: settingsRef.current.teamMemberAlerts,
+            teamAchievementAlerts:
+              settingsRef.current.teamAchievementAlerts,
           });
 
           return;
@@ -230,7 +247,9 @@ export function SettingsProvider({ children }) {
           dailyReminder: serverSettings.daily_reminder,
           streakAlerts: serverSettings.streak_alerts,
           achievementAlerts: serverSettings.achievement_alerts,
-          teamAlerts: serverSettings.team_alerts,
+          teamEntryAlerts: serverSettings.team_entry_alerts,
+          teamMemberAlerts: serverSettings.team_member_alerts,
+          teamAchievementAlerts: serverSettings.team_achievement_alerts,
         };
 
         const settingsChanged =
@@ -238,7 +257,10 @@ export function SettingsProvider({ children }) {
           currentSettings.streakAlerts !== nextSettings.streakAlerts ||
           currentSettings.achievementAlerts !==
             nextSettings.achievementAlerts ||
-          currentSettings.teamAlerts !== nextSettings.teamAlerts;
+          currentSettings.teamEntryAlerts !== nextSettings.teamEntryAlerts ||
+          currentSettings.teamMemberAlerts !== nextSettings.teamMemberAlerts ||
+          currentSettings.teamAchievementAlerts !==
+            nextSettings.teamAchievementAlerts;
 
         if (!settingsChanged) {
           return;
@@ -286,7 +308,9 @@ export function SettingsProvider({ children }) {
         dailyReminder: settings.dailyReminder,
         streakAlerts: settings.streakAlerts,
         achievementAlerts: settings.achievementAlerts,
-        teamAlerts: settings.teamAlerts,
+        teamEntryAlerts: settings.teamEntryAlerts,
+        teamMemberAlerts: settings.teamMemberAlerts,
+        teamAchievementAlerts: settings.teamAchievementAlerts,
       };
 
       if (isOnlineRef.current) {
@@ -315,7 +339,9 @@ export function SettingsProvider({ children }) {
     settings.dailyReminder,
     settings.streakAlerts,
     settings.achievementAlerts,
-    settings.teamAlerts,
+    settings.teamEntryAlerts,
+    settings.teamMemberAlerts,
+    settings.teamAchievementAlerts,
   ]);
 
   useEffect(() => {
@@ -401,7 +427,11 @@ export function SettingsProvider({ children }) {
 
       achievementAlerts: settings.achievementAlerts,
 
-      teamAlerts: settings.teamAlerts,
+      teamEntryAlerts: settings.teamEntryAlerts,
+
+      teamMemberAlerts: settings.teamMemberAlerts,
+
+      teamAchievementAlerts: settings.teamAchievementAlerts,
 
       updateSetting,
       setAccent,
