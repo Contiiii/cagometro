@@ -17,6 +17,11 @@ import {
   getTeamActivity,
 } from "../services/teamService";
 
+import {
+  loadTeamSnapshot,
+  saveTeamSnapshot,
+} from "../utils/storage";
+
 export const TEAM_REALTIME_DEBOUNCE_MS = 500;
 
 const REALTIME_LEADERBOARD_EVENT_TYPES = new Set([
@@ -197,6 +202,20 @@ export function TeamProvider({ children }) {
           });
         }
 
+        // Save snapshot after successful data load
+        if (
+          membersResult.status === "fulfilled" &&
+          leaderboardResult.status === "fulfilled" &&
+          activityResult.status === "fulfilled"
+        ) {
+          saveTeamSnapshot(requestedUserId, {
+            team: nextTeam,
+            members: membersResult.value ?? [],
+            leaderboard: leaderboardResult.value ?? [],
+            activity: activityResult.value ?? [],
+          });
+        }
+
         const failedSections = [
           membersResult.status === "rejected" ? "members" : null,
           leaderboardResult.status === "rejected" ? "leaderboard" : null,
@@ -218,7 +237,10 @@ export function TeamProvider({ children }) {
           };
         }
 
-        clearTeamData();
+        if (!loadTeamSnapshot(requestedUserId)) {
+          clearTeamData();
+        }
+
         setLoadedUserId(requestedUserId);
 
         throw error;
@@ -238,6 +260,15 @@ export function TeamProvider({ children }) {
 
     const requestedUserId = user.id;
     let cancelled = false;
+
+    // Load cached snapshot immediately for offline support
+    const snapshot = loadTeamSnapshot(requestedUserId);
+    if (snapshot && !cancelled) {
+      setTeam(snapshot.team ?? null);
+      setMembers(snapshot.members ?? []);
+      setLeaderboard(snapshot.leaderboard ?? []);
+      setActivity(snapshot.activity ?? []);
+    }
 
     const timeoutId = window.setTimeout(() => {
       refreshDashboard(requestedUserId).catch((error) => {

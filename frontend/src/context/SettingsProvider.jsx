@@ -23,7 +23,16 @@ import {
   getAccentContrast,
 } from "../config/appearance";
 
-const STORAGE_KEY = "cagometro_settings";
+import {
+  loadPendingOps,
+  savePendingOps,
+  clearPendingOps,
+  enqueueOp,
+  dequeueOp,
+} from "../utils/pendingQueue";
+
+const SETTINGS_STORAGE_KEY = "cagometro_settings";
+const SETTINGS_OP_TYPE = "upsertSettings";
 
 const ACCOUNT_SYNC_DEBOUNCE_MS = 800;
 
@@ -48,9 +57,7 @@ function booleanSetting(storedSettings, key, fallback) {
 
 function loadStoredSettings() {
   try {
-    const storedSettings = localStorage.getItem(
-      STORAGE_KEY,
-    );
+    const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
 
     if (!storedSettings) {
       return DEFAULT_SETTINGS;
@@ -62,18 +69,15 @@ function loadStoredSettings() {
       ...DEFAULT_SETTINGS,
       ...parsedSettings,
 
-      accent: VALID_ACCENTS.includes(
-        parsedSettings.accent,
-      )
+      accent: VALID_ACCENTS.includes(parsedSettings.accent)
         ? parsedSettings.accent
         : DEFAULT_ACCENT,
 
-      initialTeamActivityLimit:
-        VALID_ACTIVITY_LIMITS.includes(
-          parsedSettings.initialTeamActivityLimit,
-        )
-          ? parsedSettings.initialTeamActivityLimit
-          : DEFAULT_SETTINGS.initialTeamActivityLimit,
+      initialTeamActivityLimit: VALID_ACTIVITY_LIMITS.includes(
+        parsedSettings.initialTeamActivityLimit,
+      )
+        ? parsedSettings.initialTeamActivityLimit
+        : DEFAULT_SETTINGS.initialTeamActivityLimit,
 
       confirmationsEnabled: booleanSetting(
         parsedSettings,
@@ -112,21 +116,40 @@ function loadStoredSettings() {
       ),
     };
   } catch (error) {
-    console.error(
-      "Errore caricamento impostazioni:",
-      error,
-    );
+    console.error("Errore caricamento impostazioni:", error);
 
     return DEFAULT_SETTINGS;
   }
 }
 
+function flushSettingsQueue(userId, skipNextSyncRef) {
+  const pendingOps = loadPendingOps(userId);
+  const settingsOps = pendingOps.filter((op) => op.type === SETTINGS_OP_TYPE);
+
+  if (settingsOps.length === 0) return Promise.resolve(true);
+
+  return settingsOps.reduce(
+    (promise, op) =>
+      promise.then((results) =>
+        (async () => {
+          try {
+            await upsertMySettings(op.payload);
+            dequeueOp(userId, op.id);
+            return [...results, true];
+          } catch (error) {
+            console.error("Errore flush settings queue:", error);
+            return [...results, false];
+          }
+        })(),
+      ),
+    Promise.resolve([]),
+  ).then((results) => results.every((r) => r));
+}
+
 export function SettingsProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
 
-  const [settings, setSettings] = useState(
-    loadStoredSettings,
-  );
+  const [settings, setSettings] = useState(loadStoredSettings);
 
   const settingsRef = useRef(settings);
 
@@ -135,6 +158,33 @@ export function SettingsProvider({ children }) {
   }, [settings]);
 
   const skipNextSyncRef = useRef(false);
+
+  const isOnlineRef = useRef(typeof navigator !== "undefined" ? navigator.onLine : true);
+
+  const setOnlineStatus = useCallback((online) => {
+    isOnlineRef.current = online;
+    if (online && user?.id) {
+      flushSettingsQueue(user.id, skipNextSyncRef);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    function handleOnline() {
+      setOnlineStatus(true);
+    }
+
+    function handleOffline() {
+      setOnlineStatus(false);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [setOnlineStatus]);
 
   useEffect(() => {
     if (authLoading || !user?.id) {
@@ -161,8 +211,7 @@ export function SettingsProvider({ children }) {
           await upsertMySettings({
             dailyReminder: settingsRef.current.dailyReminder,
             streakAlerts: settingsRef.current.streakAlerts,
-            achievementAlerts:
-              settingsRef.current.achievementAlerts,
+            achievementAlerts: settingsRef.current.achievementAlerts,
             teamAlerts: settingsRef.current.teamAlerts,
           });
 
@@ -175,20 +224,16 @@ export function SettingsProvider({ children }) {
           ...currentSettings,
           dailyReminder: serverSettings.daily_reminder,
           streakAlerts: serverSettings.streak_alerts,
-          achievementAlerts:
-            serverSettings.achievement_alerts,
+          achievementAlerts: serverSettings.achievement_alerts,
           teamAlerts: serverSettings.team_alerts,
         };
 
         const settingsChanged =
-          currentSettings.dailyReminder !==
-            nextSettings.dailyReminder ||
-          currentSettings.streakAlerts !==
-            nextSettings.streakAlerts ||
+          currentSettings.dailyReminder !== nextSettings.dailyReminder ||
+          currentSettings.streakAlerts !== nextSettings.streakAlerts ||
           currentSettings.achievementAlerts !==
             nextSettings.achievementAlerts ||
-          currentSettings.teamAlerts !==
-            nextSettings.teamAlerts;
+          currentSettings.teamAlerts !== nextSettings.teamAlerts;
 
         if (!settingsChanged) {
           return;
@@ -196,17 +241,11 @@ export function SettingsProvider({ children }) {
 
         skipNextSyncRef.current = true;
 
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(nextSettings),
-        );
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings));
 
         setSettings(nextSettings);
       } catch (error) {
-        console.error(
-          "Errore sincronizzazione impostazioni account:",
-          error,
-        );
+        console.error("Errore sincronizzazione impostazioni account:", error);
       }
     }
 
@@ -228,17 +267,27 @@ export function SettingsProvider({ children }) {
     }
 
     const timerId = window.setTimeout(() => {
-      upsertMySettings({
+      const payload = {
         dailyReminder: settings.dailyReminder,
         streakAlerts: settings.streakAlerts,
         achievementAlerts: settings.achievementAlerts,
         teamAlerts: settings.teamAlerts,
-      }).catch((error) => {
-        console.error(
-          "Errore salvataggio impostazioni account:",
-          error,
-        );
-      });
+      };
+
+      if (isOnlineRef.current) {
+        upsertMySettings(payload).catch((error) => {
+          console.error("Errore salvataggio impostazioni account:", error);
+          enqueueOp(user.id, {
+            type: SETTINGS_OP_TYPE,
+            payload,
+          });
+        });
+      } else {
+        enqueueOp(user.id, {
+          type: SETTINGS_OP_TYPE,
+          payload,
+        });
+      }
     }, ACCOUNT_SYNC_DEBOUNCE_MS);
 
     return () => {
@@ -256,10 +305,7 @@ export function SettingsProvider({ children }) {
   useEffect(() => {
     const root = document.documentElement;
 
-    root.style.setProperty(
-      "--accent",
-      getAccentColor(settings.accent),
-    );
+    root.style.setProperty("--accent", getAccentColor(settings.accent));
 
     root.style.setProperty(
       "--accent-contrast",
@@ -275,10 +321,7 @@ export function SettingsProvider({ children }) {
           [settingName]: value,
         };
 
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(updatedSettings),
-        );
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updatedSettings));
 
         return updatedSettings;
       });
@@ -287,10 +330,7 @@ export function SettingsProvider({ children }) {
   );
 
   const resetSettings = useCallback(() => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(DEFAULT_SETTINGS),
-    );
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
 
     setSettings(DEFAULT_SETTINGS);
   }, []);
@@ -327,14 +367,11 @@ export function SettingsProvider({ children }) {
     () => ({
       settings,
 
-      confirmationsEnabled:
-        settings.confirmationsEnabled,
+      confirmationsEnabled: settings.confirmationsEnabled,
 
-      vibrationEnabled:
-        settings.vibrationEnabled,
+      vibrationEnabled: settings.vibrationEnabled,
 
-      initialTeamActivityLimit:
-        settings.initialTeamActivityLimit,
+      initialTeamActivityLimit: settings.initialTeamActivityLimit,
 
       accent: settings.accent,
 
@@ -342,8 +379,7 @@ export function SettingsProvider({ children }) {
 
       streakAlerts: settings.streakAlerts,
 
-      achievementAlerts:
-        settings.achievementAlerts,
+      achievementAlerts: settings.achievementAlerts,
 
       teamAlerts: settings.teamAlerts,
 

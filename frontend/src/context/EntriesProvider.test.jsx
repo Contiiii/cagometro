@@ -64,7 +64,6 @@ beforeEach(() => {
 
   setOnline(true);
 
-  // reset implementazioni per evitare leak tra test
   getEntries.mockResolvedValue([]);
   saveEntry.mockRejectedValue(new Error("offline"));
   importEntries.mockResolvedValue([]);
@@ -79,7 +78,7 @@ afterEach(() => {
 });
 
 describe("EntriesProvider", () => {
-  it("senza utente espone syncStatus 'synced' e pendingChanges vuoto", async () => {
+  it("senza utente espone syncStatus 'synced' e pendingOps vuoto", async () => {
     render(
       <EntriesProvider>
         <Probe />
@@ -89,10 +88,10 @@ describe("EntriesProvider", () => {
     await flushAsync();
 
     expect(latest.syncStatus).toBe("synced");
-    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.pendingOps).toEqual([]);
   });
 
-  it("clearLocalData resetta entries, pendingChanges e syncStatus", async () => {
+  it("clearLocalData resetta entries, pendingOps e syncStatus", async () => {
     useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
 
     render(
@@ -110,14 +109,14 @@ describe("EntriesProvider", () => {
     await flushAsync();
 
     expect(latest.syncStatus).toBe("pending");
-    expect(latest.pendingChanges.length).toBeGreaterThan(0);
+    expect(latest.pendingOps.length).toBeGreaterThan(0);
 
     await act(async () => {
       latest.clearLocalData();
     });
 
     expect(latest.entries).toEqual({});
-    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.pendingOps).toEqual([]);
     expect(latest.syncStatus).toBe("synced");
   });
 
@@ -143,7 +142,6 @@ describe("EntriesProvider", () => {
 
     await flushAsync();
 
-    // L'utente passa all'account B mentre il fetch di A è ancora in volo
     useAuth.mockReturnValue({ user: { id: "user-b" }, loading: false });
 
     await act(async () => {
@@ -156,7 +154,6 @@ describe("EntriesProvider", () => {
       await new Promise((resolve) => window.setTimeout(resolve, 0));
     });
 
-    // Arriva in ritardo la risposta dell'account precedente
     await act(async () => {
       resolveOldFetch([{ date: "2026-09-12", count: 7 }]);
     });
@@ -166,7 +163,7 @@ describe("EntriesProvider", () => {
     expect(latest.entries).toEqual({ "2026-09-13": 3 });
   });
 
-  it("incrementToday offline accumula pendingChanges e passa a 'pending'", async () => {
+  it("incrementToday offline accumula pendingOps e passa a 'pending'", async () => {
     useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
 
     setOnline(false);
@@ -188,7 +185,9 @@ describe("EntriesProvider", () => {
     const today = getLocalDateKey();
 
     expect(latest.entries).toEqual({ [today]: 1 });
-    expect(latest.pendingChanges).toEqual([{ date: today, count: 1 }]);
+    const saveEntryOps = latest.pendingOps.filter((op) => op.type === "saveEntry");
+    expect(saveEntryOps).toHaveLength(1);
+    expect(saveEntryOps[0].payload).toEqual({ date: today, count: 1 });
     expect(latest.syncStatus).toBe("pending");
     expect(saveEntry).toHaveBeenCalledWith({
       userId: "user-1",
@@ -197,7 +196,7 @@ describe("EntriesProvider", () => {
     });
   });
 
-  it("al ritorno online flusha i pendingChanges e torna 'synced'", async () => {
+  it("al ritorno online flusha i pendingOps e torna 'synced'", async () => {
     useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
 
     setOnline(false);
@@ -228,7 +227,7 @@ describe("EntriesProvider", () => {
     await flushAsync();
 
     expect(importEntries).toHaveBeenCalledWith("user-1", { [today]: 1 });
-    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.pendingOps).toEqual([]);
     expect(latest.syncStatus).toBe("synced");
   });
 
@@ -262,10 +261,15 @@ describe("EntriesProvider", () => {
       await new Promise((resolve) => window.setTimeout(resolve, 0));
     });
 
-    await flushAsync();
+    // Wait for flush to complete and error state to propagate
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+    });
 
     expect(latest.syncStatus).toBe("error");
-    expect(latest.pendingChanges).toEqual([{ date: today, count: 1 }]);
+    const saveEntryOps = latest.pendingOps.filter((op) => op.type === "saveEntry");
+    expect(saveEntryOps).toHaveLength(1);
+    expect(saveEntryOps[0].payload).toEqual({ date: today, count: 1 });
 
     await act(async () => {
       window.dispatchEvent(new Event("online"));
@@ -274,7 +278,7 @@ describe("EntriesProvider", () => {
 
     await flushAsync();
 
-    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.pendingOps).toEqual([]);
     expect(latest.syncStatus).toBe("synced");
   });
 
@@ -313,7 +317,7 @@ describe("EntriesProvider", () => {
 
     expect(ok).toBe(true);
     expect(importEntries).toHaveBeenCalledWith("user-1", { [today]: 1 });
-    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.pendingOps).toEqual([]);
     expect(latest.syncStatus).toBe("synced");
   });
 
@@ -348,7 +352,7 @@ describe("EntriesProvider", () => {
 
     expect(ok).toBe(false);
     expect(latest.syncStatus).toBe("error");
-    expect(latest.pendingChanges.length).toBeGreaterThan(0);
+    expect(latest.pendingOps.length).toBeGreaterThan(0);
   });
 
   it("retrySync senza pending non chiama importEntries", async () => {
@@ -373,7 +377,7 @@ describe("EntriesProvider", () => {
     expect(latest.syncStatus).toBe("synced");
   });
 
-  it("due increment offline sulla stessa data producono un unico pending con il conteggio finale", async () => {
+  it("due increment offline sulla stessa data producono pending separati che si uniscono al flush", async () => {
     useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
 
     setOnline(false);
@@ -399,7 +403,10 @@ describe("EntriesProvider", () => {
     const today = getLocalDateKey();
 
     expect(latest.entries).toEqual({ [today]: 2 });
-    expect(latest.pendingChanges).toEqual([{ date: today, count: 2 }]);
+    const saveEntryOps = latest.pendingOps.filter((op) => op.type === "saveEntry");
+    expect(saveEntryOps).toHaveLength(2);
+    expect(saveEntryOps[0].payload).toEqual({ date: today, count: 1 });
+    expect(saveEntryOps[1].payload).toEqual({ date: today, count: 2 });
   });
 
   it("incrementToday online chiama saveEntry e createTeamActivity", async () => {
@@ -430,7 +437,7 @@ describe("EntriesProvider", () => {
     });
     expect(createTeamActivity).toHaveBeenCalledWith("entry_created", 1);
     expect(latest.syncStatus).toBe("synced");
-    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.pendingOps).toEqual([]);
   });
 
   it("decrementToday a zero non modifica nulla", async () => {
@@ -453,7 +460,7 @@ describe("EntriesProvider", () => {
     await flushAsync();
 
     expect(latest.entries).toEqual({});
-    expect(latest.pendingChanges).toEqual([]);
+    expect(latest.pendingOps).toEqual([]);
     expect(latest.syncStatus).toBe("synced");
     expect(saveEntry).not.toHaveBeenCalled();
   });
@@ -483,7 +490,12 @@ describe("EntriesProvider", () => {
     await flushAsync();
 
     expect(latest.entries).toEqual({ [today]: 1 });
-    expect(latest.pendingChanges).toEqual([{ date: today, count: 1 }]);
+    expect(latest.pendingOps).toEqual([
+      expect.objectContaining({
+        type: "saveEntry",
+        payload: { date: today, count: 1 },
+      }),
+    ]);
     expect(latest.syncStatus).toBe("pending");
   });
 

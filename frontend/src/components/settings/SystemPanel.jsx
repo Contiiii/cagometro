@@ -9,6 +9,7 @@ import PanelFrame from "./PanelFrame";
 import TinySwitch from "./TinySwitch";
 import InfoRow from "./InfoRow";
 import VersionInfoButton from "./VersionInfoButton";
+import QuotaPanel from "./QuotaPanel";
 
 import { announce } from "../../utils/announce";
 import { getFriendlyErrorMessage } from "../../utils/friendlyError";
@@ -156,6 +157,16 @@ export default function SystemPanel({
             </button>
           )}
       </div>
+
+      {cloudEnabled && (
+        <div className="mt-4">
+          <QuotaPanel
+            theme={theme}
+            accentColor={accentColor}
+            cloudEnabled={cloudEnabled}
+          />
+        </div>
+      )}
 
       {canVibrate && (
         <div className="mt-4">

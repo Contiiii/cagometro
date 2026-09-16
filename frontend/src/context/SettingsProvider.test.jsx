@@ -11,6 +11,8 @@ import {
   upsertMySettings,
 } from "../services/settingsService";
 
+import { loadPendingOps } from "../utils/pendingQueue";
+
 vi.mock("../hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
@@ -357,5 +359,162 @@ describe("SettingsProvider", () => {
     expect(getMySettings).not.toHaveBeenCalled();
     expect(ensureMySettings).not.toHaveBeenCalled();
     expect(upsertMySettings).not.toHaveBeenCalled();
+  });
+
+  describe("coda offline", () => {
+    function setOnline(value) {
+      Object.defineProperty(navigator, "onLine", {
+        value,
+        configurable: true,
+      });
+    }
+
+    beforeEach(() => {
+      getMySettings.mockReset().mockRejectedValue(new Error("offline"));
+      ensureMySettings.mockReset().mockResolvedValue(undefined);
+      upsertMySettings.mockReset().mockResolvedValue(undefined);
+    });
+
+    function renderAuthed() {
+      useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+      return renderProvider();
+    }
+
+    it("con utente offline il toggle accoda senza chiamare la rete", async () => {
+      setOnline(false);
+
+      getMySettings.mockRejectedValue(new Error("offline"));
+
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const { getLatest } = renderAuthed();
+
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 0));
+      });
+
+      act(() => {
+        getLatest().updateSetting("teamAlerts", true);
+      });
+
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 900));
+      });
+
+      expect(upsertMySettings).not.toHaveBeenCalled();
+
+      const ops = loadPendingOps("user-1");
+      expect(ops).toHaveLength(1);
+      expect(ops[0]).toMatchObject({
+        type: "upsertSettings",
+        payload: {
+          dailyReminder: true,
+          streakAlerts: true,
+          achievementAlerts: true,
+          teamAlerts: true,
+        },
+      });
+
+      consoleSpy.mockRestore();
+    });
+
+    it("se upsert fallisce la modifica viene accodata", async () => {
+      getMySettings.mockResolvedValue({
+        daily_reminder: true,
+        streak_alerts: true,
+        achievement_alerts: true,
+        team_alerts: false,
+      });
+
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const { getLatest } = renderAuthed();
+
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 0));
+      });
+
+      upsertMySettings.mockRejectedValueOnce(new Error("Failed to fetch"));
+
+      act(() => {
+        getLatest().updateSetting("teamAlerts", true);
+      });
+
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 900));
+      });
+
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 0));
+      });
+
+      const ops = loadPendingOps("user-1");
+      expect(ops).toHaveLength(1);
+      expect(ops[0].type).toBe("upsertSettings");
+
+      consoleSpy.mockRestore();
+    });
+
+    it("il ritorno online flusha la coda settings", async () => {
+      setOnline(false);
+
+      getMySettings.mockRejectedValue(new Error("offline"));
+
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const { getLatest } = renderAuthed();
+
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 0));
+      });
+
+      act(() => {
+        getLatest().updateSetting("teamAlerts", true);
+      });
+
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 900));
+      });
+
+      expect(loadPendingOps("user-1")).toHaveLength(1);
+
+      consoleSpy.mockRestore();
+
+      setOnline(true);
+
+      await act(async () => {
+        window.dispatchEvent(new Event("online"));
+        await new Promise((resolve) => window.setTimeout(resolve, 0));
+      });
+
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 0));
+      });
+
+      expect(upsertMySettings).toHaveBeenCalled();
+      expect(loadPendingOps("user-1")).toEqual([]);
+    });
+
+    it("senza utente nessuna coda viene scritta", async () => {
+      setOnline(false);
+
+      useAuth.mockReturnValue({ user: null, loading: false });
+
+      const { getLatest } = renderProvider();
+
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 0));
+      });
+
+      act(() => {
+        getLatest().updateSetting("teamAlerts", true);
+      });
+
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 900));
+      });
+
+      expect(loadPendingOps("user-undefined")).toEqual([]);
+    });
   });
 });

@@ -15,6 +15,8 @@ import {
 import { TeamProvider, TEAM_REALTIME_DEBOUNCE_MS } from "./TeamProvider";
 import { useTeam } from "../hooks/useTeam";
 
+import { saveTeamSnapshot } from "../utils/storage";
+
 vi.mock("../hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
@@ -136,6 +138,8 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   latest = null;
+
+  window.localStorage.clear();
 
   useAuth.mockReturnValue({ user: null, loading: false });
 
@@ -603,5 +607,95 @@ describe("TeamProvider", () => {
 
     expect(result).toEqual({ hasErrors: false, failedSections: [] });
     expect(getMyTeam).not.toHaveBeenCalled();
+  });
+
+  describe("snapshot offline", () => {
+    it("S1: salva lo snapshot in localStorage dopo un refresh riuscito", async () => {
+      useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+      getMyTeam.mockResolvedValue(TEAM_A);
+
+      await loadTeam();
+
+      const stored = JSON.parse(
+        window.localStorage.getItem("team_snapshot_u-a"),
+      );
+
+      expect(stored.timestamp).toBeDefined();
+      expect(stored.data.team).toEqual(TEAM_A);
+      expect(stored.data.members).toEqual(MEMBERS);
+      expect(stored.data.leaderboard).toEqual(LEADERBOARD);
+      expect(stored.data.activity).toEqual(ACTIVITY);
+    });
+
+    it("S2: senza squadra non salva lo snapshot", async () => {
+      useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+      getMyTeam.mockResolvedValue(null);
+
+      render(
+        <TeamProvider>
+          <Probe />
+        </TeamProvider>,
+      );
+
+      await waitFor(() => {
+        expect(latest.loading).toBe(false);
+      });
+
+      expect(window.localStorage.getItem("team_snapshot_u-a")).toBeNull();
+    });
+
+    it("S3: con snapshot in cache la squadra viene esposta subito all'avvio", async () => {
+      saveTeamSnapshot("u-a", {
+        team: TEAM_A,
+        members: MEMBERS,
+        leaderboard: LEADERBOARD,
+        activity: ACTIVITY,
+      });
+
+      getMyTeam.mockResolvedValue({ ...TEAM_A, team_name: "Squadra Aggiornata" });
+
+      useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+
+      render(
+        <TeamProvider>
+          <Probe />
+        </TeamProvider>,
+      );
+
+      await waitFor(() => {
+        expect(latest.team?.team_id).toBe("team-a");
+      });
+
+      expect(latest.team).toEqual({ ...TEAM_A, team_name: "Squadra Aggiornata" });
+      expect(getMyTeam).toHaveBeenCalledTimes(1);
+    });
+
+    it("S4: se getMyTeam fallisce lo snapshot in cache viene mantenuto", async () => {
+      saveTeamSnapshot("u-a", {
+        team: TEAM_A,
+        members: MEMBERS,
+        leaderboard: LEADERBOARD,
+        activity: ACTIVITY,
+      });
+
+      getMyTeam.mockRejectedValue(new Error("offline"));
+
+      useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+
+      render(
+        <TeamProvider>
+          <Probe />
+        </TeamProvider>,
+      );
+
+      await waitFor(() => {
+        expect(latest.loading).toBe(false);
+      });
+
+      expect(latest.team).toEqual(TEAM_A);
+      expect(latest.members).toEqual(MEMBERS);
+      expect(latest.leaderboard).toEqual(LEADERBOARD);
+      expect(latest.activity).toEqual(ACTIVITY);
+    });
   });
 });

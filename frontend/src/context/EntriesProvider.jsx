@@ -18,14 +18,22 @@ import {
   loadUserEntries,
   saveUserEntries,
   hasAnonymousEntries,
-  savePendingSync,
-  clearPendingSync,
-  loadPendingSync,
 } from "../utils/storage";
+
+import {
+  loadPendingOps,
+  savePendingOps,
+  clearPendingOps,
+} from "../utils/pendingQueue";
 
 import { getLocalDateKey } from "../utils/date";
 
 import { announce } from "../utils/announce";
+
+const OP_TYPES = {
+  SAVE_ENTRY: "saveEntry",
+  CREATE_TEAM_ACTIVITY: "createTeamActivity",
+};
 
 function formatEntries(entriesList) {
   return entriesList.reduce((acc, entry) => {
@@ -43,7 +51,7 @@ export function EntriesProvider({ children }) {
 
   const [syncStatus, setSyncStatus] = useState("synced");
 
-  const [pendingChanges, setPendingChanges] = useState([]);
+  const [pendingOps, setPendingOps] = useState([]);
 
   const [today, setToday] = useState(() => getLocalDateKey());
 
@@ -112,21 +120,30 @@ export function EntriesProvider({ children }) {
     };
   }, []);
 
-  const flushPendingChanges = useCallback(
-    async (changes = pendingChanges) => {
-      if (!userId || changes.length === 0) {
+  const flushPendingOps = useCallback(
+    async () => {
+      if (!userId || pendingOps.length === 0) {
         return true;
       }
 
       try {
-        const entriesByDate = Object.fromEntries(
-          changes.map((change) => [change.date, change.count]),
-        );
+        const saveEntryOps = pendingOps.filter((op) => op.type === OP_TYPES.SAVE_ENTRY);
+        const activityOps = pendingOps.filter((op) => op.type === OP_TYPES.CREATE_TEAM_ACTIVITY);
 
-        await importEntries(userId, entriesByDate);
+        if (saveEntryOps.length > 0) {
+          const entriesByDate = Object.fromEntries(
+            saveEntryOps.map((op) => [op.payload.date, op.payload.count]),
+          );
 
-        clearPendingSync(userId);
-        setPendingChanges([]);
+          await importEntries(userId, entriesByDate);
+        }
+
+        for (const op of activityOps) {
+          await createTeamActivity(op.payload.activityType, op.payload.points);
+        }
+
+        clearPendingOps(userId);
+        setPendingOps([]);
         setSyncStatus("synced");
 
         if (prevSyncStatusRef.current === "error") {
@@ -139,20 +156,19 @@ export function EntriesProvider({ children }) {
       } catch (error) {
         console.error("Errore sincronizzazione pending:", error);
 
-        savePendingSync(userId, changes);
         setSyncStatus("error");
         prevSyncStatusRef.current = "error";
 
         return false;
       }
     },
-    [userId, pendingChanges],
+    [userId, pendingOps],
   );
 
   useEffect(() => {
     function handleOnline() {
-      if (pendingChanges.length > 0) {
-        flushPendingChanges();
+      if (pendingOps.length > 0) {
+        flushPendingOps();
       }
     }
 
@@ -161,7 +177,7 @@ export function EntriesProvider({ children }) {
     return () => {
       window.removeEventListener("online", handleOnline);
     };
-  }, [flushPendingChanges, pendingChanges]);
+  }, [flushPendingOps, pendingOps]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -173,7 +189,7 @@ export function EntriesProvider({ children }) {
 
       if (!userId) {
         entriesOwnerRef.current = null;
-        setPendingChanges([]);
+        setPendingOps([]);
         setSyncStatus("synced");
         prevSyncStatusRef.current = "synced";
         setEntries(loadAnonymousEntries());
@@ -185,7 +201,7 @@ export function EntriesProvider({ children }) {
       entriesOwnerRef.current = userId;
 
       if (previousOwner !== userId) {
-        setPendingChanges([]);
+        setPendingOps([]);
         setSyncStatus("synced");
         prevSyncStatusRef.current = "synced";
         setEntries({});
@@ -199,22 +215,28 @@ export function EntriesProvider({ children }) {
       }
 
       // 2. Recupera eventuali pending
-      const savedPending = loadPendingSync(userId);
-      setPendingChanges(savedPending);
+      const savedPendingOps = loadPendingOps(userId);
+      setPendingOps(savedPendingOps);
 
       // 3. Se online prova a sincronizzarli
-      if (navigator.onLine && savedPending.length > 0) {
+      if (navigator.onLine && savedPendingOps.length > 0) {
         try {
-          const pendingByDate = Object.fromEntries(
-            savedPending.map((change) => [change.date, change.count]),
-          );
-
-          await importEntries(userId, pendingByDate);
+          for (const op of savedPendingOps) {
+            if (op.type === "saveEntry") {
+              await saveEntry({
+                userId,
+                date: op.payload.date,
+                count: op.payload.count,
+              });
+            } else if (op.type === "createTeamActivity") {
+              await createTeamActivity(op.payload.activityType, op.payload.points);
+            }
+          }
 
           if (cancelled) return;
 
-          clearPendingSync(userId);
-          setPendingChanges([]);
+          clearPendingOps(userId);
+          setPendingOps([]);
         } catch (error) {
           console.error("Errore sync pending:", error);
         }
@@ -275,22 +297,16 @@ export function EntriesProvider({ children }) {
 
   const todayCount = entries[today] || 0;
 
-  const createPendingChanges = useCallback(
-    (date, count) => {
-      setPendingChanges((prev) => {
-        const nextPendingChanges = [
-          ...prev.filter((change) => change.date !== date),
-          {
-            date,
-            count,
-          },
-        ];
+  const createPendingOps = useCallback(
+    (ops) => {
+      setPendingOps((prev) => {
+        const nextOps = [...prev, ...ops];
 
         if (userId) {
-          savePendingSync(userId, nextPendingChanges);
+          savePendingOps(userId, nextOps);
         }
 
-        return nextPendingChanges;
+        return nextOps;
       });
     },
     [userId],
@@ -308,20 +324,31 @@ export function EntriesProvider({ children }) {
           await createTeamActivity("entry_created", 1);
         }
 
-        await flushPendingChanges();
+        await flushPendingOps();
 
         setSyncStatus("synced");
         prevSyncStatusRef.current = "synced";
       } catch (error) {
         console.error(error);
 
-        createPendingChanges(date, count);
+        const ops = [
+          { type: OP_TYPES.SAVE_ENTRY, payload: { date, count } },
+        ];
+
+        if (logActivity) {
+          ops.push({
+            type: OP_TYPES.CREATE_TEAM_ACTIVITY,
+            payload: { activityType: "entry_created", points: 1 },
+          });
+        }
+
+        createPendingOps(ops);
 
         setSyncStatus("pending");
         prevSyncStatusRef.current = "pending";
       }
     },
-    [userId, flushPendingChanges, createPendingChanges],
+    [userId, createPendingOps],
   );
 
   const incrementToday = useCallback(() => {
@@ -373,20 +400,23 @@ export function EntriesProvider({ children }) {
     entriesOwnerRef.current = null;
     setEntries({});
     entriesRef.current = {};
-    setPendingChanges([]);
+    if (userId) {
+      clearPendingOps(userId);
+    }
+    setPendingOps([]);
     setSyncStatus("synced");
     prevSyncStatusRef.current = "synced";
-  }, []);
+  }, [userId]);
 
   const retrySync = useCallback(async () => {
-    return flushPendingChanges();
-  }, [flushPendingChanges]);
+    return flushPendingOps();
+  }, [flushPendingOps]);
 
   const value = useMemo(
     () => ({
       entries,
       syncStatus,
-      pendingChanges,
+      pendingOps,
       today,
       todayCount,
       incrementToday,
@@ -397,7 +427,7 @@ export function EntriesProvider({ children }) {
     [
       entries,
       syncStatus,
-      pendingChanges,
+      pendingOps,
       today,
       todayCount,
       incrementToday,
