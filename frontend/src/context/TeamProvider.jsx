@@ -20,6 +20,7 @@ import {
 import {
   loadTeamSnapshot,
   saveTeamSnapshot,
+  clearTeamSnapshot,
 } from "../utils/storage";
 
 export const TEAM_REALTIME_DEBOUNCE_MS = 500;
@@ -140,6 +141,7 @@ export function TeamProvider({ children }) {
         setTeam(nextTeam);
 
         if (!nextTeam) {
+          clearTeamSnapshot(requestedUserId);
           setMembers([]);
           setLeaderboard([]);
           setActivity([]);

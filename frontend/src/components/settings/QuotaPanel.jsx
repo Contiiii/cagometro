@@ -19,6 +19,7 @@ export default function QuotaPanel({
     async function loadQuota() {
       if (!cloudEnabled) {
         setAvailable(false);
+        setLoading(false);
         return;
       }
 
@@ -38,24 +39,21 @@ export default function QuotaPanel({
     loadQuota();
   }, [cloudEnabled]);
 
-  const percentage = Math.round(snapshot?.usage?.requests_pct ?? 0);
+  const usage = snapshot?.usage ?? {};
 
-  const tone =
-    percentage >= 90
-      ? "danger"
-      : percentage >= 70
-        ? "warning"
-        : "ok";
+  const requests =
+    snapshot?.requests ??
+    (usage.total_auth_requests ?? 0) +
+      (usage.total_rest_requests ?? 0) +
+      (usage.total_realtime_requests ?? 0) +
+      (usage.total_storage_requests ?? 0);
 
-  const toneColor =
-    tone === "danger"
-      ? "#f43f5e"
-      : tone === "warning"
-        ? "#f59e0b"
-        : "#10b981";
-
-  const requests = snapshot?.requests ?? 0;
-  const monthlyCap = snapshot?.limits?.mau ?? 50000;
+  const breakdown = [
+    { label: "Auth", value: usage.total_auth_requests ?? 0 },
+    { label: "REST", value: usage.total_rest_requests ?? 0 },
+    { label: "Realtime", value: usage.total_realtime_requests ?? 0 },
+    { label: "Storage", value: usage.total_storage_requests ?? 0 },
+  ];
 
   const formatNumber = (value) => value.toLocaleString("it-IT");
 
@@ -94,11 +92,11 @@ export default function QuotaPanel({
           className={`rounded-2xl border p-4 ${theme.softSurface}`}
         >
           <div className="flex items-center gap-3">
-            <IconTile size="lg" style={{ backgroundColor: `${toneColor}18` }}>
+            <IconTile size="lg" style={{ backgroundColor: `${accentColor}15` }}>
               <Activity
                 className="h-5 w-5"
                 strokeWidth={2.2}
-                style={{ color: toneColor }}
+                style={{ color: accentColor }}
               />
             </IconTile>
 
@@ -108,34 +106,30 @@ export default function QuotaPanel({
               </p>
 
               <p className={`mt-0.5 text-xs font-medium ${theme.muted}`}>
-                {formatNumber(requests)} su {formatNumber(monthlyCap)} mensili
+                {formatNumber(requests)} negli ultimi 7 giorni
               </p>
             </div>
-
-            <span
-              className="ml-auto shrink-0 rounded-full px-3 py-1 text-[11px] font-extrabold"
-              style={{
-                backgroundColor: `${toneColor}18`,
-                color: toneColor,
-              }}
-            >
-              {percentage}%
-            </span>
           </div>
 
-          <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${Math.min(100, percentage)}%`,
-                backgroundColor: toneColor,
-              }}
-            />
-          </div>
+          <dl className="mt-4 grid grid-cols-2 gap-2">
+            {breakdown.map((row) => (
+              <div key={row.label} className="rounded-xl border px-3 py-2">
+                <dt className={`text-[11px] font-semibold uppercase tracking-wide ${theme.muted}`}>
+                  {row.label}
+                </dt>
+
+                <dd className={`mt-0.5 text-sm font-black ${theme.primaryText}`}>
+                  {formatNumber(row.value)}
+                </dd>
+              </div>
+            ))}
+          </dl>
 
           <p className={`mt-3 text-[11px] font-medium ${theme.muted}`}>
             Ultimo aggiornamento:{" "}
-            {new Date(snapshot.recorded_at).toLocaleDateString("it-IT")}
+            {snapshot.recordedAt
+              ? new Date(snapshot.recordedAt).toLocaleString("it-IT")
+              : "—"}
           </p>
         </div>
       )}

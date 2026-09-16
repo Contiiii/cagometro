@@ -7,16 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
-const FREE_PLAN_LIMITS = {
-  mau: 50000,
-  monthlyActiveUsers: 50000,
-  dbSizeMb: 500,
-  egressGb: 5,
-  dailyActiveUsers: 2000,
-  storageSizeGb: 1,
-  edgeInvocationsMonthly: 500000,
-  realtimeMonthlyMessages: 500000,
-};
+const USAGE_WINDOW = "7day";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -58,9 +49,7 @@ Deno.serve(async (req) => {
 
     const url = new URL(`https://api.supabase.com/v1/projects/${projectRef}/analytics/endpoints/usage.api-counts`);
 
-    url.searchParams.set("grant_type", "daily");
-    url.searchParams.set("iso_timestamp_start", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-    url.searchParams.set("iso_timestamp_end", new Date().toISOString());
+    url.searchParams.set("interval", USAGE_WINDOW);
 
     const response = await fetch(url, {
       method: "GET",
@@ -95,10 +84,11 @@ Deno.serve(async (req) => {
       },
     );
 
-    const requests = usage.total_rest_requests + usage.total_realtime_requests;
-    const requestsPct = FREE_PLAN_LIMITS.mau > 0
-      ? Math.min(100, Math.round((requests / FREE_PLAN_LIMITS.mau) * 100))
-      : 0;
+    const requests =
+      usage.total_auth_requests +
+      usage.total_rest_requests +
+      usage.total_realtime_requests +
+      usage.total_storage_requests;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -111,13 +101,8 @@ Deno.serve(async (req) => {
       requests,
       usage: {
         ...usage,
-        requests_pct: requestsPct,
-        rest_requests_pct: Math.min(
-          100,
-          Math.round(((usage.total_rest_requests + usage.total_realtime_requests + usage.total_auth_requests + usage.total_storage_requests) / FREE_PLAN_LIMITS.mau) * 100),
-        ),
+        window: USAGE_WINDOW,
       },
-      limits: FREE_PLAN_LIMITS,
     };
 
     const { error } = await supabase.from("quota_snapshots").insert(snapshot);

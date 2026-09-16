@@ -7,6 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 import {
   getProfile,
   updateProfile as updateProfileService,
+  flushProfileQueue,
 } from "../services/profileService";
 
 export function ProfileProvider({ children }) {
@@ -42,6 +43,41 @@ export function ProfileProvider({ children }) {
     };
   }, [userId, authLoading]);
 
+  useEffect(() => {
+    if (authLoading || !userId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function syncQueuedProfile() {
+      try {
+        const allSynced = await flushProfileQueue(userId);
+
+        if (!allSynced || cancelled) {
+          return;
+        }
+
+        const data = await getProfile(userId);
+
+        if (!cancelled) {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error("Errore sincronizzazione profilo:", error);
+      }
+    }
+
+    syncQueuedProfile();
+
+    window.addEventListener("online", syncQueuedProfile);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", syncQueuedProfile);
+    };
+  }, [userId, authLoading]);
+
   const updateProfile = useCallback(
     async ({ displayName, avatarUrl }) => {
       if (!userId) {
@@ -53,6 +89,18 @@ export function ProfileProvider({ children }) {
         displayName,
         avatarUrl,
       });
+
+      if (updatedProfile?.queued) {
+        const optimisticProfile = {
+          user_id: userId,
+          display_name: displayName,
+          avatar_url: avatarUrl,
+        };
+
+        setProfile((current) => ({ ...(current ?? {}), ...optimisticProfile }));
+
+        return optimisticProfile;
+      }
 
       setProfile(updatedProfile);
 

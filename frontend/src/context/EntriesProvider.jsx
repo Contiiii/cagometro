@@ -348,7 +348,7 @@ export function EntriesProvider({ children }) {
         prevSyncStatusRef.current = "pending";
       }
     },
-    [userId, createPendingOps],
+    [userId, createPendingOps, flushPendingOps],
   );
 
   const incrementToday = useCallback(() => {

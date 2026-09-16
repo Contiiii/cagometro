@@ -73,15 +73,19 @@ export function clearPendingSync(userId) {
   localStorage.removeItem(getPendingSyncKey(userId));
 }
 
+const QUOTA_CACHE_KEY = "cagometro_quota_last_check";
+
 export function clearAllLocalData(userId) {
   localStorage.removeItem(ANONYMOUS_ENTRIES_KEY);
   localStorage.removeItem(SETTINGS_KEY);
   localStorage.removeItem(THEME_KEY);
   localStorage.removeItem(SHOWN_ACHIEVEMENTS_KEY);
+  localStorage.removeItem(QUOTA_CACHE_KEY);
 
   if (userId) {
     localStorage.removeItem(getUserEntriesKey(userId));
     localStorage.removeItem(getPendingSyncKey(userId));
+    localStorage.removeItem(getTeamSnapshotKey(userId));
   }
 }
 
