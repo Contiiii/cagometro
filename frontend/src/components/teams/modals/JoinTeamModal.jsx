@@ -41,12 +41,8 @@ export default function JoinTeamModal({
       setJoinCode("");
       onClose();
     } catch (error) {
-      const message =
-        typeof error?.message === "string" ? error.message : error;
-
       console.error(
         "Errore durante l'ingresso nella squadra:",
-        message,
         error,
       );
 
