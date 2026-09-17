@@ -33,6 +33,31 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+// Il project ref viene ricavato da SUPABASE_URL (iniettata dal runtime) perché
+// non è possibile creare secret con prefisso SUPABASE_ e non è tra quelle
+// iniettate di default.
+function resolveProjectRef(): string | null {
+  const explicit = Deno.env.get("PROJECT_REF");
+
+  if (explicit) {
+    return explicit;
+  }
+
+  const url = Deno.env.get("SUPABASE_URL");
+
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const ref = new URL(url).hostname.split(".")[0];
+
+    return ref || null;
+  } catch {
+    return null;
+  }
+}
+
 async function managementGet(
   ref: string,
   token: string,
@@ -129,7 +154,8 @@ async function collectDatabaseAndStorage(
     const query = [
       "select",
       "  pg_database_size(current_database()) as database_size,",
-      "  (select coalesce(sum((metadata->>'size')::bigint), 0) from storage.objects) as storage_bytes",
+      "  (select coalesce(sum((metadata->>'size')::bigint), 0) from storage.objects) as storage_bytes,",
+      "  (select count(*) from auth.users where last_sign_in_at > now() - interval '30 days') as monthly_active_users",
     ].join(" ");
 
     const payload = await managementPost(
@@ -147,30 +173,9 @@ async function collectDatabaseAndStorage(
       value: {
         database_size_bytes: Number(row.database_size ?? 0),
         storage_bytes: Number(row.storage_bytes ?? 0),
+        mau: Number(row.monthly_active_users ?? 0),
       },
     };
-  } catch (error) {
-    return { ok: false, error: messageOf(error) };
-  }
-}
-
-async function collectMau(ref: string, token: string): Promise<CollectorResult> {
-  try {
-    const payload = await managementGet(
-      ref,
-      token,
-      "analytics/endpoints/usage.mau",
-    );
-
-    const firstRow = (Array.isArray(payload?.result)
-      ? (payload.result[0] as JsonObject | undefined)
-      : undefined);
-
-    const currentMau =
-      Number((payload as JsonObject)?.current_mau ?? 0) ||
-      Number(firstRow?.current_mau ?? 0);
-
-    return { ok: true, value: { mau: currentMau } };
   } catch (error) {
     return { ok: false, error: messageOf(error) };
   }
@@ -267,13 +272,19 @@ Deno.serve(async (req) => {
 
   try {
     const managementToken = Deno.env.get("MANAGEMENT_ACCESS_TOKEN");
-    const projectRef = Deno.env.get("SUPABASE_PROJECT_REF");
+    const projectRef = resolveProjectRef();
 
     if (!managementToken || !projectRef) {
+      const missing = [
+        !managementToken ? "MANAGEMENT_ACCESS_TOKEN" : null,
+        !projectRef ? "PROJECT_REF/SUPABASE_URL" : null,
+      ].filter(Boolean);
+
       return new Response(
         JSON.stringify({
           configured: false,
           error: "Management token or project ref not configured",
+          missing,
         }),
         {
           status: 200,
@@ -285,11 +296,10 @@ Deno.serve(async (req) => {
     const collectors = await Promise.all([
       collectApiCounts(projectRef, managementToken),
       collectDatabaseAndStorage(projectRef, managementToken),
-      collectMau(projectRef, managementToken),
       collectEdgeFunctions(projectRef, managementToken),
     ]);
 
-    const [apiCounts, databaseAndStorage, mau, edge] = collectors;
+    const [apiCounts, databaseAndStorage, edge] = collectors;
 
     const usage: JsonObject = { window: USAGE_WINDOW };
 
@@ -305,12 +315,6 @@ Deno.serve(async (req) => {
       logger.error("database query collector failed", {
         reason: databaseAndStorage.error,
       });
-    }
-
-    if (mau.ok) {
-      Object.assign(usage, mau.value);
-    } else {
-      logger.error("mau collector failed", { reason: mau.error });
     }
 
     if (edge.ok) {

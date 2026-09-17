@@ -540,15 +540,17 @@ VAPID_PRIVATE_KEY=...
 VAPID_SUBJECT=mailto:admin@example.com
 PUSH_TRIGGER_KEY=...
 MANAGEMENT_ACCESS_TOKEN=...
-SUPABASE_PROJECT_REF=...
 ```
 
 - `VAPID_PUBLIC_KEY` deve coincidere con `VITE_VAPID_PUBLIC_KEY` usata dal frontend;
 - `PUSH_TRIGGER_KEY` è il valore letto dalle funzioni SQL da `vault.decrypted_secrets`
   (nome `push_trigger_key`) e inviato come header `x-push-key`;
-- `MANAGEMENT_ACCESS_TOKEN` e `SUPABASE_PROJECT_REF` servono solo a `check-quota`.
+- `MANAGEMENT_ACCESS_TOKEN` serve solo a `check-quota` (token personale, da
+  https://supabase.com/dashboard/account/tokens).
 
 `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` sono iniettati automaticamente da Supabase.
+Il project ref usato da `check-quota` è ricavato da `SUPABASE_URL`, quindi non serve
+un secret dedicato (i nomi con prefisso `SUPABASE_` sono riservati e non impostabili).
 
 ### Generare le chiavi VAPID
 
