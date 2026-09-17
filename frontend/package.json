@@ -8,6 +8,7 @@
     "build": "vite build",
     "generate:icons": "node scripts/generate-icons.mjs",
     "generate:og": "node scripts/generate-og.mjs",
+    "generate:poop": "node scripts/generate-poop.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",

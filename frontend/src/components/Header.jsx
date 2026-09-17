@@ -2,7 +2,7 @@ import { Moon, Settings, Sun } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
-import poopIcon from "../assets/poop.webp";
+import poopIcon from "../assets/poop-display.webp";
 
 import { useTheme } from "../hooks/useTheme";
 import { useProfile } from "../hooks/useProfile";

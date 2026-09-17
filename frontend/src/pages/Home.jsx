@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
-import AchievementUnlockModal from "../components/achievements/AchievementUnlockModal";
 import CloudBackupWarning from "../components/CloudBackupWarning";
-import PushOptInModal from "../components/PushOptInModal";
 
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
@@ -13,7 +11,6 @@ import DailyCounter from "../components/home/DailyCounter";
 import PoopButton from "../components/home/PoopButton";
 import UndoButton from "../components/home/UndoButton";
 import MotivationToast from "../components/home/MotivationToast";
-import ReleaseNotesModal from "../components/ReleaseNotesModal";
 import SkeletonBlock from "../components/ui/SkeletonBlock";
 
 import {
@@ -46,6 +43,12 @@ import {
   markPushInstallPromptSeen,
   markPushOptInSeen,
 } from "../utils/pushOptIn.js";
+
+const AchievementUnlockModal = lazy(
+  () => import("../components/achievements/AchievementUnlockModal"),
+);
+const PushOptInModal = lazy(() => import("../components/PushOptInModal"));
+const ReleaseNotesModal = lazy(() => import("../components/ReleaseNotesModal"));
 
 const CURRENT_APP_VERSION = APP_VERSION;
 
@@ -427,13 +430,15 @@ export default function Home() {
         </Card>
       </main>
 
-      <AchievementUnlockModal
-        achievement={unlockedAchievement}
-        open={!!unlockedAchievement}
-        onClose={closeAchievement}
-        theme={theme}
-        prefersReducedMotion={prefersReducedMotion}
-      />
+      <Suspense fallback={null}>
+        <AchievementUnlockModal
+          achievement={unlockedAchievement}
+          open={!!unlockedAchievement}
+          onClose={closeAchievement}
+          theme={theme}
+          prefersReducedMotion={prefersReducedMotion}
+        />
+      </Suspense>
 
       <MotivationToast
         toast={motivationToast}
@@ -444,24 +449,28 @@ export default function Home() {
 
       <BottomNav />
 
-      <ReleaseNotesModal
-        open={releaseNotesOpen}
-        onClose={closeReleaseNotes}
-        notes={RELEASE_NOTES}
-        isDark={isDark}
-        prefersReducedMotion={prefersReducedMotion}
-      />
+      <Suspense fallback={null}>
+        <ReleaseNotesModal
+          open={releaseNotesOpen}
+          onClose={closeReleaseNotes}
+          notes={RELEASE_NOTES}
+          isDark={isDark}
+          prefersReducedMotion={prefersReducedMotion}
+        />
+      </Suspense>
 
-      <PushOptInModal
-        open={pushOptInOpen}
-        mode={pushOptInEligibility.mode}
-        isBusy={pushOptInBusy}
-        error={pushSubscribeError}
-        isDark={isDark}
-        prefersReducedMotion={prefersReducedMotion}
-        onAccept={acceptPushOptIn}
-        onClose={closePushOptIn}
-      />
+      <Suspense fallback={null}>
+        <PushOptInModal
+          open={pushOptInOpen}
+          mode={pushOptInEligibility.mode}
+          isBusy={pushOptInBusy}
+          error={pushSubscribeError}
+          isDark={isDark}
+          prefersReducedMotion={prefersReducedMotion}
+          onAccept={acceptPushOptIn}
+          onClose={closePushOptIn}
+        />
+      </Suspense>
     </div>
   );
 }
