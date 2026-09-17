@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
 import AchievementUnlockModal from "../components/achievements/AchievementUnlockModal";
 import CloudBackupWarning from "../components/CloudBackupWarning";
+import PushOptInModal from "../components/PushOptInModal";
 
 import Header from "../components/Header";
 import BottomNav from "../components/BottomNav";
@@ -34,10 +35,28 @@ import { usePush } from "../hooks/usePush.js";
 import { useTeam } from "../hooks/useTeam.js";
 import { sendMyPushNotification } from "../services/pushService.js";
 import { createAchievementTeamActivities } from "../services/teamService.js";
+import { trackEvent } from "../services/analyticsService.js";
 import { calculateStreak } from "../utils/stats.js";
 import { reportError } from "../utils/reportError.js";
+import {
+  getPushOptInEligibility,
+  hasSeenPushInstallPrompt,
+  hasSeenPushOptIn,
+  isIosNonStandalone,
+  markPushInstallPromptSeen,
+  markPushOptInSeen,
+} from "../utils/pushOptIn.js";
 
 const CURRENT_APP_VERSION = APP_VERSION;
+
+const NOTIFICATION_ALERT_KEYS = [
+  "dailyReminder",
+  "streakAlerts",
+  "achievementAlerts",
+  "teamEntryAlerts",
+  "teamMemberAlerts",
+  "teamAchievementAlerts",
+];
 
 const HOME_DATE_FORMATTER = new Intl.DateTimeFormat("it-IT", {
   weekday: "long",
@@ -75,9 +94,21 @@ export default function Home() {
     resetLockedAchievements,
   } = useAchievements();
 
-  const { triggerHapticFeedback, achievementAlerts, streakAlerts } = useSettings();
+  const {
+    triggerHapticFeedback,
+    achievementAlerts,
+    streakAlerts,
+    updateSetting,
+  } = useSettings();
 
-  const { isSubscribed: pushSubscribed } = usePush();
+  const {
+    isSubscribed: pushSubscribed,
+    isSupported: pushSupported,
+    permission: pushPermission,
+    initialized: pushInitialized,
+    subscribe: subscribePush,
+    subscribeError: pushSubscribeError,
+  } = usePush();
 
   const { team } = useTeam();
 
@@ -88,6 +119,87 @@ export default function Home() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const [motivationToast, setMotivationToast] = useState(null);
+  const [pushOptInBusy, setPushOptInBusy] = useState(false);
+  const [optInSeen, setOptInSeen] = useState(() => hasSeenPushOptIn());
+  const [installPromptSeen, setInstallPromptSeen] = useState(() =>
+    hasSeenPushInstallPrompt(),
+  );
+  const [iosNonStandalone] = useState(() => isIosNonStandalone());
+
+  const pushOptInEligibility = useMemo(
+    () =>
+      getPushOptInEligibility({
+        user,
+        isSupported: pushSupported,
+        initialized: pushInitialized,
+        permission: pushPermission,
+        isSubscribed: pushSubscribed,
+        optInSeen,
+        installPromptSeen,
+        iosNonStandalone,
+      }),
+    [
+      user,
+      pushSupported,
+      pushInitialized,
+      pushPermission,
+      pushSubscribed,
+      optInSeen,
+      installPromptSeen,
+      iosNonStandalone,
+    ],
+  );
+
+  const pushOptInOpen = pushOptInEligibility.shouldPrompt && !releaseNotesOpen;
+
+  useEffect(() => {
+    if (pushOptInOpen) {
+      trackEvent("push_optin_shown", { mode: pushOptInEligibility.mode });
+    }
+  }, [pushOptInOpen, pushOptInEligibility.mode]);
+
+  function closePushOptIn() {
+    if (pushOptInEligibility.mode === "install") {
+      markPushInstallPromptSeen();
+      setInstallPromptSeen(true);
+    } else {
+      markPushOptInSeen();
+      setOptInSeen(true);
+    }
+
+    trackEvent("push_optin_dismissed", { mode: pushOptInEligibility.mode });
+  }
+
+  async function acceptPushOptIn() {
+    if (pushOptInBusy) {
+      return;
+    }
+
+    setPushOptInBusy(true);
+
+    try {
+      const result = await subscribePush();
+
+      // Errore riproponibile: lasciamo il modale aperto per ritentare.
+      if (result?.error) {
+        return;
+      }
+
+      if (result?.subscription) {
+        NOTIFICATION_ALERT_KEYS.forEach((key) => updateSetting(key, true));
+      }
+
+      markPushOptInSeen();
+      setOptInSeen(true);
+
+      trackEvent("push_optin_accepted", {
+        permission: result?.permission ?? null,
+        subscribed: Boolean(result?.subscription),
+      });
+    } finally {
+      setPushOptInBusy(false);
+    }
+  }
 
   const registerActivity = async () => {
     if (isRegistering || isUndoing || entriesLoading) return;
@@ -338,6 +450,17 @@ export default function Home() {
         notes={RELEASE_NOTES}
         isDark={isDark}
         prefersReducedMotion={prefersReducedMotion}
+      />
+
+      <PushOptInModal
+        open={pushOptInOpen}
+        mode={pushOptInEligibility.mode}
+        isBusy={pushOptInBusy}
+        error={pushSubscribeError}
+        isDark={isDark}
+        prefersReducedMotion={prefersReducedMotion}
+        onAccept={acceptPushOptIn}
+        onClose={closePushOptIn}
       />
     </div>
   );

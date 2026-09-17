@@ -56,6 +56,18 @@ describe("usePush", () => {
     });
   });
 
+  it("espone initialized al termine del sync iniziale", async () => {
+    pushService.getPushSubscription.mockResolvedValue(null);
+
+    const { result } = renderHook(() => usePush());
+
+    expect(result.current.initialized).toBe(false);
+
+    await waitFor(() => {
+      expect(result.current.initialized).toBe(true);
+    });
+  });
+
   it("rimane non sottoscritto senza subscription", async () => {
     pushService.getPushSubscription.mockResolvedValue(null);
 

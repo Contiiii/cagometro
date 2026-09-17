@@ -48,6 +48,7 @@ export function usePush() {
   const [permission, setPermission] = useState(() =>
     getNotificationPermission(),
   );
+  const [initialized, setInitialized] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [devices, setDevices] = useState([]);
@@ -83,6 +84,8 @@ export function usePush() {
 
     async function syncSubscriptionState() {
       if (!user?.id || !isSupported) {
+        setInitialized(true);
+
         return;
       }
 
@@ -123,6 +126,10 @@ export function usePush() {
           userId: user?.id ?? null,
           message: "Errore stato sottoscrizione push:",
         });
+      } finally {
+        if (!cancelled) {
+          setInitialized(true);
+        }
       }
     }
 
@@ -282,6 +289,7 @@ export function usePush() {
     () => ({
       isSupported,
       permission,
+      initialized,
       isSubscribed,
       isBusy,
       subscribe,
@@ -299,6 +307,7 @@ export function usePush() {
     [
       isSupported,
       permission,
+      initialized,
       isSubscribed,
       isBusy,
       subscribe,
