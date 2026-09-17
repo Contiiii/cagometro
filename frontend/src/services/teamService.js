@@ -169,6 +169,22 @@ export async function createTeamActivity(
   return data;
 }
 
+export async function removeTeamActivity(
+  activityType = "entry_created",
+  dedupKey = null,
+) {
+  const { data, error } = await supabase.rpc("remove_team_activity", {
+    p_activity_type: activityType,
+    p_dedup_key: dedupKey,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function createAchievementTeamActivities(
   newAchievements,
   teamId,

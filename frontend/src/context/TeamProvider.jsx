@@ -329,6 +329,56 @@ export function TeamProvider({ children }) {
       return undefined;
     }
 
+    function handleActivityChange(activityType) {
+      if (REALTIME_LEADERBOARD_EVENT_TYPES.has(activityType)) {
+        realtimeLeaderboardDirtyRef.current = true;
+      }
+
+      if (REALTIME_MEMBERS_EVENT_TYPES.has(activityType)) {
+        realtimeMembersDirtyRef.current = true;
+      }
+
+      if (realtimeDebounceTimerRef.current) {
+        window.clearTimeout(realtimeDebounceTimerRef.current);
+      }
+
+      realtimeDebounceTimerRef.current = window.setTimeout(() => {
+        realtimeDebounceTimerRef.current = null;
+
+        const operations = [refreshActivity()];
+
+        if (realtimeLeaderboardDirtyRef.current) {
+          realtimeLeaderboardDirtyRef.current = false;
+          operations.push(refreshLeaderboard());
+        }
+
+        if (realtimeMembersDirtyRef.current) {
+          realtimeMembersDirtyRef.current = false;
+          operations.push(refreshMembers());
+        }
+
+        Promise.allSettled(operations)
+          .then((results) => {
+            results.forEach((result) => {
+              if (result.status === "rejected") {
+                reportError(result.reason, {
+                  feature: "team-realtime-refresh",
+                  userId: user?.id ?? null,
+                  message: "Errore aggiornamento realtime Team:",
+                });
+              }
+            });
+          })
+          .catch((error) => {
+            reportError(error, {
+              feature: "team-realtime-refresh",
+              userId: user?.id ?? null,
+              message: "Errore aggiornamento realtime Team:",
+            });
+          });
+      }, TEAM_REALTIME_DEBOUNCE_MS);
+    }
+
     const channel = supabase
       .channel(`team-activity-${currentTeamId}`)
       .on(
@@ -341,54 +391,20 @@ export function TeamProvider({ children }) {
         },
         (payload) => {
           const activityType = payload.new?.activity_type;
-
-          if (REALTIME_LEADERBOARD_EVENT_TYPES.has(activityType)) {
-            realtimeLeaderboardDirtyRef.current = true;
-          }
-
-          if (REALTIME_MEMBERS_EVENT_TYPES.has(activityType)) {
-            realtimeMembersDirtyRef.current = true;
-          }
-
-          if (realtimeDebounceTimerRef.current) {
-            window.clearTimeout(realtimeDebounceTimerRef.current);
-          }
-
-          realtimeDebounceTimerRef.current = window.setTimeout(() => {
-            realtimeDebounceTimerRef.current = null;
-
-            const operations = [refreshActivity()];
-
-            if (realtimeLeaderboardDirtyRef.current) {
-              realtimeLeaderboardDirtyRef.current = false;
-              operations.push(refreshLeaderboard());
-            }
-
-            if (realtimeMembersDirtyRef.current) {
-              realtimeMembersDirtyRef.current = false;
-              operations.push(refreshMembers());
-            }
-
-            Promise.allSettled(operations)
-              .then((results) => {
-                results.forEach((result) => {
-                  if (result.status === "rejected") {
-                    reportError(result.reason, {
-                      feature: "team-realtime-refresh",
-                      userId: user?.id ?? null,
-                      message: "Errore aggiornamento realtime Team:",
-                    });
-                  }
-                });
-              })
-              .catch((error) => {
-                reportError(error, {
-                  feature: "team-realtime-refresh",
-                  userId: user?.id ?? null,
-                  message: "Errore aggiornamento realtime Team:",
-                });
-              });
-          }, TEAM_REALTIME_DEBOUNCE_MS);
+          handleActivityChange(activityType);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "team_activity",
+          filter: `team_id=eq.${currentTeamId}`,
+        },
+        (payload) => {
+          const activityType = payload.old?.activity_type;
+          handleActivityChange(activityType);
         },
       )
       .subscribe((status, error) => {

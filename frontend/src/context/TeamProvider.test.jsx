@@ -70,15 +70,30 @@ function deferred() {
 }
 
 function createChannelMock() {
-  const state = { channel: null, filter: null, onEvent: null, name: null };
+  const state = {
+    channel: null,
+    filter: null,
+    onEvent: null,
+    name: null,
+    handlers: {},
+  };
   let current = null;
 
   supabase.channel.mockImplementation((name) => {
     state.name = name;
     current = {
       on: vi.fn((event, filter, callback) => {
-        state.filter = filter;
-        state.onEvent = callback;
+        const kind = filter?.event ?? event;
+
+        if (!state.handlers[kind]) {
+          state.handlers[kind] = [];
+        }
+        state.handlers[kind].push({ filter, callback });
+
+        if (kind === "INSERT") {
+          state.filter = filter;
+          state.onEvent = callback;
+        }
         return current;
       }),
       subscribe: vi.fn((callback) => {
@@ -492,6 +507,46 @@ describe("TeamProvider", () => {
     unmount();
 
     expect(supabase.removeChannel).toHaveBeenCalledWith(realtime.channel);
+  });
+
+  it("T8c: realtime reagisce alle DELETE (annullamento registrazione)", async () => {
+    useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+    getMyTeam.mockResolvedValue(TEAM_A);
+
+    const realtime = createChannelMock();
+
+    render(
+      <TeamProvider>
+        <Probe />
+      </TeamProvider>,
+    );
+
+    await waitFor(() => {
+      expect(realtime.handlers.DELETE?.length).toBe(1);
+    });
+
+    expect(realtime.handlers.DELETE[0].filter).toMatchObject({
+      event: "DELETE",
+      schema: "public",
+      table: "team_activity",
+      filter: "team_id=eq.team-a",
+    });
+
+    getTeamMembers.mockClear();
+    getTeamActivity.mockClear();
+    getTeamLeaderboard.mockClear();
+
+    await act(async () => {
+      await realtime.handlers.DELETE[0].callback({
+        old: { activity_type: "entry_created" },
+      });
+    });
+
+    await flushRealtimeDebounce();
+
+    expect(getTeamMembers).not.toHaveBeenCalled();
+    expect(getTeamActivity).toHaveBeenCalledTimes(1);
+    expect(getTeamLeaderboard).toHaveBeenCalledTimes(1);
   });
 
   it("T8b: realtime gestisce gli errori senza rejection non gestite", async () => {

@@ -4,7 +4,10 @@ import { EntriesContext } from "./entries-context";
 
 import { useAuth } from "../hooks/useAuth";
 
-import { createTeamActivity } from "../services/teamService";
+import {
+  createTeamActivity,
+  removeTeamActivity,
+} from "../services/teamService";
 
 import {
   getEntries,
@@ -39,6 +42,7 @@ import { trackEvent } from "../services/analyticsService";
 const OP_TYPES = {
   SAVE_ENTRY: "saveEntry",
   CREATE_TEAM_ACTIVITY: "createTeamActivity",
+  REMOVE_TEAM_ACTIVITY: "removeTeamActivity",
 };
 
 function formatEntries(entriesList) {
@@ -144,6 +148,9 @@ export function EntriesProvider({ children }) {
       try {
         const saveEntryOps = batch.filter((op) => op.type === OP_TYPES.SAVE_ENTRY);
         const activityOps = batch.filter((op) => op.type === OP_TYPES.CREATE_TEAM_ACTIVITY);
+        const removalOps = batch.filter(
+          (op) => op.type === OP_TYPES.REMOVE_TEAM_ACTIVITY,
+        );
 
         if (saveEntryOps.length > 0) {
           const entriesByDate = Object.fromEntries(
@@ -158,6 +165,13 @@ export function EntriesProvider({ children }) {
             op.payload.activityType,
             op.payload.points,
             null,
+            op.payload.dedupKey ?? op.id,
+          );
+        }
+
+        for (const op of removalOps) {
+          await removeTeamActivity(
+            op.payload.activityType,
             op.payload.dedupKey ?? op.id,
           );
         }
@@ -266,6 +280,11 @@ export function EntriesProvider({ children }) {
                 op.payload.activityType,
                 op.payload.points,
                 null,
+                op.payload.dedupKey ?? op.id,
+              );
+            } else if (op.type === "removeTeamActivity") {
+              await removeTeamActivity(
+                op.payload.activityType,
                 op.payload.dedupKey ?? op.id,
               );
             }
@@ -380,11 +399,15 @@ export function EntriesProvider({ children }) {
   // per un singolo device, dove i conteggi locali rimangono monotoni anche
   // offline. Non usiamo delta proprio per mantenere l'upsert idempotente.
   const syncEntry = useCallback(
-    async (date, count, logActivity = false) => {
+    async (date, count, logActivity = false, removeActivity = false) => {
       // Chiave di deduplicazione condivisa tra il tentativo diretto e l'op
       // accodata: un retry dopo un timeout "commit riuscito ma risposta persa"
       // non crea una seconda riga di attività (on conflict in create_team_activity).
       const activityDedupKey = logActivity ? createOpId() : null;
+
+      // Stessa logica per l'annullamento: la chiave evita di eliminare una
+      // seconda riga se la RPC è andata a buon fine ma la risposta è andata persa.
+      const removalDedupKey = removeActivity ? createOpId() : null;
 
       try {
         await saveEntry({
@@ -394,6 +417,9 @@ export function EntriesProvider({ children }) {
         });
         if (logActivity) {
           await createTeamActivity("entry_created", 1, null, activityDedupKey);
+        }
+        if (removeActivity) {
+          await removeTeamActivity("entry_created", removalDedupKey);
         }
 
         await flushPendingOps();
@@ -418,6 +444,16 @@ export function EntriesProvider({ children }) {
               activityType: "entry_created",
               points: 1,
               dedupKey: activityDedupKey,
+            },
+          });
+        }
+
+        if (removeActivity) {
+          ops.push({
+            type: OP_TYPES.REMOVE_TEAM_ACTIVITY,
+            payload: {
+              activityType: "entry_created",
+              dedupKey: removalDedupKey,
             },
           });
         }
@@ -471,7 +507,7 @@ export function EntriesProvider({ children }) {
       setEntries(newEntries);
 
       if (userId) {
-        await syncEntry(today, newCount);
+        await syncEntry(today, newCount, false, true);
       }
 
       return newEntries;

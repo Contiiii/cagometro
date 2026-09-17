@@ -8,7 +8,7 @@ import { EntriesProvider } from "./EntriesProvider";
 import { useEntries } from "../hooks/useEntries";
 
 import { getEntries, saveEntry, importEntries } from "../services/entriesService";
-import { createTeamActivity } from "../services/teamService";
+import { createTeamActivity, removeTeamActivity } from "../services/teamService";
 
 import { getLocalDateKey } from "../utils/date";
 import {
@@ -28,6 +28,7 @@ vi.mock("../services/entriesService", () => ({
 
 vi.mock("../services/teamService", () => ({
   createTeamActivity: vi.fn().mockResolvedValue(undefined),
+  removeTeamActivity: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../services/analyticsService", () => ({
@@ -603,7 +604,8 @@ describe("EntriesProvider", () => {
     ]);
     expect(latest.syncStatus).toBe("pending");
 
-    createTeamActivity.mockResolvedValue(undefined);
+  createTeamActivity.mockResolvedValue(undefined);
+  removeTeamActivity.mockResolvedValue(undefined);
 
     await act(async () => {
       await latest.retrySync();
@@ -706,8 +708,48 @@ describe("EntriesProvider", () => {
         type: "saveEntry",
         payload: { date: today, count: 1 },
       }),
+      expect.objectContaining({
+        type: "removeTeamActivity",
+        payload: expect.objectContaining({ activityType: "entry_created" }),
+      }),
     ]);
     expect(latest.syncStatus).toBe("pending");
+  });
+
+  it("decrementToday online rimuove l'attività di squadra", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    const today = getLocalDateKey();
+
+    saveUserEntries("user-1", { [today]: 2 });
+    getEntries.mockResolvedValue([{ date: today, count: 2 }]);
+    saveEntry.mockResolvedValue([{ date: today, count: 1 }]);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.decrementToday();
+    });
+
+    await flushAsync();
+
+    expect(latest.entries).toEqual({ [today]: 1 });
+    expect(saveEntry).toHaveBeenCalledWith({
+      userId: "user-1",
+      date: today,
+      count: 1,
+    });
+    expect(removeTeamActivity).toHaveBeenCalledWith(
+      "entry_created",
+      expect.any(String),
+    );
+    expect(latest.syncStatus).toBe("synced");
   });
 
   it("al primo login migra le entries anonime e rimuove la chiave locale", async () => {

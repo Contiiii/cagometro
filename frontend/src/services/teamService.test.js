@@ -15,6 +15,7 @@ import {
   regenerateInviteCode,
   getTeamActivity,
   createTeamActivity,
+  removeTeamActivity,
   createAchievementTeamActivities,
 } from "./teamService";
 import { supabase } from "../lib/supabase";
@@ -393,6 +394,37 @@ describe("createTeamActivity", () => {
     await expect(createTeamActivity("entry_created")).rejects.toThrow(
       "attività rifiutata",
     );
+  });
+});
+
+describe("removeTeamActivity", () => {
+  it("chiama la rpc remove_team_activity con tipo e dedup key", async () => {
+    mockRpc({ data: 1 });
+
+    const removed = await removeTeamActivity("entry_created", "dedup-1");
+
+    expect(supabase.rpc).toHaveBeenCalledWith("remove_team_activity", {
+      p_activity_type: "entry_created",
+      p_dedup_key: "dedup-1",
+    });
+    expect(removed).toBe(1);
+  });
+
+  it("usa entry_created e null come default", async () => {
+    mockRpc({ data: 0 });
+
+    await removeTeamActivity();
+
+    expect(supabase.rpc).toHaveBeenCalledWith("remove_team_activity", {
+      p_activity_type: "entry_created",
+      p_dedup_key: null,
+    });
+  });
+
+  it("propaga l'errore del database", async () => {
+    mockRpc({ error: { message: "rimozione rifiutata" } });
+
+    await expect(removeTeamActivity()).rejects.toThrow("rimozione rifiutata");
   });
 });
 
