@@ -2,6 +2,9 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 
 import { createLogger } from "../_shared/logger.ts";
+import { sendWithRetry } from "../_shared/pushRetry.ts";
+import { isVapidRejected, loadVapidConfig } from "../_shared/vapid.ts";
+import { verifyVapidKeyPair } from "../_shared/vapidCrypto.ts";
 
 const logger = createLogger("send-push");
 
@@ -16,6 +19,37 @@ const MAX_RECIPIENTS = 500;
 const SUBSCRIPTIONS_PAGE_SIZE = 1000;
 const SEND_BATCH_SIZE = 50;
 const SEND_TIMEOUT_MS = 10000;
+
+type AppEventsClient = {
+  from: (table: string) => {
+    insert: (
+      row: Record<string, unknown>,
+    ) => Promise<{ error: { message: string } | null }>;
+  };
+};
+
+// Riga tecnica/amministrativa in app_events (user_id null): e' l'unico canale
+// persistente visibile all'admin per i problemi di configurazione VAPID, dato
+// che send-push e' invocata via net.http_post e la risposta viene ignorata.
+async function recordVapidIssue(
+  supabase: AppEventsClient,
+  event: string,
+  payload: Record<string, unknown>,
+) {
+  const { error } = await supabase.from("app_events").insert({
+    user_id: null,
+    device_id: null,
+    event,
+    payload,
+  });
+
+  if (error) {
+    logger.error("vapid app_event insert failed", {
+      event,
+      reason: error.message,
+    });
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -83,6 +117,76 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const vapidResult = loadVapidConfig(Deno.env.toObject());
+
+    if (!vapidResult.ok) {
+      logger.error("vapid_config_invalid", {
+        missing: vapidResult.missing,
+        errors: vapidResult.errors,
+      });
+      await recordVapidIssue(supabase, "push_vapid_config_invalid", {
+        missing: vapidResult.missing,
+        errors: vapidResult.errors,
+      });
+
+      return new Response(
+        JSON.stringify({
+          error: "VAPID_CONFIG_INVALID",
+          missing: vapidResult.missing,
+          errors: vapidResult.errors,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const vapidConfig = vapidResult.config;
+
+    if (
+      !verifyVapidKeyPair(vapidConfig.publicKey, vapidConfig.privateKey)
+    ) {
+      const reason =
+        "VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY non sono una coppia valida";
+
+      logger.error("vapid_pair_mismatch", { reason });
+      await recordVapidIssue(supabase, "push_vapid_pair_mismatch", {
+        reason,
+      });
+
+      return new Response(
+        JSON.stringify({ error: "VAPID_CONFIG_INVALID", errors: [reason] }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    try {
+      webpush.setVapidDetails(
+        vapidConfig.subject,
+        vapidConfig.publicKey,
+        vapidConfig.privateKey,
+      );
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+
+      logger.error("vapid_config_invalid", { reason });
+      await recordVapidIssue(supabase, "push_vapid_config_invalid", {
+        reason,
+      });
+
+      return new Response(
+        JSON.stringify({ error: "VAPID_CONFIG_INVALID", errors: [reason] }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     const subscriptions: {
       endpoint: string;
       keys_p256dh: string;
@@ -108,14 +212,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    webpush.setVapidDetails(
-      `mailto:${Deno.env.get("VAPID_SUBJECT") || "admin@cagometro.app"}`,
-      Deno.env.get("VAPID_PUBLIC_KEY")!,
-      Deno.env.get("VAPID_PRIVATE_KEY")!,
-    );
-
     const staleEndpoints: string[] = [];
-    let sent = 0;
+    let delivered = 0;
+    let failed = 0;
+    let retries = 0;
+    let vapidRejected = 0;
+
+    const sendNotification = (
+      subscription: {
+        endpoint: string;
+        keys: { p256dh: string; auth: string };
+      },
+      payload: string,
+    ) => webpush.sendNotification(subscription, payload, { timeout: SEND_TIMEOUT_MS });
 
     for (
       let index = 0;
@@ -126,7 +235,14 @@ Deno.serve(async (req) => {
 
       const results = await Promise.allSettled(
         batch.map(async (subscription) => {
-          await webpush.sendNotification(
+          const payload = JSON.stringify({
+            title,
+            body: messageBody,
+            url,
+            type,
+          });
+
+          return sendWithRetry(
             {
               endpoint: subscription.endpoint,
               keys: {
@@ -134,46 +250,101 @@ Deno.serve(async (req) => {
                 auth: subscription.keys_auth,
               },
             },
-            JSON.stringify({
-              title,
-              body: messageBody,
-              url,
-              type,
-            }),
-            { timeout: SEND_TIMEOUT_MS },
+            payload,
+            sendNotification,
+            { timeoutMs: SEND_TIMEOUT_MS },
           );
         }),
       );
 
       results.forEach((result, batchIndex) => {
-        if (result.status === "fulfilled") {
-          sent += 1;
+        const endpoint = batch[batchIndex].endpoint;
+
+        if (result.status === "rejected") {
+          failed += 1;
+          logger.error("notification failed", {
+            statusCode: null,
+            endpoint,
+            reason: String(result.reason),
+          });
           return;
         }
 
-        const statusCode = result.reason?.statusCode ?? null;
+        const outcome = result.value;
 
-        if (statusCode === 404 || statusCode === 410) {
-          staleEndpoints.push(batch[batchIndex].endpoint);
+        retries += Math.max(0, outcome.attempts - 1);
+
+        if (outcome.delivered) {
+          delivered += 1;
+          return;
+        }
+
+        if (outcome.removeEndpoint) {
+          staleEndpoints.push(endpoint);
+          return;
+        }
+
+        failed += 1;
+
+        if (outcome.forbidden) {
+          if (
+            isVapidRejected({
+              statusCode: outcome.statusCode,
+              reason: outcome.reason,
+            })
+          ) {
+            vapidRejected += 1;
+            logger.error("vapid_rejected", {
+              statusCode: outcome.statusCode,
+              endpoint,
+              reason: outcome.reason,
+            });
+            return;
+          }
+
+          logger.error("push forbidden", {
+            statusCode: outcome.statusCode,
+            endpoint,
+            reason: outcome.reason,
+          });
           return;
         }
 
         logger.error("notification failed", {
-          statusCode,
-          endpoint: batch[batchIndex].endpoint,
-          reason: String(result.reason?.message ?? result.reason ?? "unknown"),
+          statusCode: outcome.statusCode,
+          endpoint,
+          reason: outcome.reason,
+          retries: outcome.retries,
         });
       });
     }
 
     if (staleEndpoints.length > 0) {
-      await supabase
+      const { error: deleteError } = await supabase
         .from("push_subscriptions")
         .delete()
         .in("endpoint", staleEndpoints);
 
-      logger.info("stale subscriptions removed", {
-        count: staleEndpoints.length,
+      if (deleteError) {
+        logger.error("stale subscriptions removal failed", {
+          count: staleEndpoints.length,
+          reason: deleteError.message,
+        });
+      } else {
+        logger.info("stale subscriptions removed", {
+          count: staleEndpoints.length,
+        });
+      }
+    }
+
+    const removedEndpoints = staleEndpoints.length;
+
+    if (vapidRejected > 0) {
+      await recordVapidIssue(supabase, "push_vapid_rejected", {
+        type,
+        count: vapidRejected,
+        subscriptions: subscriptions.length,
+        recipients: targetUsers.length,
       });
     }
 
@@ -181,15 +352,23 @@ Deno.serve(async (req) => {
       type,
       recipients: targetUsers.length,
       subscriptions: subscriptions.length,
-      sent,
-      stale: staleEndpoints.length,
+      delivered,
+      failed,
+      retries,
+      removedEndpoints,
+      vapidRejected,
       truncated,
     });
 
     return new Response(
       JSON.stringify({
-        sent,
-        stale: staleEndpoints.length,
+        delivered,
+        failed,
+        retries,
+        removedEndpoints,
+        sent: delivered,
+        stale: removedEndpoints,
+        vapidRejected,
         truncated,
       }),
       {

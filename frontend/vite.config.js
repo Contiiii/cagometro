@@ -10,7 +10,10 @@ export default defineConfig({
   },
 
   test: {
-    include: ["src/**/*.test.{js,jsx}"],
+    include: [
+      "src/**/*.test.{js,jsx}",
+      "supabase/functions/**/*.test.{ts,tsx}",
+    ],
     exclude: ["e2e/**", "node_modules/**"],
   },
 
@@ -25,6 +28,10 @@ export default defineConfig({
 
       srcDir: "src",
       filename: "sw.js",
+
+      injectManifest: {
+        globPatterns: ["**/*.{js,wasm,css,html,woff2,webp}"],
+      },
 
       includeAssets: [
         "favicon-32.png",

@@ -11,10 +11,29 @@ import {
   NetworkFirst,
 } from "workbox-strategies";
 
+import {
+  createPushSubscriptionWithRetry,
+  enqueuePushSubscriptionChange,
+  getVapidApplicationServerKey,
+  notifyClientsPushSubscriptionSync,
+} from "./services/pushSubscriptionChange.js";
+import { resolvePushClickTarget } from "./services/pushUrl.js";
+
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
+});
+
+// Con strategia injectManifest il plugin non inietta skipWaiting/clientsClaim
+// (valgono solo per generateSW): li aggiungiamo qui per rendere effettivo
+// registerType "autoUpdate" (attivazione immediata + reload della pagina).
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
 });
 
 // Analytics errori service worker: inoltra ogni errore non gestito alla
@@ -57,9 +76,12 @@ registerRoute(
   }),
 );
 
+// NOTA TECNICA: la Cache Storage "tracker-read" non viene svuotata al logout
+// (clearAllLocalData agisce solo su localStorage). Se questa route resta
+// attiva, valutare una pulizia esplicita della cache alla disconnessione.
 registerRoute(
   ({ url }) =>
-    url.pathname.match(/^\/rest\/v1\/(entries|profiles)\//),
+    url.pathname.match(/^\/rest\/v1\/(entries|profiles)(?:$|\/)/),
   new NetworkFirst({
     cacheName: "tracker-read",
     plugins: [
@@ -113,13 +135,60 @@ self.addEventListener("push", (event) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
+// Rotazione endpoint (provider push, reset browser, reinstallazione, cambio
+// profilo): ricrea la subscription, la accoda in modo persistente e avvisa le
+// pagine aperte. Se nessuna pagina è aperta la queue resta in IndexedDB e viene
+// svuotata da PushSyncProvider (mount, "online", messaggio SW).
+self.addEventListener("pushsubscriptionchange", (event) => {
+  const oldSubscription = event.oldSubscription ?? null;
+
+  event.waitUntil(
+    (async () => {
+      const applicationServerKey = getVapidApplicationServerKey();
+
+      if (!applicationServerKey) {
+        forwardAnalytics("sw_error", {
+          message: "VAPID key mancante su pushsubscriptionchange",
+        });
+        return;
+      }
+
+      const subscription = await createPushSubscriptionWithRetry({
+        pushManager: self.registration.pushManager,
+        applicationServerKey,
+      });
+
+      if (!subscription?.endpoint) {
+        forwardAnalytics("sw_error", {
+          message: "pushsubscriptionchange: re-subscribe fallito",
+          reason: subscription?.error?.message ?? "unknown",
+        });
+        return;
+      }
+
+      await enqueuePushSubscriptionChange({
+        subscription,
+        oldSubscription,
+      });
+
+      await notifyClientsPushSubscriptionSync(self);
+    })(),
+  );
+});
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const targetUrl = new URL(
-    event.notification.data?.url || "/",
+  // B2: la destinazione è vincolata a percorsi interni. URL esterne o
+  // maleformate producono null -> nessuna apertura verso domini esterni.
+  const targetUrl = resolvePushClickTarget(
+    event.notification.data?.url,
     self.location.origin,
   );
+
+  if (!targetUrl) {
+    return;
+  }
 
   event.waitUntil(
     (async () => {

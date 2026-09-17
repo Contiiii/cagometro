@@ -11,12 +11,38 @@ import {
   getMyPushSubscriptions,
   removePushSubscription,
   refreshPushSubscription,
+  claimPushSubscription,
+  isPushSubscriptionOwnedByOther,
+  sendMyPushNotification,
 } from "../services/pushService";
 import { reportError } from "../utils/reportError";
 import { trackEvent } from "../services/analyticsService";
 
+// Push di test dopo un'attivazione esplicita: conferma il path DB -> edge ->
+// push service. La rilevazione di una VAPID errata resta comunque server-side
+// (notify_my_push e' fire-and-forget, la risposta di send-push non torna qui).
+async function sendTestPushNotification(userId) {
+  try {
+    await sendMyPushNotification({
+      type: "test",
+      title: "Notifiche attive",
+      body: "Se vedi questa notifica, le push funzionano.",
+      url: "/",
+    });
+
+    await trackEvent("push_test_sent");
+  } catch (error) {
+    reportError(error, {
+      feature: "push-test",
+      userId: userId ?? null,
+      message: "Errore invio push di test:",
+    });
+  }
+}
+
 export function usePush() {
   const { user } = useAuth();
+  const userId = user?.id;
 
   const [isSupported] = useState(() => isPushSupported());
   const [permission, setPermission] = useState(() =>
@@ -28,6 +54,7 @@ export function usePush() {
   const [devicesLoading, setDevicesLoading] = useState(false);
   const [currentEndpoint, setCurrentEndpoint] = useState(null);
   const [subscribeError, setSubscribeError] = useState(null);
+  const [subscribeConflict, setSubscribeConflict] = useState(false);
 
   const refreshDevices = useCallback(async () => {
     if (!user?.id || !isSupported) {
@@ -75,11 +102,17 @@ export function usePush() {
           try {
             await refreshPushSubscription(subscription);
           } catch (error) {
-            reportError(error, {
-              feature: "push-touch",
-              userId: user?.id ?? null,
-              message: "Errore aggiornamento dispositivo push:",
-            });
+            if (isPushSubscriptionOwnedByOther(error)) {
+              // L'endpoint è legato a un altro account: lo segnaliamo senza
+              // adottarlo silenziosamente; il claim è sempre una scelta esplicita.
+              setSubscribeConflict(true);
+            } else {
+              reportError(error, {
+                feature: "push-touch",
+                userId: user?.id ?? null,
+                message: "Errore aggiornamento dispositivo push:",
+              });
+            }
           }
         }
 
@@ -101,7 +134,7 @@ export function usePush() {
   }, [user?.id, isSupported, refreshDevices]);
 
   const subscribe = useCallback(async () => {
-    if (!user?.id || !isSupported) {
+    if (!userId || !isSupported) {
       return null;
     }
 
@@ -117,14 +150,33 @@ export function usePush() {
 
       await refreshDevices();
 
+      if (result.subscription) {
+        await sendTestPushNotification(userId);
+      }
+
       return { permission: result.permission, subscription: result.subscription, error: null };
     } catch (error) {
+      if (isPushSubscriptionOwnedByOther(error)) {
+        // Endpoint già associato a un altro account: nessun adottamento
+        // silenzioso, si propone il claim esplicito.
+        setSubscribeConflict(true);
+        setSubscribeError(null);
+        setPermission(getNotificationPermission());
+
+        return {
+          permission: getNotificationPermission(),
+          subscription: null,
+          error: null,
+          conflict: true,
+        };
+      }
+
       const message =
         error instanceof Error ? error.message : String(error);
 
       reportError(error, {
         feature: "push-subscribe",
-        userId: user?.id ?? null,
+        userId: userId ?? null,
         message: "Errore attivazione notifiche:",
       });
 
@@ -141,7 +193,7 @@ export function usePush() {
     } finally {
       setIsBusy(false);
     }
-  }, [user?.id, isSupported, refreshDevices]);
+  }, [userId, isSupported, refreshDevices]);
 
   const unsubscribe = useCallback(async () => {
     if (!isSupported) {
@@ -178,6 +230,54 @@ export function usePush() {
     [refreshDevices],
   );
 
+  const claim = useCallback(async () => {
+    if (!user?.id || !isSupported) {
+      return { error: "Notifiche non supportate." };
+    }
+
+    setIsBusy(true);
+    setSubscribeError(null);
+
+    try {
+      const subscription = await getPushSubscription();
+
+      if (!subscription) {
+        setSubscribeConflict(false);
+
+        return { error: "Nessuna notifica registrata su questo dispositivo." };
+      }
+
+      await claimPushSubscription(subscription);
+
+      setIsSubscribed(true);
+      setCurrentEndpoint(subscription.endpoint);
+      setSubscribeConflict(false);
+
+      await refreshDevices();
+
+      return { error: null };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error);
+
+      reportError(error, {
+        feature: "push-claim",
+        userId: user?.id ?? null,
+        message: "Errore collegamento notifiche push:",
+      });
+
+      setSubscribeError(message);
+
+      return { error: message };
+    } finally {
+      setIsBusy(false);
+    }
+  }, [user?.id, isSupported, refreshDevices]);
+
+  const dismissConflict = useCallback(() => {
+    setSubscribeConflict(false);
+  }, []);
+
   const value = useMemo(
     () => ({
       isSupported,
@@ -192,6 +292,9 @@ export function usePush() {
       refreshDevices,
       removeDevice,
       subscribeError,
+      subscribeConflict,
+      claim,
+      dismissConflict,
     }),
     [
       isSupported,
@@ -206,20 +309,9 @@ export function usePush() {
       refreshDevices,
       removeDevice,
       subscribeError,
-    ],
-    [
-      isSupported,
-      permission,
-      isSubscribed,
-      isBusy,
-      subscribe,
-      unsubscribe,
-      devices,
-      devicesLoading,
-      currentEndpoint,
-      refreshDevices,
-      removeDevice,
-      subscribeError,
+      subscribeConflict,
+      claim,
+      dismissConflict,
     ],
   );
 

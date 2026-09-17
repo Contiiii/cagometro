@@ -31,7 +31,9 @@ import { useStats } from "../hooks/useStats.js";
 import { useAchievements } from "../hooks/useAchievements.js";
 import { useSettings } from "../hooks/useSettings.js";
 import { usePush } from "../hooks/usePush.js";
+import { useTeam } from "../hooks/useTeam.js";
 import { sendMyPushNotification } from "../services/pushService.js";
+import { createAchievementTeamActivities } from "../services/teamService.js";
 import { calculateStreak } from "../utils/stats.js";
 import { reportError } from "../utils/reportError.js";
 
@@ -77,6 +79,8 @@ export default function Home() {
 
   const { isSubscribed: pushSubscribed } = usePush();
 
+  const { team } = useTeam();
+
   const { streak, bestStreak } = useStats(entries);
 
   const [burst, setBurst] = useState(0);
@@ -113,9 +117,23 @@ export default function Home() {
 
         const newAchievements = checkAchievements(total, updatedStreak);
 
+        createAchievementTeamActivities(newAchievements, team?.id, user?.id).then(
+          (results) => {
+            results.forEach((result) => {
+              if (result.status === "rejected") {
+                reportError(result.reason, {
+                  feature: "home-achievement-team",
+                  userId: user?.id ?? null,
+                  message: "Errore invio attività squadra (traguardo):",
+                });
+              }
+            });
+          },
+        );
+
         if (pushSubscribed && achievementAlerts && newAchievements.length > 0) {
           const achievementNames = newAchievements
-            .map((achievement) => achievement.name)
+            .map((achievement) => achievement.title)
             .join(", ");
 
           sendMyPushNotification({

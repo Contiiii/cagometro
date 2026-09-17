@@ -5,6 +5,7 @@ import {
   Crown,
   Flame,
   Plus,
+  Trophy,
   UserPlus,
   UsersRound,
   Wifi,
@@ -31,6 +32,7 @@ function getActivityIcon(type) {
     ownership_transferred: Crown,
     member_removed: X,
     streak_bonus: Flame,
+    achievement_unlocked: Trophy,
   };
 
   return icons[type] || Activity;
@@ -100,6 +102,9 @@ function getActivityText(item) {
           ? "punto bonus streak"
           : "punti bonus streak"
       }`;
+
+    case "achievement_unlocked":
+      return `${displayName} ha sbloccato un traguardo`;
 
     default:
       return `${displayName} ha aggiornato la squadra`;

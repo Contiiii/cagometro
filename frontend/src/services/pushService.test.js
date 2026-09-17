@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   isPushSupported,
@@ -12,13 +12,22 @@ import {
   getMyPushSubscriptions,
   removePushSubscription,
   refreshPushSubscription,
+  detachPushSubscription,
+  claimPushSubscription,
+  isPushSubscriptionOwnedByOther,
+  isValidVapidPublicKey,
 } from "./pushService";
 import { supabase } from "../lib/supabase";
+import { reportError } from "../utils/reportError";
 
 vi.mock("../lib/supabase", () => ({
   supabase: {
     rpc: vi.fn(),
   },
+}));
+
+vi.mock("../utils/reportError", () => ({
+  reportError: vi.fn(),
 }));
 
 function mockPushEnvironment({
@@ -114,6 +123,33 @@ beforeEach(() => {
     },
   });
 });
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+function base64UrlFromBytes(bytes) {
+  const binary = Array.from(bytes, (byte) =>
+    String.fromCharCode(byte),
+  ).join("");
+
+  return window
+    .btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function vapidPublicKey(length = 65, prefix = 0x04) {
+  const bytes = new Uint8Array(length);
+  bytes[0] = prefix;
+
+  for (let index = 1; index < length; index += 1) {
+    bytes[index] = index;
+  }
+
+  return base64UrlFromBytes(bytes);
+}
 
 describe("isPushSupported", () => {
   it("restituisce false senza serviceWorker", () => {
@@ -368,5 +404,156 @@ describe("subscribeToPush - errori", () => {
     });
 
     await expect(subscribeToPush()).rejects.toThrow("unavailable");
+  });
+
+  it("rifiuta una chiave VAPID malformata all'attivazione", async () => {
+    mockPushEnvironment();
+
+    vi.stubEnv("VITE_VAPID_PUBLIC_KEY", "non-una-chiave-vapid");
+
+    await expect(subscribeToPush()).rejects.toThrow(
+      "non è una chiave P-256 valida",
+    );
+  });
+
+  it("passa la chiave decodificata come applicationServerKey", async () => {
+    const { pushManager } = mockPushEnvironment();
+
+    supabase.rpc.mockResolvedValue({ error: null });
+
+    await subscribeToPush();
+
+    const [options] = pushManager.subscribe.mock.calls[0];
+
+    expect(options.applicationServerKey).toBeInstanceOf(Uint8Array);
+    expect(options.applicationServerKey.length).toBe(65);
+    expect(options.applicationServerKey[0]).toBe(0x04);
+  });
+});
+
+describe("isValidVapidPublicKey", () => {
+  it("accetta una chiave P-256 non compressa di 65 byte", () => {
+    expect(isValidVapidPublicKey(vapidPublicKey())).toBe(true);
+  });
+
+  it("rifiuta lunghezze errate e prefissi non compressi", () => {
+    expect(isValidVapidPublicKey(vapidPublicKey(64))).toBe(false);
+    expect(isValidVapidPublicKey(vapidPublicKey(66))).toBe(false);
+    expect(isValidVapidPublicKey(vapidPublicKey(65, 0x02))).toBe(false);
+  });
+
+  it("rifiuta valori assenti o non decodificabili", () => {
+    expect(isValidVapidPublicKey(undefined)).toBe(false);
+    expect(isValidVapidPublicKey("")).toBe(false);
+    expect(isValidVapidPublicKey("!!!")).toBe(false);
+  });
+});
+
+describe("isPushSubscriptionOwnedByOther", () => {
+  it("riconosce l'errcode PUSH1", () => {
+    expect(
+      isPushSubscriptionOwnedByOther({
+        code: "PUSH1",
+        message: "Subscription already owned by another user",
+      }),
+    ).toBe(true);
+  });
+
+  it("riconosce il marcatore PUSH_OWNED_BY_OTHER nel messaggio", () => {
+    expect(
+      isPushSubscriptionOwnedByOther({
+        message: "PUSH_OWNED_BY_OTHER|Subscription already owned by another user",
+      }),
+    ).toBe(true);
+  });
+
+  it("restituisce false per errori generici e valori nulli", () => {
+    expect(isPushSubscriptionOwnedByOther(new Error("altro errore"))).toBe(false);
+    expect(isPushSubscriptionOwnedByOther(null)).toBe(false);
+  });
+});
+
+describe("detachPushSubscription", () => {
+  it("rimuove lato server l'endpoint corrente senza chiamare subscription.unsubscribe", async () => {
+    const { subscription } = mockPushEnvironment({ hasSubscription: true });
+
+    supabase.rpc.mockResolvedValue({ error: null });
+
+    await detachPushSubscription();
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "unsubscribe_push",
+      expect.objectContaining({ p_endpoint: "endpoint-1" }),
+    );
+    expect(subscription.unsubscribe).not.toHaveBeenCalled();
+  });
+
+  it("non chiama il rpc senza subscription attiva", async () => {
+    mockPushEnvironment();
+
+    await detachPushSubscription();
+
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("non fa nulla senza supporto push", async () => {
+    mockPushEnvironment({ serviceWorkerAvailable: false });
+
+    await detachPushSubscription();
+
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("assorbe l'errore del rpc e lo registra via reportError", async () => {
+    mockPushEnvironment({ hasSubscription: true });
+
+    supabase.rpc.mockResolvedValue({ error: { message: "rpc ko" } });
+
+    await expect(detachPushSubscription()).resolves.toBeUndefined();
+
+    expect(reportError).toHaveBeenCalled();
+  });
+});
+
+describe("claimPushSubscription", () => {
+  it("chiama claim_push_subscription con i dati della subscription", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
+
+    await claimPushSubscription({
+      toJSON: () => ({
+        endpoint: "endpoint-1",
+        keys: { p256dh: "p256dh-key", auth: "auth-key" },
+      }),
+    });
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "claim_push_subscription",
+      expect.objectContaining({
+        p_endpoint: "endpoint-1",
+        p_keys_p256dh: "p256dh-key",
+        p_keys_auth: "auth-key",
+      }),
+    );
+  });
+
+  it("rifiuta payload incompleti senza chiamare il rpc", async () => {
+    await expect(
+      claimPushSubscription({ endpoint: "endpoint-1" }),
+    ).rejects.toThrow("Subscription non valida");
+
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("propaga l'errore del rpc", async () => {
+    supabase.rpc.mockResolvedValue({ error: { message: "rpc ko" } });
+
+    await expect(
+      claimPushSubscription({
+        toJSON: () => ({
+          endpoint: "endpoint-1",
+          keys: { p256dh: "p256dh-key", auth: "auth-key" },
+        }),
+      }),
+    ).rejects.toThrow("rpc ko");
   });
 });

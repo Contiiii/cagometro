@@ -168,3 +168,32 @@ export async function createTeamActivity(
 
   return data;
 }
+
+export async function createAchievementTeamActivities(
+  newAchievements,
+  teamId,
+  userId,
+) {
+  if (
+    !teamId ||
+    userId == null ||
+    !Array.isArray(newAchievements) ||
+    newAchievements.length === 0
+  ) {
+    return [];
+  }
+
+  return Promise.allSettled(
+    newAchievements.map((achievement) =>
+      createTeamActivity(
+        "achievement_unlocked",
+        null,
+        {
+          achievementId: achievement.id,
+          achievementName: achievement.title,
+        },
+        `${userId}:achievement:${achievement.id}`,
+      ),
+    ),
+  );
+}

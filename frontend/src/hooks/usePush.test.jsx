@@ -3,10 +3,20 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as pushService from "../services/pushService";
+import { reportError } from "../utils/reportError";
+import { trackEvent } from "../services/analyticsService";
 import { usePush } from "./usePush";
 
 vi.mock("./useAuth", () => ({
   useAuth: () => ({ user: { id: "u-1" } }),
+}));
+
+vi.mock("../utils/reportError", () => ({
+  reportError: vi.fn(),
+}));
+
+vi.mock("../services/analyticsService", () => ({
+  trackEvent: vi.fn(),
 }));
 
 vi.mock("../services/pushService", () => ({
@@ -18,6 +28,9 @@ vi.mock("../services/pushService", () => ({
   getMyPushSubscriptions: vi.fn(),
   removePushSubscription: vi.fn(),
   refreshPushSubscription: vi.fn(),
+  claimPushSubscription: vi.fn(),
+  isPushSubscriptionOwnedByOther: vi.fn(() => false),
+  sendMyPushNotification: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -27,6 +40,7 @@ beforeEach(() => {
   pushService.getMyPushSubscriptions.mockResolvedValue([]);
   pushService.refreshPushSubscription.mockResolvedValue(undefined);
   pushService.removePushSubscription.mockResolvedValue(undefined);
+  pushService.sendMyPushNotification.mockResolvedValue(undefined);
 });
 
 describe("usePush", () => {
@@ -159,5 +173,192 @@ describe("usePush", () => {
     expect(result.current.subscribeError).toBe("Service worker non disponibile");
     expect(result.current.permission).toBe("default");
     expect(result.current.isSubscribed).toBe(false);
+  });
+
+  it("rileva il conflitto durante il mount senza adottare l'endpoint", async () => {
+    pushService.getPushSubscription.mockResolvedValue({
+      endpoint: "endpoint-1",
+    });
+    pushService.getNotificationPermission.mockReturnValue("granted");
+    pushService.refreshPushSubscription.mockRejectedValue({
+      code: "PUSH1",
+      message: "PUSH_OWNED_BY_OTHER|Subscription already owned by another user",
+    });
+    pushService.isPushSubscriptionOwnedByOther.mockReturnValue(true);
+
+    const { result } = renderHook(() => usePush());
+
+    await waitFor(() => {
+      expect(result.current.subscribeConflict).toBe(true);
+    });
+
+    expect(pushService.claimPushSubscription).not.toHaveBeenCalled();
+    expect(reportError).not.toHaveBeenCalled();
+  });
+
+  it("subscribe in conflitto segnala il claim senza errore generico", async () => {
+    pushService.getPushSubscription.mockResolvedValue(null);
+    pushService.subscribeToPush.mockRejectedValue({
+      code: "PUSH1",
+      message: "PUSH_OWNED_BY_OTHER|Subscription already owned by another user",
+    });
+    pushService.isPushSubscriptionOwnedByOther.mockReturnValue(true);
+
+    const { result } = renderHook(() => usePush());
+
+    await act(async () => {
+      const ret = await result.current.subscribe();
+
+      expect(ret.conflict).toBe(true);
+      expect(ret.error).toBeNull();
+    });
+
+    expect(result.current.subscribeConflict).toBe(true);
+    expect(result.current.subscribeError).toBeNull();
+    expect(reportError).not.toHaveBeenCalled();
+  });
+
+  it("claim riuscito aggiorna stato e dispositivi e chiude il conflitto", async () => {
+    pushService.getPushSubscription.mockResolvedValue({
+      endpoint: "endpoint-1",
+    });
+    pushService.getNotificationPermission.mockReturnValue("granted");
+    pushService.refreshPushSubscription.mockRejectedValue({
+      code: "PUSH1",
+      message: "PUSH_OWNED_BY_OTHER|Subscription already owned by another user",
+    });
+    pushService.isPushSubscriptionOwnedByOther.mockReturnValue(true);
+    pushService.claimPushSubscription.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => usePush());
+
+    await waitFor(() => {
+      expect(result.current.subscribeConflict).toBe(true);
+    });
+
+    await act(async () => {
+      const ret = await result.current.claim();
+      expect(ret.error).toBeNull();
+    });
+
+    expect(pushService.claimPushSubscription).toHaveBeenCalledTimes(1);
+    expect(result.current.isSubscribed).toBe(true);
+    expect(result.current.currentEndpoint).toBe("endpoint-1");
+    expect(result.current.subscribeConflict).toBe(false);
+    expect(pushService.getMyPushSubscriptions).toHaveBeenCalledTimes(2);
+  });
+
+  it("claim fallito lascia lo stato invariato e segnala l'errore", async () => {
+    pushService.getPushSubscription.mockResolvedValue({
+      endpoint: "endpoint-1",
+    });
+    pushService.getNotificationPermission.mockReturnValue("granted");
+    pushService.refreshPushSubscription.mockRejectedValue({
+      code: "PUSH1",
+      message: "PUSH_OWNED_BY_OTHER|Subscription already owned by another user",
+    });
+    pushService.isPushSubscriptionOwnedByOther.mockReturnValue(true);
+    pushService.claimPushSubscription.mockRejectedValue(
+      new Error("rpc ko"),
+    );
+
+    const { result } = renderHook(() => usePush());
+
+    await waitFor(() => {
+      expect(result.current.subscribeConflict).toBe(true);
+    });
+
+    await act(async () => {
+      const ret = await result.current.claim();
+      expect(ret.error).toBe("rpc ko");
+    });
+
+    expect(result.current.subscribeConflict).toBe(true);
+    expect(result.current.subscribeError).toBe("rpc ko");
+    expect(result.current.isSubscribed).toBe(true);
+    expect(result.current.currentEndpoint).toBe("endpoint-1");
+    expect(pushService.getMyPushSubscriptions).toHaveBeenCalledTimes(1);
+  });
+
+  it("dismissConflict chiude il prompt senza chiamare claim", async () => {
+    pushService.getPushSubscription.mockResolvedValue({
+      endpoint: "endpoint-1",
+    });
+    pushService.getNotificationPermission.mockReturnValue("granted");
+    pushService.refreshPushSubscription.mockRejectedValue({
+      code: "PUSH1",
+      message: "PUSH_OWNED_BY_OTHER|Subscription already owned by another user",
+    });
+    pushService.isPushSubscriptionOwnedByOther.mockReturnValue(true);
+
+    const { result } = renderHook(() => usePush());
+
+    await waitFor(() => {
+      expect(result.current.subscribeConflict).toBe(true);
+    });
+
+    act(() => {
+      result.current.dismissConflict();
+    });
+
+    expect(result.current.subscribeConflict).toBe(false);
+    expect(pushService.claimPushSubscription).not.toHaveBeenCalled();
+  });
+
+  it("l'attivazione esplicita invia la push di test e traccia l'evento", async () => {
+    pushService.getPushSubscription.mockResolvedValue(null);
+    pushService.subscribeToPush.mockResolvedValue({
+      permission: "granted",
+      subscription: { endpoint: "endpoint-1" },
+    });
+
+    const { result } = renderHook(() => usePush());
+
+    await act(async () => {
+      await result.current.subscribe();
+    });
+
+    expect(pushService.sendMyPushNotification).toHaveBeenCalledTimes(1);
+    expect(pushService.sendMyPushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "test" }),
+    );
+    expect(trackEvent).toHaveBeenCalledWith("push_test_sent");
+  });
+
+  it("il mount non invia la push di test", async () => {
+    pushService.getPushSubscription.mockResolvedValue({
+      endpoint: "endpoint-1",
+    });
+
+    const { result } = renderHook(() => usePush());
+
+    await waitFor(() => {
+      expect(result.current.isSubscribed).toBe(true);
+    });
+
+    expect(pushService.sendMyPushNotification).not.toHaveBeenCalled();
+  });
+
+  it("un errore della push di test non rompe la subscribe", async () => {
+    pushService.getPushSubscription.mockResolvedValue(null);
+    pushService.subscribeToPush.mockResolvedValue({
+      permission: "granted",
+      subscription: { endpoint: "endpoint-1" },
+    });
+    pushService.sendMyPushNotification.mockRejectedValue(
+      new Error("rpc ko"),
+    );
+
+    const { result } = renderHook(() => usePush());
+
+    await act(async () => {
+      const ret = await result.current.subscribe();
+
+      expect(ret.error).toBeNull();
+      expect(ret.subscription).not.toBeNull();
+    });
+
+    expect(reportError).toHaveBeenCalled();
+    expect(result.current.subscribeError).toBeNull();
   });
 });

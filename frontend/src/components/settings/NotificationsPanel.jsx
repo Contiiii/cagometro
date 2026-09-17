@@ -11,6 +11,8 @@ import {
 
 import { useState } from "react";
 
+import { toast } from "react-hot-toast";
+
 import IconTile from "../ui/IconTile";
 import PanelFrame from "./PanelFrame";
 import TinySwitch from "./TinySwitch";
@@ -90,6 +92,9 @@ export default function NotificationsPanel({
     currentEndpoint,
     removeDevice,
     subscribeError,
+    subscribeConflict,
+    claim,
+    dismissConflict,
   } = usePush();
 
   const [removingEndpoint, setRemovingEndpoint] = useState(null);
@@ -111,6 +116,14 @@ export default function NotificationsPanel({
       await removeDevice(endpoint);
     } finally {
       setRemovingEndpoint(null);
+    }
+  }
+
+  async function handleClaimDevice() {
+    const result = await claim();
+
+    if (!result?.error) {
+      toast.success("Notifiche collegate a questo account");
     }
   }
 
@@ -194,6 +207,46 @@ export default function NotificationsPanel({
                 Apri l'app dall'icona Home (aggiungi a schermata Home).
               </span>
             )}
+        </div>
+      )}
+
+      {subscribeConflict && (
+        <div className={`mt-4 rounded-2xl border p-4 ${theme.softSurface}`}>
+          <p className={`text-sm font-black ${theme.primaryText}`}>
+            Notifiche già collegate a un altro account
+          </p>
+
+          <p
+            className={`mt-1 text-xs font-medium leading-relaxed ${theme.muted}`}
+          >
+            Le notifiche di questo dispositivo sono collegate a un altro
+            account. Vuoi collegarle all'account corrente?
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleClaimDevice}
+              disabled={isBusy}
+              className="rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em] transition enabled:hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2"
+              style={{
+                backgroundColor: `${accentColor}18`,
+                color: accentColor,
+              }}
+            >
+              {isBusy ? "Collegamento…" : "Collega a questo account"}
+            </button>
+
+            <button
+              type="button"
+              onClick={dismissConflict}
+              disabled={isBusy}
+              className="rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em] transition enabled:hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2"
+              style={{ color: theme.subtle }}
+            >
+              Non ora
+            </button>
+          </div>
         </div>
       )}
 

@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+} from "@testing-library/react";
 
 import NotificationsPanel from "./NotificationsPanel";
 
@@ -16,10 +22,19 @@ vi.mock("../../hooks/usePush", () => ({
     devicesLoading: false,
     currentEndpoint: null,
     removeDevice: vi.fn(),
+    subscribeError: null,
+    subscribeConflict: false,
+    claim: vi.fn().mockResolvedValue({ error: null }),
+    dismissConflict: vi.fn(),
   })),
 }));
 
+vi.mock("react-hot-toast", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
 import { usePush } from "../../hooks/usePush";
+import { toast } from "react-hot-toast";
 
 afterEach(() => {
   cleanup();
@@ -44,6 +59,10 @@ function renderPanel(overrides) {
     devicesLoading: false,
     currentEndpoint: null,
     removeDevice: vi.fn(),
+    subscribeError: null,
+    subscribeConflict: false,
+    claim: vi.fn().mockResolvedValue({ error: null }),
+    dismissConflict: vi.fn(),
     ...overrides,
   };
 
@@ -213,5 +232,52 @@ describe("NotificationsPanel", () => {
     expect(
       screen.getByText(/Service worker non disponibile/),
     ).toBeTruthy();
+  });
+});
+
+describe("NotificationsPanel - conflitto di proprietà", () => {
+  it("mostra il prompt di claim quando la subscription appartiene a un altro account", () => {
+    renderPanel({ subscribeConflict: true });
+
+    expect(
+      screen.getByText(
+        "Le notifiche di questo dispositivo sono collegate a un altro account. Vuoi collegarle all'account corrente?",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Collega a questo account" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Non ora" })).toBeTruthy();
+  });
+
+  it("chiama claim e mostra un messaggio di successo quando l'utente collega", async () => {
+    const claim = vi.fn().mockResolvedValue({ error: null });
+    const dismissConflict = vi.fn();
+
+    renderPanel({ subscribeConflict: true, claim, dismissConflict });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Collega a questo account" }),
+    );
+
+    expect(claim).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith(
+        "Notifiche collegate a questo account",
+      );
+    });
+  });
+
+  it("non chiama claim quando l'utente sceglie 'Non ora'", () => {
+    const claim = vi.fn();
+    const dismissConflict = vi.fn();
+
+    renderPanel({ subscribeConflict: true, claim, dismissConflict });
+
+    fireEvent.click(screen.getByRole("button", { name: "Non ora" }));
+
+    expect(dismissConflict).toHaveBeenCalledTimes(1);
+    expect(claim).not.toHaveBeenCalled();
   });
 });
