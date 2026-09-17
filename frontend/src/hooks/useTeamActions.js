@@ -134,17 +134,7 @@ reportError(
   async function handleJoinTeam(code, teamName = null, options = {}) {
     const immediate = Boolean(options?.immediate);
 
-    try {
-      await joinTeam(code);
-    } catch (error) {
-      reportError(error, {
-        feature: "team-join",
-        userId,
-        message: "Errore durante l'ingresso nella squadra:",
-      });
-
-      throw error;
-    }
+    await joinTeam(code);
 
     notify(teamName ? `Sei entrato in ${teamName}.` : "Sei entrato nella squadra");
 
