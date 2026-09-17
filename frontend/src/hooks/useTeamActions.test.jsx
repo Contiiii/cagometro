@@ -3,10 +3,30 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as teamService from "../services/teamService";
+import { sendMyPushNotification } from "../services/pushService";
+import { usePush } from "./usePush";
+import { useSettings } from "./useSettings";
+import { reportError } from "../utils/reportError";
 import { useTeamActions } from "./useTeamActions";
 
 vi.mock("./useAuth", () => ({
   useAuth: () => ({ user: { id: "u-owner" } }),
+}));
+
+vi.mock("./usePush", () => ({
+  usePush: vi.fn(() => ({ isSubscribed: true })),
+}));
+
+vi.mock("./useSettings", () => ({
+  useSettings: vi.fn(() => ({ teamMemberAlerts: true })),
+}));
+
+vi.mock("../services/pushService", () => ({
+  sendMyPushNotification: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("../utils/reportError", () => ({
+  reportError: vi.fn(),
 }));
 
 vi.mock("../services/teamService", () => ({
@@ -88,6 +108,11 @@ describe("useTeamActions", () => {
     teamService.updateTeam.mockResolvedValue(undefined);
 
     vi.spyOn(console, "error").mockImplementation(() => {});
+
+    vi.mocked(usePush).mockReturnValue({ isSubscribed: true });
+    vi.mocked(useSettings).mockReturnValue({ teamMemberAlerts: true });
+    sendMyPushNotification.mockResolvedValue(undefined);
+    reportError.mockClear();
   });
 
   it("T1: create riuscita con refresh riusciti", async () => {
@@ -393,6 +418,74 @@ describe("useTeamActions", () => {
       "Inviti disabilitati, ma alcuni dati non sono stati aggiornati",
       "error",
     );
+  });
+
+  it("T16: join riuscito con push attive => invia la notifica di benvenuto", async () => {
+    teamService.joinTeam.mockResolvedValue(undefined);
+
+    const { result, props, notify } = createHarness();
+
+    await act(async () => {
+      await result.current.handleJoinTeam("CODE", "Squadra B");
+    });
+
+    expect(sendMyPushNotification).toHaveBeenCalledWith({
+      type: "team",
+      title: "Benvenuto nella squadra!",
+      body: "Sei entrato in Squadra B.",
+      url: "/teams",
+    });
+    expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith("Sei entrato in Squadra B.");
+    expect(countErrorNotifies(notify)).toBe(0);
+  });
+
+  it("T17: join riuscito ma notifiche squadra disattivate => nessuna push", async () => {
+    vi.mocked(useSettings).mockReturnValue({ teamMemberAlerts: false });
+
+    const { result, props, notify } = createHarness();
+
+    await act(async () => {
+      await result.current.handleJoinTeam("CODE");
+    });
+
+    expect(sendMyPushNotification).not.toHaveBeenCalled();
+    expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith("Sei entrato nella squadra");
+  });
+
+  it("T18: join riuscito ma non sottoscritto alle push => nessuna push", async () => {
+    vi.mocked(usePush).mockReturnValue({ isSubscribed: false });
+
+    const { result, props } = createHarness();
+
+    await act(async () => {
+      await result.current.handleJoinTeam("CODE");
+    });
+
+    expect(sendMyPushNotification).not.toHaveBeenCalled();
+    expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
+  });
+
+  it("T19: push di benvenuto fallita => il join non viene bloccato", async () => {
+    sendMyPushNotification.mockRejectedValue(new Error("rpc offline"));
+
+    const { result, props, notify } = createHarness();
+
+    await act(async () => {
+      await result.current.handleJoinTeam("CODE", "Squadra C");
+    });
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        feature: "team-join-welcome-push",
+        userId: "u-owner",
+      }),
+    );
+    expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith("Sei entrato in Squadra C.");
+    expect(countErrorNotifies(notify)).toBe(0);
   });
 
   it("T15: refresh obsoleto non altera il risultato del flusso", async () => {

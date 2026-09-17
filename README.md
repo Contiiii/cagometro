@@ -288,6 +288,7 @@ Il file `.env.example` contiene:
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_VAPID_PUBLIC_KEY=
 ```
 
 Inserisci nel file `.env` i valori del progetto Supabase:
@@ -295,6 +296,7 @@ Inserisci nel file `.env` i valori del progetto Supabase:
 ```env
 VITE_SUPABASE_URL=https://example.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+VITE_VAPID_PUBLIC_KEY=your_public_vapid_key
 ```
 
 Il file `.env` non deve essere aggiunto a Git.
@@ -509,6 +511,92 @@ Il feed attività utilizza un indice composto su:
 team_activity (team_id, created_at desc)
 ```
 
+## 🔔 Notifiche push
+
+Le notifiche push usano Web Push: il frontend si iscrive con la chiave VAPID
+pubblica, una Edge Function `send-push` invia, trigger e cron SQL la chiamano.
+
+### Componenti
+
+- `send-push` (Edge Function, POST): invia una notifica a una lista di `user_id`;
+- `check-quota` (Edge Function, GET): registra uno snapshot d'uso (cron giornaliero);
+- trigger `notify_team_activity_push` su `team_activity`;
+- funzione `send_daily_reminder_push` richiamata dal cron `daily-reminder-push`;
+- estensioni richieste: `pg_net` (chiamate HTTP asincrone) e `pg_cron` (schedulazione).
+
+La consegna regge la scala: `send_daily_reminder_push` invia i destinatari in
+chunk da 200, mentre `send-push` pagina le subscription (1000 per volta) e
+limita la concorrenza a 50 invii per batch. Il cap di 500 destinatari per
+chiamata resta come guardia: se superato, la risposta include `truncated: true`
+e il troncamento viene loggato come errore.
+
+### Secret Edge Function
+
+Configura sul progetto Supabase (Edge Functions → Secrets, oppure `supabase secrets set`):
+
+```env
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:admin@example.com
+PUSH_TRIGGER_KEY=...
+MANAGEMENT_ACCESS_TOKEN=...
+SUPABASE_PROJECT_REF=...
+```
+
+- `VAPID_PUBLIC_KEY` deve coincidere con `VITE_VAPID_PUBLIC_KEY` usata dal frontend;
+- `PUSH_TRIGGER_KEY` è il valore letto dalle funzioni SQL da `vault.decrypted_secrets`
+  (nome `push_trigger_key`) e inviato come header `x-push-key`;
+- `MANAGEMENT_ACCESS_TOKEN` e `SUPABASE_PROJECT_REF` servono solo a `check-quota`.
+
+`SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` sono iniettati automaticamente da Supabase.
+
+### Generare le chiavi VAPID
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+### Cron attivi
+
+```text
+daily-reminder-push   ogni 30 min (lavora solo alle 20:00/20:30 Europe/Rome)
+check-quota-daily     ogni giorno alle 06:00
+```
+
+### Verifiche post-deploy
+
+```sql
+select extname from pg_extension where extname in ('pg_net', 'pg_cron');
+
+select count(*) from public.profiles
+where display_name is null or btrim(display_name) = '';
+
+select u.id
+from auth.users u
+left join public.profiles p on p.user_id = u.id
+where p.user_id is null;
+```
+
+### Rotazione delle chiavi VAPID
+
+Cambiare le chiavi VAPID **invalida tutte le subscription esistenti**: sono legate
+alla vecchia chiave pubblica e i servizi push rifiutano gli invii con errori che non
+sono 404/410, quindi il cleanup automatico di `send-push` non le rimuove.
+
+Procedura:
+
+1. genera una nuova coppia: `npx web-push generate-vapid-keys`;
+2. aggiorna i secret della Edge Function `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`
+   (e `VAPID_SUBJECT` se cambia);
+3. aggiorna `VITE_VAPID_PUBLIC_KEY` nel frontend (locale e variabili Vercel) e rideploya;
+4. svuota le subscription obsolete:
+   ```sql
+   truncate table public.push_subscriptions;
+   ```
+5. gli utenti si ri-iscrivono automaticamente alla successiva apertura dell'app.
+
+Senza il passo 4 gli invii continuano a fallire per le vecchie subscription.
+
 ## 🏷️ Versione e note di rilascio
 
 La versione dell'app e le novità mostrate all'utente sono centralizzate in:
@@ -542,6 +630,7 @@ Nel pannello del progetto devono essere configurate queste variabili:
 ```env
 VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_VAPID_PUBLIC_KEY
 ```
 
 Dopo aver modificato le variabili d'ambiente, esegui un nuovo deploy.

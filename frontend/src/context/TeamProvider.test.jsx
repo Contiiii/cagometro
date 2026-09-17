@@ -215,15 +215,16 @@ describe("TeamProvider", () => {
     expect(latest.activity).toEqual([]);
   });
 
-  it("T3: errore parziale => sezioni fallite azzerate e hasErrors/failedSections", async () => {
+  it("T3: errore parziale => mantiene i dati precedenti per le sezioni fallite", async () => {
     useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
     getMyTeam.mockResolvedValue(TEAM_A);
-    getTeamLeaderboard.mockRejectedValue(new Error("classifica ko"));
-    getTeamActivity.mockRejectedValue(new Error("attività ko"));
 
     await loadTeam();
 
     console.error.mockClear();
+
+    getTeamLeaderboard.mockRejectedValue(new Error("classifica ko"));
+    getTeamActivity.mockRejectedValue(new Error("attività ko"));
 
     let result;
     await act(async () => {
@@ -238,10 +239,40 @@ describe("TeamProvider", () => {
     await waitFor(() => {
       expect(latest.members).toEqual(MEMBERS);
     });
-    expect(latest.leaderboard).toEqual([]);
-    expect(latest.activity).toEqual([]);
+    expect(latest.leaderboard).toEqual(LEADERBOARD);
+    expect(latest.activity).toEqual(ACTIVITY);
 
     expect(console.error).toHaveBeenCalledTimes(2);
+  });
+
+  it("T3b: cambio squadra con errore parziale azzera le sezioni fallite", async () => {
+    useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+    getMyTeam.mockResolvedValue(TEAM_A);
+
+    await loadTeam();
+
+    console.error.mockClear();
+
+    getMyTeam.mockResolvedValue(TEAM_B);
+    getTeamLeaderboard.mockRejectedValue(new Error("classifica ko"));
+    getTeamActivity.mockRejectedValue(new Error("attività ko"));
+
+    let result;
+    await act(async () => {
+      result = await latest.refreshDashboard();
+    });
+
+    expect(result).toEqual({
+      hasErrors: true,
+      failedSections: ["leaderboard", "activity"],
+    });
+
+    await waitFor(() => {
+      expect(latest.team?.team_id).toBe("team-b");
+    });
+    expect(latest.members).toEqual(MEMBERS);
+    expect(latest.leaderboard).toEqual([]);
+    expect(latest.activity).toEqual([]);
   });
 
   it("T4: getMyTeam fallisce => refreshDashboard lancia e azzera lo stato", async () => {

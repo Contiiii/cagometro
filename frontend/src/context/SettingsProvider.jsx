@@ -29,6 +29,8 @@ import {
   dequeueOp,
 } from "../utils/pendingQueue";
 
+import { reportError } from "../utils/reportError";
+
 const SETTINGS_STORAGE_KEY = "cagometro_settings";
 const SETTINGS_OP_TYPE = "upsertSettings";
 
@@ -128,7 +130,10 @@ function loadStoredSettings() {
       ),
     };
   } catch (error) {
-    console.error("Errore caricamento impostazioni:", error);
+    reportError(error, {
+      feature: "settings-load-local",
+      message: "Errore caricamento impostazioni:",
+    });
 
     return DEFAULT_SETTINGS;
   }
@@ -149,7 +154,11 @@ function flushSettingsQueue(userId) {
             dequeueOp(userId, op.id);
             return [...results, true];
           } catch (error) {
-            console.error("Errore flush settings queue:", error);
+            reportError(error, {
+              feature: "settings-sync",
+              userId,
+              message: "Errore flush settings queue:",
+            });
             return [...results, false];
           }
         })(),
@@ -175,6 +184,8 @@ export function SettingsProvider({ children }) {
   const localEditDuringSyncRef = useRef(false);
 
   const [syncEpoch, setSyncEpoch] = useState(0);
+
+  const [hydratedUserId, setHydratedUserId] = useState(() => user?.id ?? null);
 
   const isOnlineRef = useRef(typeof navigator !== "undefined" ? navigator.onLine : true);
 
@@ -280,7 +291,11 @@ export function SettingsProvider({ children }) {
 
         setSettings(nextSettings);
       } catch (error) {
-        console.error("Errore sincronizzazione impostazioni account:", error);
+        reportError(error, {
+          feature: "settings-sync",
+          userId: user?.id ?? null,
+          message: "Errore sincronizzazione impostazioni account:",
+        });
       }
     }
 
@@ -288,6 +303,7 @@ export function SettingsProvider({ children }) {
       serverSyncSettledRef.current = true;
 
       if (!cancelled) {
+        setHydratedUserId(user?.id ?? null);
         setSyncEpoch((n) => n + 1);
       }
     });
@@ -321,14 +337,18 @@ export function SettingsProvider({ children }) {
         teamAchievementAlerts: settings.teamAchievementAlerts,
       };
 
-      if (isOnlineRef.current) {
-        upsertMySettings(payload).catch((error) => {
-          console.error("Errore salvataggio impostazioni account:", error);
-          enqueueOp(user.id, {
-            type: SETTINGS_OP_TYPE,
-            payload,
+if (isOnlineRef.current) {
+          upsertMySettings(payload).catch((error) => {
+            reportError(error, {
+              feature: "settings-sync",
+              userId: user?.id ?? null,
+              message: "Errore salvataggio impostazioni account:",
+            });
+            enqueueOp(user.id, {
+              type: SETTINGS_OP_TYPE,
+              payload,
+            });
           });
-        });
       } else {
         enqueueOp(user.id, {
           type: SETTINGS_OP_TYPE,
@@ -417,9 +437,14 @@ export function SettingsProvider({ children }) {
     [settings.vibrationEnabled],
   );
 
+  const hydrated = hydratedUserId === (user?.id ?? null);
+
+  const loading = authLoading || (user?.id ? !hydrated : false);
+
   const value = useMemo(
     () => ({
       settings,
+      loading,
 
       confirmationsEnabled: settings.confirmationsEnabled,
 
@@ -448,6 +473,7 @@ export function SettingsProvider({ children }) {
     }),
     [
       settings,
+      loading,
       updateSetting,
       setAccent,
       resetSettings,

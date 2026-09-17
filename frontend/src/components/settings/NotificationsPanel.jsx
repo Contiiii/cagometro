@@ -6,13 +6,17 @@ import {
   Trophy,
   UserPlus,
   ListChecks,
+  Trash2,
 } from "lucide-react";
+
+import { useState } from "react";
 
 import IconTile from "../ui/IconTile";
 import PanelFrame from "./PanelFrame";
 import TinySwitch from "./TinySwitch";
 
 import { usePush } from "../../hooks/usePush";
+import { formatRelativeTime } from "../../utils/date";
 
 function SettingToggleCard({
   icon: Icon,
@@ -74,8 +78,20 @@ export default function NotificationsPanel({
   teamAchievementAlerts,
   updateSetting,
 }) {
-  const { isSupported, permission, isSubscribed, isBusy, subscribe, unsubscribe } =
-    usePush();
+  const {
+    isSupported,
+    permission,
+    isSubscribed,
+    isBusy,
+    subscribe,
+    unsubscribe,
+    devices,
+    devicesLoading,
+    currentEndpoint,
+    removeDevice,
+  } = usePush();
+
+  const [removingEndpoint, setRemovingEndpoint] = useState(null);
 
   const pushActive = permission === "granted" && isSubscribed;
 
@@ -84,6 +100,16 @@ export default function NotificationsPanel({
       unsubscribe();
     } else {
       subscribe();
+    }
+  }
+
+  async function handleRemoveDevice(endpoint) {
+    setRemovingEndpoint(endpoint);
+
+    try {
+      await removeDevice(endpoint);
+    } finally {
+      setRemovingEndpoint(null);
     }
   }
 
@@ -154,6 +180,68 @@ export default function NotificationsPanel({
           )}
         </div>
       </div>
+
+      {pushActive && (
+        <div
+          className={`mt-4 overflow-hidden rounded-2xl border ${theme.softSurface}`}
+        >
+          <p
+            className={`px-4 pb-3 pt-4 text-xs font-bold uppercase tracking-[0.12em] ${theme.subtle}`}
+          >
+            I tuoi dispositivi ({devices.length})
+          </p>
+
+          {devicesLoading && devices.length === 0 ? (
+            <p className={`px-4 pb-4 text-xs font-medium ${theme.muted}`}>
+              Caricamento…
+            </p>
+          ) : devices.length === 0 ? (
+            <p className={`px-4 pb-4 text-xs font-medium ${theme.muted}`}>
+              Nessun dispositivo registrato.
+            </p>
+          ) : (
+            <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {devices.map((device) => (
+                <li
+                  key={device.endpoint}
+                  className="flex items-center justify-between gap-3 px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <p
+                      className={`truncate text-sm font-bold ${theme.primaryText}`}
+                    >
+                      {device.device_name || "Dispositivo"}
+                      {device.endpoint === currentEndpoint && (
+                        <span className={`ml-1 text-xs font-medium ${theme.muted}`}>
+                          (questo dispositivo)
+                        </span>
+                      )}
+                    </p>
+
+                    <p className={`mt-0.5 text-xs font-medium ${theme.muted}`}>
+                      {device.last_seen_at
+                        ? `Visto ${formatRelativeTime(device.last_seen_at)}`
+                        : "Mai utilizzato"}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveDevice(device.endpoint)}
+                    disabled={removingEndpoint === device.endpoint}
+                    aria-label={`Rimuovi ${device.device_name || "dispositivo"}`}
+                    className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.06em] transition enabled:hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2"
+                    style={{ color: theme.subtle }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" strokeWidth={2.4} />
+                    Rimuovi
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className={`mt-4 overflow-hidden rounded-2xl border ${theme.softSurface}`}>
         <p

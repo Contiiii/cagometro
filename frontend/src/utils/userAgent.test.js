@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { parseUserAgent } from "./userAgent";
+import { formatDeviceName, parseUserAgent } from "./userAgent";
 
 describe("parseUserAgent", () => {
   it("riconosce Chrome su Windows", () => {
@@ -61,5 +61,26 @@ describe("parseUserAgent", () => {
     expect(unknown.browser).toBeNull();
     expect(unknown.os).toBeNull();
     expect(unknown.device).toBe("Desktop");
+  });
+});
+
+describe("formatDeviceName", () => {
+  it("combina browser e sistema operativo", () => {
+    expect(
+      formatDeviceName(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      ),
+    ).toBe("Chrome su Windows");
+  });
+
+  it("usa solo il sistema operativo se il browser è ignoto", () => {
+    expect(
+      formatDeviceName("Mozilla/5.0 (Linux; Android 14)"),
+    ).toBe("Android");
+  });
+
+  it("ricade su 'Dispositivo' per input vuoto", () => {
+    expect(formatDeviceName(null)).toBe("Dispositivo");
+    expect(formatDeviceName("AlienWeb/1.0")).toBe("Desktop");
   });
 });

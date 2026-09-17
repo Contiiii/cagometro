@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { formatDeviceName } from "../utils/userAgent";
 
 export function isPushSupported() {
   return (
@@ -88,12 +89,14 @@ export async function subscribeToPush({ deviceName, userAgent } = {}) {
 
   const { endpoint, keys } = subscription.toJSON();
 
+  const resolvedUserAgent = userAgent ?? navigator.userAgent;
+
   const { error } = await supabase.rpc("subscribe_push", {
     p_endpoint: endpoint,
     p_keys_p256dh: keys.p256dh,
     p_keys_auth: keys.auth,
-    p_user_agent: userAgent ?? navigator.userAgent,
-    p_device_name: deviceName ?? null,
+    p_user_agent: resolvedUserAgent,
+    p_device_name: deviceName ?? formatDeviceName(resolvedUserAgent),
   });
 
   if (error) {
@@ -101,6 +104,52 @@ export async function subscribeToPush({ deviceName, userAgent } = {}) {
   }
 
   return { permission: "granted", subscription };
+}
+
+export async function getMyPushSubscriptions() {
+  const { data, error } = await supabase.rpc("get_my_push_subscriptions");
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function removePushSubscription(endpoint) {
+  if (!endpoint) {
+    return;
+  }
+
+  const { error } = await supabase.rpc("unsubscribe_push", {
+    p_endpoint: endpoint,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function refreshPushSubscription(subscription) {
+  const payload = subscription?.toJSON ? subscription.toJSON() : subscription;
+
+  if (!payload?.endpoint || !payload?.keys) {
+    return;
+  }
+
+  const userAgent = navigator.userAgent;
+
+  const { error } = await supabase.rpc("subscribe_push", {
+    p_endpoint: payload.endpoint,
+    p_keys_p256dh: payload.keys.p256dh,
+    p_keys_auth: payload.keys.auth,
+    p_user_agent: userAgent,
+    p_device_name: formatDeviceName(userAgent),
+  });
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function unsubscribeFromPush({ endpoint } = {}) {

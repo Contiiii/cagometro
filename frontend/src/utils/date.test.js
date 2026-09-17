@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  formatRelativeTime,
   getLocalDateKey,
   getWeekRangeLabel,
   parseLocalDateKey,
@@ -156,6 +157,51 @@ describe("parseLocalDateKey", () => {
     const date = parseLocalDateKey("2026-xx-03");
 
     expect(Number.isNaN(date.getTime())).toBe(true);
+  });
+});
+
+describe("formatRelativeTime", () => {
+  const now = new Date(2026, 8, 17, 12, 0, 0);
+
+  it("formatta i minuti", () => {
+    expect(formatRelativeTime(new Date(2026, 8, 17, 11, 45, 0), now)).toBe(
+      "15 min fa",
+    );
+  });
+
+  it("formatta le ore con singolare e plurale", () => {
+    expect(formatRelativeTime(new Date(2026, 8, 17, 11, 0, 0), now)).toBe(
+      "1 ora fa",
+    );
+    expect(formatRelativeTime(new Date(2026, 8, 17, 9, 0, 0), now)).toBe(
+      "3 ore fa",
+    );
+  });
+
+  it("formatta ieri e i giorni", () => {
+    expect(formatRelativeTime(new Date(2026, 8, 16, 12, 0, 0), now)).toBe(
+      "ieri",
+    );
+    expect(formatRelativeTime(new Date(2026, 8, 14, 12, 0, 0), now)).toBe(
+      "3 giorni fa",
+    );
+  });
+
+  it("usa 'adesso' sotto il minuto", () => {
+    expect(formatRelativeTime(new Date(2026, 8, 17, 11, 59, 30), now)).toBe(
+      "adesso",
+    );
+  });
+
+  it("ricade sulla data per valori vecchi", () => {
+    expect(formatRelativeTime(new Date(2026, 6, 1, 12, 0, 0), now)).toContain(
+      "2026",
+    );
+  });
+
+  it("gestisce valori mancanti o invalidi", () => {
+    expect(formatRelativeTime(null, now)).toBe("");
+    expect(formatRelativeTime("cagometro", now)).toBe("");
   });
 });
 

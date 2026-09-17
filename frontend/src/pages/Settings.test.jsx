@@ -34,6 +34,10 @@ vi.mock("../hooks/usePush", () => ({
     isBusy: false,
     subscribe: vi.fn(),
     unsubscribe: vi.fn(),
+    devices: [],
+    devicesLoading: false,
+    currentEndpoint: null,
+    removeDevice: vi.fn(),
   })),
 }));
 
@@ -177,5 +181,12 @@ describe("CagometroSettings", () => {
     fireEvent.click(screen.getByRole("button", { name: /Notifiche/ }));
 
     expect(await screen.findByText("Notifiche del dispositivo")).toBeTruthy();
+  });
+
+  it("mostra uno skeleton finché le impostazioni stanno caricando", () => {
+    const { container } = renderSettings({ settings: { loading: true } });
+
+    expect(container.querySelector(".animate-pulse")).toBeTruthy();
+    expect(screen.queryByText("Stile")).toBeFalsy();
   });
 });

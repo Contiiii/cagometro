@@ -5,6 +5,7 @@ import { toBlob } from "html-to-image";
 import toast from "react-hot-toast";
 import poopIcon from "../../assets/poop.webp?inline";
 import useModalFocusTrap from "../../hooks/useModalFocusTrap";
+import { reportError } from "../../utils/reportError";
 
 function withTimeout(promise, ms, message) {
   let timer;
@@ -143,7 +144,10 @@ async function handleShareCard() {
   } catch (error) {
     if (error?.name === "AbortError") return;
 
-    console.error("Errore durante la condivisione della card:", error);
+    reportError(error, {
+      feature: "report-share",
+      message: "Errore durante la condivisione della card:",
+    });
     toast.error("Errore durante la condivisione");
   } finally {
     setIsSharing(false);

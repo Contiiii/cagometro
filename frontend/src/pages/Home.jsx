@@ -13,6 +13,7 @@ import PoopButton from "../components/home/PoopButton";
 import UndoButton from "../components/home/UndoButton";
 import MotivationToast from "../components/home/MotivationToast";
 import ReleaseNotesModal from "../components/ReleaseNotesModal";
+import SkeletonBlock from "../components/ui/SkeletonBlock";
 
 import {
   APP_VERSION,
@@ -24,6 +25,7 @@ import { pickRandomPhrase } from "../config/motivation";
 
 import { useTheme } from "../hooks/useTheme.js";
 import { getTheme } from "../config/theme.js";
+import { useAuth } from "../hooks/useAuth.js";
 import { useEntries } from "../hooks/useEntries.js";
 import { useStats } from "../hooks/useStats.js";
 import { useAchievements } from "../hooks/useAchievements.js";
@@ -31,6 +33,7 @@ import { useSettings } from "../hooks/useSettings.js";
 import { usePush } from "../hooks/usePush.js";
 import { sendMyPushNotification } from "../services/pushService.js";
 import { calculateStreak } from "../utils/stats.js";
+import { reportError } from "../utils/reportError.js";
 
 const CURRENT_APP_VERSION = APP_VERSION;
 
@@ -59,7 +62,9 @@ export default function Home() {
 
   const isDark = resolvedTheme === "dark";
 
-  const { entries, todayCount, incrementToday, decrementToday } = useEntries();
+  const { user } = useAuth();
+
+  const { entries, loading: entriesLoading, todayCount, incrementToday, decrementToday } = useEntries();
 
   const {
     unlockedAchievement,
@@ -81,7 +86,7 @@ export default function Home() {
   const [motivationToast, setMotivationToast] = useState(null);
 
   const registerActivity = async () => {
-    if (isRegistering || isUndoing) return;
+    if (isRegistering || isUndoing || entriesLoading) return;
 
     try {
       setIsRegistering(true);
@@ -119,7 +124,11 @@ export default function Home() {
             body: `Hai sbloccato ${achievementNames}.`,
             url: "/achievements",
           }).catch((error) => {
-            console.error("Errore invio notifica traguardo:", error);
+            reportError(error, {
+              feature: "home-achievement-push",
+              userId: user?.id ?? null,
+              message: "Errore invio notifica traguardo:",
+            });
           });
         }
 
@@ -130,12 +139,20 @@ export default function Home() {
             body: `Hai raggiunto una serie di ${updatedStreak} giorni consecutivi.`,
             url: "/",
           }).catch((error) => {
-            console.error("Errore invio notifica streak:", error);
+            reportError(error, {
+              feature: "home-streak-push",
+              userId: user?.id ?? null,
+              message: "Errore invio notifica streak:",
+            });
           });
         }
       }
     } catch (error) {
-      console.error("Errore durante la registrazione:", error);
+      reportError(error, {
+        feature: "home-register",
+        userId: user?.id ?? null,
+        message: "Errore durante la registrazione:",
+      });
       setMessage("Non è stato possibile salvare la registrazione.");
     } finally {
       setIsRegistering(false);
@@ -163,10 +180,11 @@ export default function Home() {
 
       resetLockedAchievements(total, updatedStreak);
     } catch (error) {
-      console.error(
-        "Errore durante l'annullamento della registrazione:",
-        error,
-      );
+      reportError(error, {
+        feature: "home-undo",
+        userId: user?.id ?? null,
+        message: "Errore durante l'annullamento della registrazione:",
+      });
 
       setMessage("Non è stato possibile annullare la registrazione.");
     } finally {
@@ -217,7 +235,11 @@ export default function Home() {
 
           <CloudBackupWarning />
 
-          <StreakCard streak={streak} bestStreak={bestStreak} theme={theme} />
+          {entriesLoading ? (
+            <SkeletonBlock className="mt-6 h-[72px] w-full" />
+          ) : (
+            <StreakCard streak={streak} bestStreak={bestStreak} theme={theme} />
+          )}
         </section>
 
         <Card
@@ -228,11 +250,15 @@ export default function Home() {
           <div className="pointer-events-none absolute -right-12 top-2 h-36 w-36 rounded-full bg-accent/[0.07] blur-3xl" />
           <div className="pointer-events-none absolute -left-16 bottom-0 h-32 w-32 rounded-full bg-amber-400/[0.05] blur-3xl" />
 
-          <DailyCounter
-            todayCount={todayCount}
-            theme={theme}
-            prefersReducedMotion={prefersReducedMotion}
-          />
+          {entriesLoading ? (
+            <SkeletonBlock className="h-24 w-full" />
+          ) : (
+            <DailyCounter
+              todayCount={todayCount}
+              theme={theme}
+              prefersReducedMotion={prefersReducedMotion}
+            />
+          )}
 
           <p className={`relative mt-2 text-sm font-medium ${theme.muted}`}>
             {displayMessage}
@@ -261,7 +287,7 @@ export default function Home() {
 
             <UndoButton
               onClick={undoActivity}
-              disabled={todayCount === 0 || isUndoing || isRegistering}
+              disabled={todayCount === 0 || isUndoing || isRegistering || entriesLoading}
               isUndoing={isUndoing}
               isDark={isDark}
               theme={theme}

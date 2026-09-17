@@ -354,11 +354,26 @@ describe("createTeamActivity", () => {
       p_activity_type: "entry_created",
       p_points: 5,
       p_metadata: { date: "2026-09-13" },
+      p_dedup_key: null,
     });
     expect(activity).toEqual({ id: "act-1" });
   });
 
-  it("usa null come default per punti e metadata", async () => {
+  it("passa la chiave di deduplicazione alla rpc", async () => {
+    mockRpc({ data: { id: "act-2" } });
+
+    const activity = await createTeamActivity("entry_created", 1, null, "dedup-1");
+
+    expect(supabase.rpc).toHaveBeenCalledWith("create_team_activity", {
+      p_activity_type: "entry_created",
+      p_points: 1,
+      p_metadata: null,
+      p_dedup_key: "dedup-1",
+    });
+    expect(activity).toEqual({ id: "act-2" });
+  });
+
+  it("usa null come default per punti, metadata e dedup key", async () => {
     mockRpc({ data: null });
 
     await createTeamActivity("entry_created");
@@ -367,6 +382,7 @@ describe("createTeamActivity", () => {
       p_activity_type: "entry_created",
       p_points: null,
       p_metadata: null,
+      p_dedup_key: null,
     });
   });
 

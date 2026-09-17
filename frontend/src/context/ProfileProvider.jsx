@@ -6,6 +6,8 @@ import { useAuth } from "../hooks/useAuth";
 
 import { loadProfileSnapshot, saveProfileSnapshot } from "../utils/storage";
 
+import { reportError } from "../utils/reportError";
+
 import {
   getProfile,
   updateProfile as updateProfileService,
@@ -18,6 +20,8 @@ export function ProfileProvider({ children }) {
   const [profile, setProfile] = useState(null);
 
   const userId = user?.id ?? null;
+
+  const [hydratedUserId, setHydratedUserId] = useState(() => userId);
 
   // Evita che lo snapshot di un account precedente venga salvato
   // sotto la chiave del nuovo account durante il cambio utente.
@@ -54,7 +58,15 @@ export function ProfileProvider({ children }) {
           setProfile(data);
         }
       } catch (error) {
-        console.error("Errore caricamento profilo:", error);
+        reportError(error, {
+          feature: "profile-load",
+          userId,
+          message: "Errore caricamento profilo:",
+        });
+      }
+
+      if (!cancelled) {
+        setHydratedUserId(userId);
       }
     }
 
@@ -87,7 +99,11 @@ export function ProfileProvider({ children }) {
           setProfile(data);
         }
       } catch (error) {
-        console.error("Errore sincronizzazione profilo:", error);
+        reportError(error, {
+          feature: "profile-sync",
+          userId,
+          message: "Errore sincronizzazione profilo:",
+        });
       }
     }
 
@@ -144,12 +160,17 @@ export function ProfileProvider({ children }) {
     [userId],
   );
 
+  const hydrated = hydratedUserId === userId;
+
+  const loading = authLoading || (userId ? !hydrated : false);
+
   const value = useMemo(
     () => ({
       profile: userId ? profile : null,
+      loading,
       updateProfile,
     }),
-    [userId, profile, updateProfile],
+    [userId, profile, loading, updateProfile],
   );
 
   return (

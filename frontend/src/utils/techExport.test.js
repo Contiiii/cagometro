@@ -49,11 +49,11 @@ describe("buildTechExport", () => {
   it("riflette l'override di versione e timestamp", () => {
     const exported = buildTechExport({
       ...payload,
-      versione: "2.1.0",
+      versione: "2.2.0",
       generatoIl: "2027-01-01T00:00:00.000Z",
     });
 
-    expect(exported.versione).toBe("2.1.0");
+    expect(exported.versione).toBe("2.2.0");
     expect(exported.generatoIl).toBe("2027-01-01T00:00:00.000Z");
   });
 });

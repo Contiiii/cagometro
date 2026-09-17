@@ -15,10 +15,18 @@ vi.mock("../services/pushService", () => ({
   isPushSupported: vi.fn(() => true),
   subscribeToPush: vi.fn(),
   unsubscribeFromPush: vi.fn(),
+  getMyPushSubscriptions: vi.fn(),
+  removePushSubscription: vi.fn(),
+  refreshPushSubscription: vi.fn(),
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
+
+  pushService.getNotificationPermission.mockReturnValue("default");
+  pushService.getMyPushSubscriptions.mockResolvedValue([]);
+  pushService.refreshPushSubscription.mockResolvedValue(undefined);
+  pushService.removePushSubscription.mockResolvedValue(undefined);
 });
 
 describe("usePush", () => {
@@ -79,5 +87,59 @@ describe("usePush", () => {
 
     expect(pushService.unsubscribeFromPush).toHaveBeenCalled();
     expect(result.current.isSubscribed).toBe(false);
+  });
+
+  it("carica i dispositivi registrati", async () => {
+    pushService.getPushSubscription.mockResolvedValue(null);
+    pushService.getMyPushSubscriptions.mockResolvedValue([
+      { endpoint: "endpoint-1", device_name: "Chrome su Windows" },
+    ]);
+
+    const { result } = renderHook(() => usePush());
+
+    await waitFor(() => {
+      expect(result.current.devices).toHaveLength(1);
+    });
+  });
+
+  it("rinfresca last_seen_at quando il permesso è concesso", async () => {
+    pushService.getNotificationPermission.mockReturnValue("granted");
+    pushService.getPushSubscription.mockResolvedValue({
+      endpoint: "endpoint-1",
+    });
+
+    renderHook(() => usePush());
+
+    await waitFor(() => {
+      expect(pushService.refreshPushSubscription).toHaveBeenCalled();
+    });
+  });
+
+  it("non rinfresca senza permesso concesso", async () => {
+    pushService.getNotificationPermission.mockReturnValue("default");
+    pushService.getPushSubscription.mockResolvedValue({
+      endpoint: "endpoint-1",
+    });
+
+    const { result } = renderHook(() => usePush());
+
+    await waitFor(() => {
+      expect(result.current.isSubscribed).toBe(true);
+    });
+
+    expect(pushService.refreshPushSubscription).not.toHaveBeenCalled();
+  });
+
+  it("removeDevice rimuove il dispositivo e ricarica la lista", async () => {
+    pushService.getPushSubscription.mockResolvedValue(null);
+
+    const { result } = renderHook(() => usePush());
+
+    await act(async () => {
+      await result.current.removeDevice("endpoint-2");
+    });
+
+    expect(pushService.removePushSubscription).toHaveBeenCalledWith("endpoint-2");
+    expect(pushService.getMyPushSubscriptions).toHaveBeenCalled();
   });
 });

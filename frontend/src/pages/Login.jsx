@@ -7,6 +7,7 @@ import Header from "../components/Header";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../hooks/useTheme";
 import { getTheme } from "../config/theme";
+import { reportError } from "../utils/reportError";
 
 import toast from "react-hot-toast";
 
@@ -48,7 +49,11 @@ export default function Login() {
           : undefined,
       );
     } catch (error) {
-      console.error("Errore durante il login:", error);
+      reportError(error, {
+        feature: "auth-login",
+        userId: user?.id ?? null,
+        message: "Errore durante il login:",
+      });
       toast.error("Non è stato possibile completare l'accesso");
       setLoggingIn(false);
     }

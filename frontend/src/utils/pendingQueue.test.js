@@ -9,6 +9,7 @@ import {
   enqueueOp,
   dequeueOp,
   hasPendingOps,
+  createOpId,
 } from "./pendingQueue";
 
 beforeEach(() => {
@@ -70,5 +71,24 @@ describe("pendingQueue", () => {
     expect(loadPendingOps("user-a")).toHaveLength(1);
     expect(loadPendingOps("user-b")).toHaveLength(1);
     expect(loadPendingOps("user-c")).toEqual([]);
+  });
+
+  it("createOpId genera id univoci con formato timestamp-suffisso", () => {
+    const ids = new Set();
+
+    for (let i = 0; i < 50; i += 1) {
+      const id = createOpId();
+      expect(id).toMatch(/^\d{13}-[a-z0-9]{7}$/);
+      expect(ids.has(id)).toBe(false);
+      ids.add(id);
+    }
+  });
+
+  it("enqueueOp usa createOpId per l'id dell'operazione", () => {
+    enqueueOp(USER_ID, { type: "saveEntry" });
+
+    const op = loadPendingOps(USER_ID)[0];
+
+    expect(op.id).toMatch(/^\d{13}-[a-z0-9]{7}$/);
   });
 });

@@ -26,6 +26,7 @@ import { useSettings } from "../hooks/useSettings";
 import IconTile from "../components/ui/IconTile";
 import StatCard from "../components/ui/StatCard";
 import ReleaseNotesModal from "../components/ReleaseNotesModal";
+import SkeletonBlock from "../components/ui/SkeletonBlock";
 
 import AppearancePanel from "../components/settings/AppearancePanel";
 import NotificationsPanel from "../components/settings/NotificationsPanel";
@@ -43,6 +44,7 @@ import { deleteAccount } from "../services/accountService";
 import { APP_VERSION, RELEASE_NOTES } from "../config/releaseNotes";
 import { accentOptions } from "../config/appearance";
 import { resolveSyncState } from "../config/syncState";
+import { reportError } from "../utils/reportError";
 import { getLevel } from "../config/levels";
 import { getTotalHistorical } from "../utils/stats";
 import { clearAllLocalData } from "../utils/storage";
@@ -112,6 +114,7 @@ export default function CagometroSettings() {
     teamMemberAlerts,
     teamAchievementAlerts,
     updateSetting,
+    loading: settingsLoading,
   } = useSettings();
 
   const { entries, syncStatus, pendingOps, clearLocalData, retrySync } =
@@ -316,7 +319,11 @@ export default function CagometroSettings() {
       setFeedbackMessage("");
       showToast("Segnalazione inviata. Grazie!");
     } catch (error) {
-      console.error("Errore durante l'invio della segnalazione:", error);
+      reportError(error, {
+        feature: "settings-feedback",
+        userId: user?.id ?? null,
+        message: "Errore durante l'invio della segnalazione:",
+      });
       showToast("Non è stato possibile inviare la segnalazione");
     } finally {
       setFeedbackSending(false);
@@ -342,7 +349,11 @@ export default function CagometroSettings() {
       showToast("Profilo aggiornato");
       setProfileEditorOpen(false);
     } catch (error) {
-      console.error(error);
+      reportError(error, {
+        feature: "settings-profile-save",
+        userId: user?.id ?? null,
+        message: "Errore durante il salvataggio del profilo:",
+      });
       showToast("Errore durante il salvataggio");
     } finally {
       setSaving(false);
@@ -372,16 +383,21 @@ export default function CagometroSettings() {
         try {
           await logout();
         } catch (error) {
-          console.error("Sessione già revocata:", error);
+          reportError(error, {
+            feature: "settings-logout-after-delete",
+            userId: user?.id ?? null,
+            message: "Errore durante il logout:",
+          });
         }
 
         navigate("/");
         showToast("Account eliminato");
       } catch (error) {
-        console.error(
-          "Errore durante l'eliminazione dell'account:",
-          error,
-        );
+        reportError(error, {
+          feature: "settings-account-delete",
+          userId: user?.id ?? null,
+          message: "Errore durante l'eliminazione dell'account:",
+        });
         showToast("Non è stato possibile eliminare l'account");
       }
 
@@ -400,7 +416,11 @@ export default function CagometroSettings() {
       navigate("/");
       showToast("Ti sei disconnesso");
     } catch (error) {
-      console.error("Errore durante il logout:", error);
+      reportError(error, {
+        feature: "settings-logout",
+        userId: user?.id ?? null,
+        message: "Errore durante il logout:",
+      });
       showToast("Non è stato possibile disconnettersi");
     }
   }
@@ -674,7 +694,11 @@ export default function CagometroSettings() {
               transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
               className={`min-w-0 rounded-[1.8rem] border p-5 sm:p-7 ${theme.surface}`}
             >
-              {activeSection === "appearance" && (
+              {settingsLoading ? (
+                <SkeletonBlock className="h-80 w-full" />
+              ) : (
+                <>
+                  {activeSection === "appearance" && (
                 <AppearancePanel
                   theme={theme}
                   accent={accent}
@@ -739,6 +763,8 @@ export default function CagometroSettings() {
                   onDevices={() => setSessionsOpen(true)}
                   onShowReleaseNotes={openReleaseNotes}
                 />
+              )}
+                </>
               )}
             </motion.section>
           </AnimatePresence>

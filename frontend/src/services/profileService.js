@@ -1,5 +1,7 @@
 import { supabase } from "../lib/supabase";
 
+import { reportError } from "../utils/reportError";
+
 import {
   loadPendingOps,
   enqueueOp,
@@ -86,7 +88,11 @@ export async function flushProfileQueue(userId) {
             dequeueOp(userId, op.id);
             return [...results, true];
           } catch (err) {
-            console.error("Errore flush profile queue:", err);
+            reportError(err, {
+              feature: "profile-sync",
+              userId,
+              message: "Errore flush profile queue:",
+            });
             return [...results, false];
           }
         })(),

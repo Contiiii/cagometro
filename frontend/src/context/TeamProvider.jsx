@@ -52,6 +52,7 @@ export function TeamProvider({ children }) {
   const [loadedUserId, setLoadedUserId] = useState(null);
   const dashboardRequestRef = useRef(0);
   const hydratedUserIdRef = useRef(null);
+  const teamIdRef = useRef(null);
   const realtimeDebounceTimerRef = useRef(null);
   const realtimeLeaderboardDirtyRef = useRef(false);
   const realtimeMembersDirtyRef = useRef(false);
@@ -62,6 +63,12 @@ export function TeamProvider({ children }) {
     setLeaderboard([]);
     setActivity([]);
   }, []);
+
+  // Riflette lo stato di `team` (incluso idratazione da snapshot) per
+  // rilevare i cambi di squadra dentro refreshDashboard.
+  useEffect(() => {
+    teamIdRef.current = team?.id ?? team?.team_id ?? null;
+  }, [team]);
 
   const refreshTeam = useCallback(async () => {
     const generation = dashboardRequestRef.current;
@@ -125,6 +132,7 @@ export function TeamProvider({ children }) {
       }
 
       const requestId = ++dashboardRequestRef.current;
+      const previousTeamId = teamIdRef.current;
 
       setLoading(true);
 
@@ -138,6 +146,11 @@ export function TeamProvider({ children }) {
             cancelled: true,
           };
         }
+
+        const nextTeamId = nextTeam?.id ?? nextTeam?.team_id ?? null;
+        const teamChanged = previousTeamId !== nextTeamId;
+
+        teamIdRef.current = nextTeamId;
 
         setTeam(nextTeam);
 
@@ -172,7 +185,9 @@ export function TeamProvider({ children }) {
         if (membersResult.status === "fulfilled") {
           setMembers(membersResult.value ?? []);
         } else {
-          setMembers([]);
+          if (teamChanged) {
+            setMembers([]);
+          }
 
           reportError(membersResult.reason, {
             feature: "team-members-load",
@@ -184,7 +199,9 @@ export function TeamProvider({ children }) {
         if (leaderboardResult.status === "fulfilled") {
           setLeaderboard(leaderboardResult.value ?? []);
         } else {
-          setLeaderboard([]);
+          if (teamChanged) {
+            setLeaderboard([]);
+          }
 
           reportError(leaderboardResult.reason, {
             feature: "team-leaderboard-load",
@@ -196,7 +213,9 @@ export function TeamProvider({ children }) {
         if (activityResult.status === "fulfilled") {
           setActivity(activityResult.value ?? []);
         } else {
-          setActivity([]);
+          if (teamChanged) {
+            setActivity([]);
+          }
 
           reportError(activityResult.reason, {
             feature: "team-activity-load",

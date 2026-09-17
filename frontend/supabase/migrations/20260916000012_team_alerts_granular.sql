@@ -20,6 +20,9 @@ set check_function_bodies = off;
 
 drop function if exists public.upsert_my_settings(boolean, boolean, boolean, boolean);
 
+-- Il tipo di ritorno cambia: CREATE OR REPLACE non è sufficiente.
+drop function if exists public.get_my_settings();
+
 CREATE OR REPLACE FUNCTION public.get_my_settings()
  RETURNS TABLE(daily_reminder boolean, streak_alerts boolean, achievement_alerts boolean, team_entry_alerts boolean, team_member_alerts boolean, team_achievement_alerts boolean, updated_at timestamp with time zone)
  LANGUAGE sql

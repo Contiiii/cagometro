@@ -25,11 +25,16 @@ import {
   savePendingOps,
   clearPendingOps,
   removePendingOps,
+  createOpId,
 } from "../utils/pendingQueue";
 
 import { getLocalDateKey } from "../utils/date";
 
 import { announce } from "../utils/announce";
+
+import { reportError } from "../utils/reportError";
+
+import { trackEvent } from "../services/analyticsService";
 
 const OP_TYPES = {
   SAVE_ENTRY: "saveEntry",
@@ -55,6 +60,12 @@ export function EntriesProvider({ children }) {
   const [pendingOps, setPendingOps] = useState([]);
 
   const [today, setToday] = useState(() => getLocalDateKey());
+
+  // Vero finché il primo hydrate (cache + server) non è concluso, così la UI
+  // può evitare di mostrare un "vuoto" ingannevole al primo avvio. Si tiene
+  // traccia dell'utente ormai idratato, così un cambio account torna a
+  // "loading" senza setState sincroni dentro l'effetto.
+  const [hydratedUserId, setHydratedUserId] = useState(() => userId);
 
   const entriesRef = useRef(entries);
 
@@ -143,7 +154,12 @@ export function EntriesProvider({ children }) {
         }
 
         for (const op of activityOps) {
-          await createTeamActivity(op.payload.activityType, op.payload.points);
+          await createTeamActivity(
+            op.payload.activityType,
+            op.payload.points,
+            null,
+            op.payload.dedupKey ?? op.id,
+          );
         }
 
         // Rimuove SOLO le operazioni del batch: quelle accodate durante
@@ -158,9 +174,17 @@ export function EntriesProvider({ children }) {
 
         prevSyncStatusRef.current = remainingOps.length > 0 ? "pending" : "synced";
 
+        trackEvent("sync_batch", { ok: true, ops: batch.length });
+
         return true;
       } catch (error) {
-        console.error("Errore sincronizzazione pending:", error);
+        reportError(error, {
+          feature: "entries-sync",
+          userId,
+          message: "Errore sincronizzazione pending:",
+        });
+
+        trackEvent("sync_batch", { ok: false, ops: batch.length });
 
         setSyncStatus("error");
         prevSyncStatusRef.current = "error";
@@ -199,6 +223,7 @@ export function EntriesProvider({ children }) {
         setSyncStatus("synced");
         prevSyncStatusRef.current = "synced";
         setEntries(loadAnonymousEntries());
+        setHydratedUserId(null);
         return;
       }
 
@@ -237,7 +262,12 @@ export function EntriesProvider({ children }) {
                 count: op.payload.count,
               });
             } else if (op.type === "createTeamActivity") {
-              await createTeamActivity(op.payload.activityType, op.payload.points);
+              await createTeamActivity(
+                op.payload.activityType,
+                op.payload.points,
+                null,
+                op.payload.dedupKey ?? op.id,
+              );
             }
           }
 
@@ -247,8 +277,16 @@ export function EntriesProvider({ children }) {
           setPendingOps((prev) =>
             prev.filter((op) => !bootstrapIds.includes(op.id)),
           );
+
+          trackEvent("sync_batch", { ok: true, ops: savedPendingOps.length });
         } catch (error) {
-          console.error("Errore sync pending:", error);
+          reportError(error, {
+            feature: "entries-sync",
+            userId,
+            message: "Errore sync pending al bootstrap:",
+          });
+
+          trackEvent("sync_batch", { ok: false, ops: savedPendingOps.length });
         }
       }
 
@@ -270,6 +308,8 @@ export function EntriesProvider({ children }) {
 
           setEntries(formatEntries(migratedData));
 
+          setHydratedUserId(userId);
+
           return;
         }
 
@@ -279,6 +319,8 @@ export function EntriesProvider({ children }) {
 
         // Se siamo offline resta la cache locale
       }
+
+      setHydratedUserId(userId);
     }
 
     bootstrapEntries();
@@ -307,12 +349,16 @@ export function EntriesProvider({ children }) {
 
   const todayCount = entries[today] || 0;
 
+  const hydrated = hydratedUserId === userId;
+
+  const loading = authLoading || (userId ? !hydrated : false);
+
   const createPendingOps = useCallback(
     (ops) => {
       const datedOps = ops.map((op) => ({
         ...op,
         timestamp: Date.now(),
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        id: createOpId(),
       }));
 
       setPendingOps((prev) => {
@@ -328,8 +374,18 @@ export function EntriesProvider({ children }) {
     [userId],
   );
 
+  // Modello di sync: ogni salvataggio scrive un CONTEGGIO ASSOLUTO nella
+  // entry del giorno (upsert idempotente). In caso di conflitto tra device
+  // vince l'ultima scrittura (last-write-wins): l'approccio è deterministico
+  // per un singolo device, dove i conteggi locali rimangono monotoni anche
+  // offline. Non usiamo delta proprio per mantenere l'upsert idempotente.
   const syncEntry = useCallback(
     async (date, count, logActivity = false) => {
+      // Chiave di deduplicazione condivisa tra il tentativo diretto e l'op
+      // accodata: un retry dopo un timeout "commit riuscito ma risposta persa"
+      // non crea una seconda riga di attività (on conflict in create_team_activity).
+      const activityDedupKey = logActivity ? createOpId() : null;
+
       try {
         await saveEntry({
           userId,
@@ -337,7 +393,7 @@ export function EntriesProvider({ children }) {
           count,
         });
         if (logActivity) {
-          await createTeamActivity("entry_created", 1);
+          await createTeamActivity("entry_created", 1, null, activityDedupKey);
         }
 
         await flushPendingOps();
@@ -345,7 +401,11 @@ export function EntriesProvider({ children }) {
         setSyncStatus("synced");
         prevSyncStatusRef.current = "synced";
       } catch (error) {
-        console.error(error);
+        reportError(error, {
+          feature: "entries-sync",
+          userId,
+          message: "Errore salvataggio entry:",
+        });
 
         const ops = [
           { type: OP_TYPES.SAVE_ENTRY, payload: { date, count } },
@@ -354,11 +414,17 @@ export function EntriesProvider({ children }) {
         if (logActivity) {
           ops.push({
             type: OP_TYPES.CREATE_TEAM_ACTIVITY,
-            payload: { activityType: "entry_created", points: 1 },
+            payload: {
+              activityType: "entry_created",
+              points: 1,
+              dedupKey: activityDedupKey,
+            },
           });
         }
 
         createPendingOps(ops);
+
+        trackEvent("offline_registration", { date, count });
 
         setSyncStatus("pending");
         prevSyncStatusRef.current = "pending";
@@ -431,6 +497,7 @@ export function EntriesProvider({ children }) {
   const value = useMemo(
     () => ({
       entries,
+      loading,
       syncStatus,
       pendingOps,
       today,
@@ -442,6 +509,7 @@ export function EntriesProvider({ children }) {
     }),
     [
       entries,
+      loading,
       syncStatus,
       pendingOps,
       today,

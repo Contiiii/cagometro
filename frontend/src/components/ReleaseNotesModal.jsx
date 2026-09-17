@@ -3,6 +3,7 @@ import { Check, Sparkles, UsersRound, X, ChevronDown, ChevronUp, ArrowRight } fr
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import useModalFocusTrap from "../hooks/useModalFocusTrap";
+import { getTheme } from "../config/theme";
 
 export default function ReleaseNotesModal({
   open,
@@ -31,21 +32,7 @@ export default function ReleaseNotesModal({
   const visibleFeatures = showAllVersions ? latestFeatures : latestFeatures.slice(0, 3);
   const hiddenFeaturesCount = Math.max(latestFeatures.length - visibleFeatures.length, 0);
 
-  const theme = isDark
-    ? {
-        panel: "border-white/[0.09] bg-[#17171b]",
-        soft: "border-white/[0.08] bg-white/[0.04]",
-        text: "text-zinc-50",
-        muted: "text-zinc-400",
-        overlay: "bg-zinc-950/70",
-      }
-    : {
-        panel: "border-zinc-900/[0.09] bg-[#fffaf6]",
-        soft: "border-zinc-900/[0.08] bg-zinc-900/[0.035]",
-        text: "text-zinc-950",
-        muted: "text-zinc-600",
-        overlay: "bg-zinc-950/45",
-      };
+  const theme = getTheme(isDark);
 
   const renderFeature = (feature, index, isExpanded = false) => {
     const Icon = feature.icon ?? Check;

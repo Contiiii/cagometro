@@ -1,5 +1,9 @@
 const PENDING_QUEUE_PREFIX = "pending_ops_";
 
+export function createOpId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 function getPendingQueueKey(userId) {
   return `${PENDING_QUEUE_PREFIX}${userId}`;
 }
@@ -43,7 +47,7 @@ export function enqueueOp(userId, op) {
   ops.push({
     ...op,
     timestamp: Date.now(),
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    id: createOpId(),
   });
   savePendingOps(userId, ops);
   return ops;

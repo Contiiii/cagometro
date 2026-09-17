@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { AuthContext } from "./auth-context";
+import { reportError } from "../utils/reportError";
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
@@ -18,7 +19,10 @@ export function AuthProvider({ children }) {
       if (!isMounted) return;
 
       if (error) {
-        console.error("Errore caricamento sessione:", error);
+        reportError(error, {
+          feature: "auth-session-load",
+          message: "Errore caricamento sessione:",
+        });
       }
 
       setSession(session);
@@ -51,7 +55,10 @@ export function AuthProvider({ children }) {
     });
 
     if (error) {
-      console.error("Errore durante il login:", error);
+      reportError(error, {
+        feature: "auth-login",
+        message: "Errore durante il login:",
+      });
     }
   }, []);
 

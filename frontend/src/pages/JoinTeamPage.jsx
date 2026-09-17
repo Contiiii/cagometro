@@ -7,6 +7,7 @@ import { useTeam } from "../hooks/useTeam";
 import { useTeamActions } from "../hooks/useTeamActions";
 import { notify } from "../utils/teamNotify";
 import { getFriendlyErrorMessage } from "../utils/friendlyError";
+import { reportError } from "../utils/reportError";
 
 export default function JoinTeamPage() {
   const { code } = useParams();
@@ -90,10 +91,11 @@ export default function JoinTeamPage() {
         setInviteTeam(team);
         setPreviewStatus("ready");
       } catch (error) {
-        console.error(
-          "Errore caricamento anteprima invito:",
-          error,
-        );
+        reportError(error, {
+          feature: "team-invite-preview",
+          userId: user?.id ?? null,
+          message: "Errore caricamento anteprima invito:",
+        });
 
         if (!cancelled) {
           setPreviewStatus("error");
@@ -141,7 +143,11 @@ export default function JoinTeamPage() {
     try {
       await handleJoinTeam(inviteCode, inviteTeam.name, { immediate: true });
     } catch (error) {
-      console.error("Errore ingresso nella squadra:", error);
+      reportError(error, {
+        feature: "team-join",
+        userId: user?.id ?? null,
+        message: "Errore ingresso nella squadra:",
+      });
 
       setJoinStatus("error");
       setErrorMessage(

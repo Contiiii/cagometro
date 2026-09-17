@@ -12,6 +12,10 @@ vi.mock("../../hooks/usePush", () => ({
     isBusy: false,
     subscribe: vi.fn(),
     unsubscribe: vi.fn(),
+    devices: [],
+    devicesLoading: false,
+    currentEndpoint: null,
+    removeDevice: vi.fn(),
   })),
 }));
 
@@ -36,6 +40,10 @@ function renderPanel(overrides) {
     isBusy: false,
     subscribe: vi.fn(),
     unsubscribe: vi.fn(),
+    devices: [],
+    devicesLoading: false,
+    currentEndpoint: null,
+    removeDevice: vi.fn(),
     ...overrides,
   };
 
@@ -122,6 +130,10 @@ describe("NotificationsPanel", () => {
       isBusy: false,
       subscribe: vi.fn(),
       unsubscribe: vi.fn(),
+      devices: [],
+      devicesLoading: false,
+      currentEndpoint: null,
+      removeDevice: vi.fn(),
     });
 
     render(
@@ -151,5 +163,42 @@ describe("NotificationsPanel", () => {
     expect(cardButton("^TraguardiQuando")).toBeDefined();
     expect(cardButton("Promemoria giornaliero").disabled).toBe(true);
     expect(cardButton("Traguardi in squadra").disabled).toBe(true);
+  });
+
+  it("mostra i dispositivi registrati e rimuove quello scelto", () => {
+    const removeDevice = vi.fn().mockResolvedValue(undefined);
+
+    renderPanel({
+      devices: [
+        {
+          endpoint: "endpoint-1",
+          device_name: "Chrome su Windows",
+          last_seen_at: new Date().toISOString(),
+        },
+        {
+          endpoint: "endpoint-2",
+          device_name: "Safari su iOS",
+          last_seen_at: null,
+        },
+      ],
+      currentEndpoint: "endpoint-1",
+      removeDevice,
+    });
+
+    expect(screen.getByText("I tuoi dispositivi (2)")).toBeTruthy();
+    expect(screen.getByText("(questo dispositivo)")).toBeTruthy();
+    expect(screen.getByText("Mai utilizzato")).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Rimuovi Safari su iOS" }),
+    );
+
+    expect(removeDevice).toHaveBeenCalledWith("endpoint-2");
+  });
+
+  it("nasconde la sezione dispositivi quando il push non è attivo", () => {
+    renderPanel({ permission: "default", isSubscribed: false });
+
+    expect(screen.queryByText(/I tuoi dispositivi/)).toBeNull();
   });
 });

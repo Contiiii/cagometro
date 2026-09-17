@@ -7,6 +7,7 @@ import CloseButton from "./CloseButton";
 
 import { useTeamUI } from "../../../hooks/useTeamUI";
 import { getFriendlyErrorMessage } from "../../../utils/friendlyError";
+import { reportError } from "../../../utils/reportError";
 
 export default function JoinTeamModal({
   onClose,
@@ -41,10 +42,10 @@ export default function JoinTeamModal({
       setJoinCode("");
       onClose();
     } catch (error) {
-      console.error(
-        "Errore durante l'ingresso nella squadra:",
-        error,
-      );
+      reportError(error, {
+        feature: "team-join",
+        message: "Errore durante l'ingresso nella squadra:",
+      });
 
       toast.error(
         getFriendlyErrorMessage(

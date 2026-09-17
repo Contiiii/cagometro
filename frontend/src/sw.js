@@ -1,7 +1,11 @@
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { ExpirationPlugin } from "workbox-expiration";
-import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
-import { registerRoute } from "workbox-routing";
+import {
+  precacheAndRoute,
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+} from "workbox-precaching";
+import { NavigationRoute, registerRoute } from "workbox-routing";
 import {
   CacheFirst,
   NetworkFirst,
@@ -13,8 +17,45 @@ self.addEventListener("message", (event) => {
   }
 });
 
+// Analytics errori service worker: inoltra ogni errore non gestito alla
+// pagina aperta, che provvede a registrarlo su Supabase.
+function forwardAnalytics(event, payload) {
+  const message = { type: "ANALYTICS_EVENT", event, payload };
+
+  self.clients
+    .matchAll({ type: "window", includeUncontrolled: true })
+    .then((clients) => {
+      clients.forEach((client) => client.postMessage(message));
+    })
+    .catch(() => {});
+}
+
+self.addEventListener("error", (event) => {
+  forwardAnalytics("sw_error", {
+    message: event?.message ?? "unknown",
+  });
+});
+
+self.addEventListener("unhandledrejection", (event) => {
+  forwardAnalytics("sw_error", {
+    reason: String(event?.reason ?? "unknown"),
+  });
+});
+
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
+
+// Fallback offline per le navigazioni: prova prima la rete, poi serve la
+// shell precacheata (index.html) così l'SPA si avvia anche senza connessione.
+registerRoute(
+  new NavigationRoute(async ({ request, event }) => {
+    try {
+      return await fetch(request);
+    } catch {
+      return (await createHandlerBoundToURL("/index.html"))({ request, event });
+    }
+  }),
+);
 
 registerRoute(
   ({ url }) =>

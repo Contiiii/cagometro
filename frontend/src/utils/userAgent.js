@@ -28,3 +28,21 @@ export function parseUserAgent(userAgent) {
 
   return { browser, os, device };
 }
+
+export function formatDeviceName(userAgent) {
+  const { browser, os, device } = parseUserAgent(userAgent);
+
+  if (browser && os) {
+    return `${browser} su ${os}`;
+  }
+
+  if (browser) {
+    return browser;
+  }
+
+  if (os) {
+    return os;
+  }
+
+  return device ?? "Dispositivo";
+}

@@ -74,6 +74,28 @@ test.describe("PWA", () => {
       .toBe(true);
   });
 
+  test("offre l'installazione quando il browser la permette", async ({
+    page,
+  }) => {
+    await page.goto("/settings");
+
+    await page.getByRole("button", { name: /Dati e sincronizzazione/ }).click();
+
+    await expect(
+      page.getByRole("button", { name: "Esporta JSON tecnico" }),
+    ).toBeVisible();
+
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new Event("beforeinstallprompt", { cancelable: true }),
+      );
+    });
+
+    await expect(
+      page.getByRole("button", { name: "Installa app" }),
+    ).toBeVisible();
+  });
+
   for (const image of IMAGES) {
     test(`serve ${image.label} alle dimensioni dichiarate`, async ({ request }) => {
       const response = await request.get(image.path);

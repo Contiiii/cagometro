@@ -30,6 +30,16 @@ vi.mock("../services/teamService", () => ({
   createTeamActivity: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("../services/analyticsService", () => ({
+  trackEvent: vi.fn(() => Promise.resolve()),
+  trackEventOnce: vi.fn(() => Promise.resolve()),
+  flushAnalyticsQueue: vi.fn(() => Promise.resolve()),
+  hasRecorded: vi.fn(() => false),
+  markRecorded: vi.fn(),
+}));
+
+import { trackEvent } from "../services/analyticsService";
+
 let latest = null;
 
 function Probe() {
@@ -502,9 +512,143 @@ describe("EntriesProvider", () => {
       date: today,
       count: 1,
     });
-    expect(createTeamActivity).toHaveBeenCalledWith("entry_created", 1);
+    expect(createTeamActivity).toHaveBeenCalledWith(
+      "entry_created",
+      1,
+      null,
+      expect.any(String),
+    );
     expect(latest.syncStatus).toBe("synced");
     expect(latest.pendingOps).toEqual([]);
+  });
+
+  it("offline: l'op attività accodata riusa la stessa dedupKey al flush", async () => {
+    setOnline(false);
+
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    const activityOps = latest.pendingOps.filter(
+      (op) => op.type === "createTeamActivity",
+    );
+    expect(activityOps).toHaveLength(1);
+
+    const dedupKey = activityOps[0].payload.dedupKey;
+    expect(dedupKey).toBeTruthy();
+    expect(activityOps[0].payload).toEqual({
+      activityType: "entry_created",
+      points: 1,
+      dedupKey,
+    });
+
+    setOnline(true);
+
+    await act(async () => {
+      await latest.retrySync();
+    });
+
+    await flushAsync();
+
+    expect(createTeamActivity).toHaveBeenCalledWith(
+      "entry_created",
+      1,
+      null,
+      dedupKey,
+    );
+  });
+
+  it("retry dopo attempt diretto fallito riusa la stessa dedupKey", async () => {
+    saveEntry.mockResolvedValue([]);
+    createTeamActivity.mockRejectedValueOnce(new Error("timeout"));
+
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    const firstCall = createTeamActivity.mock.calls[0];
+    const queuedActivity = latest.pendingOps.find(
+      (op) => op.type === "createTeamActivity",
+    );
+
+    expect(firstCall).toEqual([
+      "entry_created",
+      1,
+      null,
+      queuedActivity.payload.dedupKey,
+    ]);
+    expect(latest.syncStatus).toBe("pending");
+
+    createTeamActivity.mockResolvedValue(undefined);
+
+    await act(async () => {
+      await latest.retrySync();
+    });
+
+    await flushAsync();
+
+    expect(createTeamActivity).toHaveBeenLastCalledWith(
+      "entry_created",
+      1,
+      null,
+      firstCall[3],
+    );
+    expect(latest.syncStatus).toBe("synced");
+  });
+
+  it("flush usa op.id come dedupKey per le attività legacy senza dedupKey", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    const legacyOp = {
+      id: "legacy-op-1",
+      timestamp: Date.now(),
+      type: "createTeamActivity",
+      payload: { activityType: "entry_created", points: 1 },
+    };
+
+    window.localStorage.setItem(
+      "pending_ops_user-1",
+      JSON.stringify([legacyOp]),
+    );
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    expect(createTeamActivity).toHaveBeenCalledWith(
+      "entry_created",
+      1,
+      null,
+      "legacy-op-1",
+    );
   });
 
   it("decrementToday a zero non modifica nulla", async () => {
@@ -654,5 +798,101 @@ describe("EntriesProvider", () => {
     expect(entriesOfA).toEqual({ "2026-09-10": 1 });
     expect(entriesOfB).toEqual({ "2026-09-11": 2 });
     expect(entriesOfC).toEqual({ "2026-09-12": 3 });
+  });
+
+  it("traccia sync_batch ok quando un flush recupera i pending", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    setOnline(false);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    setOnline(true);
+
+    await act(async () => {
+      await latest.retrySync();
+    });
+
+    await flushAsync();
+
+    expect(trackEvent).toHaveBeenCalledWith(
+      "sync_batch",
+      expect.objectContaining({ ok: true }),
+    );
+  });
+
+  it("traccia sync_batch ko quando il flush fallisce", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    setOnline(false);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    importEntries.mockRejectedValueOnce(new Error("rete"));
+
+    let ok;
+
+    await act(async () => {
+      ok = await latest.retrySync();
+    });
+
+    await flushAsync();
+
+    expect(ok).toBe(false);
+    expect(trackEvent).toHaveBeenCalledWith(
+      "sync_batch",
+      expect.objectContaining({ ok: false }),
+    );
+  });
+
+  it("traccia offline_registration quando una registrazione finisce in coda", async () => {
+    useAuth.mockReturnValue({ user: { id: "user-1" }, loading: false });
+
+    setOnline(false);
+
+    render(
+      <EntriesProvider>
+        <Probe />
+      </EntriesProvider>,
+    );
+
+    await flushAsync();
+
+    const today = getLocalDateKey();
+
+    await act(async () => {
+      await latest.incrementToday();
+    });
+
+    await flushAsync();
+
+    expect(trackEvent).toHaveBeenCalledWith("offline_registration", {
+      date: today,
+      count: 1,
+    });
   });
 });

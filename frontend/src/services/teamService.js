@@ -153,11 +153,13 @@ export async function createTeamActivity(
   activityType,
   points = null,
   metadata = null,
+  dedupKey = null,
 ) {
   const { data, error } = await supabase.rpc("create_team_activity", {
     p_activity_type: activityType,
     p_points: points,
     p_metadata: metadata,
+    p_dedup_key: dedupKey,
   });
 
   if (error) {
