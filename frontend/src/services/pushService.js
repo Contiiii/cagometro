@@ -47,7 +47,18 @@ function getVapidPublicKey() {
 }
 
 async function getServiceWorkerRegistration() {
-  const registration = await navigator.serviceWorker.ready;
+  const timeout = new Promise((_, reject) => {
+    setTimeout(
+      () =>
+        reject(new Error("Service worker non disponibile: registrazione troppo lenta")),
+      10000,
+    );
+  });
+
+  const registration = await Promise.race([
+    navigator.serviceWorker.ready,
+    timeout,
+  ]);
 
   return registration;
 }
@@ -66,6 +77,14 @@ export async function getPushSubscription() {
 export async function subscribeToPush({ deviceName, userAgent } = {}) {
   if (!isPushSupported()) {
     throw new Error("Notifiche non supportate da questo browser.");
+  }
+
+  const vapidKey = getVapidPublicKey();
+
+  if (!vapidKey) {
+    throw new Error(
+      "Chiave VAPID mancante: configura VITE_VAPID_PUBLIC_KEY.",
+    );
   }
 
   const permission = await requestNotificationPermission();

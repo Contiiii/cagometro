@@ -201,4 +201,17 @@ describe("NotificationsPanel", () => {
 
     expect(screen.queryByText(/I tuoi dispositivi/)).toBeNull();
   });
+
+  it("mostra il messaggio di errore quando subscribe fallisce", () => {
+    renderPanel({
+      permission: "default",
+      isSubscribed: false,
+      subscribeError: "Service worker non disponibile",
+    });
+
+    expect(screen.getByText(/Attivazione fallita/)).toBeTruthy();
+    expect(
+      screen.getByText(/Service worker non disponibile/),
+    ).toBeTruthy();
+  });
 });

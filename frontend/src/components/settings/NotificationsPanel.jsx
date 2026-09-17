@@ -89,6 +89,7 @@ export default function NotificationsPanel({
     devicesLoading,
     currentEndpoint,
     removeDevice,
+    subscribeError,
   } = usePush();
 
   const [removingEndpoint, setRemovingEndpoint] = useState(null);
@@ -180,6 +181,21 @@ export default function NotificationsPanel({
           )}
         </div>
       </div>
+
+      {subscribeError && (
+        <div
+          className={`mt-4 rounded-2xl border px-4 py-3 text-xs font-medium ${theme.muted}`}
+          style={{ borderColor: "currentColor", backgroundColor: `${accentColor}0d` }}
+        >
+          Attivazione fallita: {subscribeError}
+          {typeof window !== "undefined" &&
+            !window.navigator.standalone && (
+              <span className="block mt-1">
+                Apri l'app dall'icona Home (aggiungi a schermata Home).
+              </span>
+            )}
+        </div>
+      )}
 
       {pushActive && (
         <div

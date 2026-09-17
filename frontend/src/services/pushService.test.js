@@ -357,3 +357,16 @@ describe("sendMyPushNotification", () => {
     ).rejects.toThrow("rpc ko");
   });
 });
+
+describe("subscribeToPush - errori", () => {
+  it("lancia quando il service worker rifiuta la ready", async () => {
+    mockPushEnvironment();
+
+    Object.defineProperty(globalThis.navigator, "serviceWorker", {
+      configurable: true,
+      value: { ready: Promise.reject(new Error("unavailable")) },
+    });
+
+    await expect(subscribeToPush()).rejects.toThrow("unavailable");
+  });
+});

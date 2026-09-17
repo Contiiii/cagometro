@@ -142,4 +142,22 @@ describe("usePush", () => {
     expect(pushService.removePushSubscription).toHaveBeenCalledWith("endpoint-2");
     expect(pushService.getMyPushSubscriptions).toHaveBeenCalled();
   });
+
+  it("subscribe gestisce l'errore e imposta subscribeError", async () => {
+    pushService.getPushSubscription.mockResolvedValue(null);
+    pushService.subscribeToPush.mockRejectedValue(
+      new Error("Service worker non disponibile"),
+    );
+
+    const { result } = renderHook(() => usePush());
+
+    await act(async () => {
+      const ret = await result.current.subscribe();
+      expect(ret.error).toBe("Service worker non disponibile");
+    });
+
+    expect(result.current.subscribeError).toBe("Service worker non disponibile");
+    expect(result.current.permission).toBe("default");
+    expect(result.current.isSubscribed).toBe(false);
+  });
 });

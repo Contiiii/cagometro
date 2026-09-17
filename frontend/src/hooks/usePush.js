@@ -13,6 +13,7 @@ import {
   refreshPushSubscription,
 } from "../services/pushService";
 import { reportError } from "../utils/reportError";
+import { trackEvent } from "../services/analyticsService";
 
 export function usePush() {
   const { user } = useAuth();
@@ -26,6 +27,7 @@ export function usePush() {
   const [devices, setDevices] = useState([]);
   const [devicesLoading, setDevicesLoading] = useState(false);
   const [currentEndpoint, setCurrentEndpoint] = useState(null);
+  const [subscribeError, setSubscribeError] = useState(null);
 
   const refreshDevices = useCallback(async () => {
     if (!user?.id || !isSupported) {
@@ -104,6 +106,7 @@ export function usePush() {
     }
 
     setIsBusy(true);
+    setSubscribeError(null);
 
     try {
       const result = await subscribeToPush();
@@ -114,7 +117,27 @@ export function usePush() {
 
       await refreshDevices();
 
-      return result;
+      return { permission: result.permission, subscription: result.subscription, error: null };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error);
+
+      reportError(error, {
+        feature: "push-subscribe",
+        userId: user?.id ?? null,
+        message: "Errore attivazione notifiche:",
+      });
+
+      try {
+        await trackEvent("push_subscribe_error", { message });
+      } catch {
+        // evento analitico non inviato, non bloccante
+      }
+
+      setSubscribeError(message);
+      setPermission(getNotificationPermission());
+
+      return { permission: getNotificationPermission(), subscription: null, error: message };
     } finally {
       setIsBusy(false);
     }
@@ -126,6 +149,7 @@ export function usePush() {
     }
 
     setIsBusy(true);
+    setSubscribeError(null);
 
     try {
       await unsubscribeFromPush();
@@ -144,6 +168,8 @@ export function usePush() {
       if (!endpoint) {
         return;
       }
+
+      setSubscribeError(null);
 
       await removePushSubscription(endpoint);
 
@@ -165,6 +191,7 @@ export function usePush() {
       currentEndpoint,
       refreshDevices,
       removeDevice,
+      subscribeError,
     }),
     [
       isSupported,
@@ -178,6 +205,21 @@ export function usePush() {
       currentEndpoint,
       refreshDevices,
       removeDevice,
+      subscribeError,
+    ],
+    [
+      isSupported,
+      permission,
+      isSubscribed,
+      isBusy,
+      subscribe,
+      unsubscribe,
+      devices,
+      devicesLoading,
+      currentEndpoint,
+      refreshDevices,
+      removeDevice,
+      subscribeError,
     ],
   );
 
