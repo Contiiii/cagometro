@@ -97,24 +97,24 @@ export default function AppearancePanel({
                 aria-pressed={active}
                 className={`flex min-h-14 items-center justify-between rounded-2xl border px-4 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.softSurface}`}
                 style={{
-                  borderColor: active ? option.color : undefined,
+                  borderColor: active ? option.fill : undefined,
                   boxShadow: active
-                    ? `0 0 0 1px ${option.color} inset`
+                    ? `0 0 0 1px ${option.fill} inset`
                     : undefined,
-                  "--tw-ring-color": option.color,
+                  "--tw-ring-color": option.fill,
                 }}
               >
                 <span className="flex items-center gap-3">
                   <span
                     className="h-7 w-7 rounded-full shadow-sm"
-                    style={{ backgroundColor: option.color }}
+                    style={{ backgroundColor: option.fill }}
                   />
                   <span className={`text-sm font-black ${theme.primaryText}`}>
                     {option.label}
                   </span>
                 </span>
 
-                {active && <CheckMark color={option.color} contrast={getAccentContrast(option.id)} />}
+                {active && <CheckMark color={option.fill} contrast={getAccentContrast(option.id)} />}
               </button>
             );
           })}

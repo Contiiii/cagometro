@@ -1,8 +1,7 @@
 import { devices, expect, test } from "@playwright/test";
 
-const MOBILE_CONTEXT = (({ defaultBrowserType, ...rest }) => rest)(
-  devices["Pixel 7"],
-);
+const MOBILE_CONTEXT = { ...devices["Pixel 7"] };
+delete MOBILE_CONTEXT.defaultBrowserType;
 
 const IMAGES = [
   { path: "/icon-192.png", label: "icon 192", width: 192, height: 192 },
