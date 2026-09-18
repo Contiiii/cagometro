@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 import { isMobileDevice } from "../utils/userAgent";
+import { OWNER_EMAILS } from "../config/admin";
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => vi.fn(),
@@ -30,6 +31,10 @@ vi.mock("../hooks/useSettings", () => ({
 
 vi.mock("../hooks/useEntries", () => ({
   useEntries: vi.fn(),
+}));
+
+vi.mock("../../services/quotaService", () => ({
+  fetchQuotaSnapshot: vi.fn(async () => null),
 }));
 
 vi.mock("../hooks/usePush", () => ({
@@ -72,6 +77,7 @@ function setupMatchMedia() {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  OWNER_EMAILS.splice(0, OWNER_EMAILS.length, "andreaconti05@gmail.com");
 });
 
 beforeEach(() => {
@@ -211,6 +217,27 @@ describe("CagometroSettings", () => {
     expect(
       screen.queryByRole("button", { name: "Aggiungi alla Home" }),
     ).toBeFalsy();
+  });
+
+  it("mostra i consumi del piano solo all'account proprietario", async () => {
+    OWNER_EMAILS.splice(0, OWNER_EMAILS.length, "mario@test.it");
+
+    renderSettings({ user: USER });
+
+    fireEvent.click(screen.getByRole("button", { name: /Account/ }));
+
+    expect(await screen.findByText("Risorse del servizio")).toBeTruthy();
+  });
+
+  it("nasconde i consumi del piano agli altri account", async () => {
+    OWNER_EMAILS.splice(0, OWNER_EMAILS.length);
+
+    renderSettings({ user: USER });
+
+    fireEvent.click(screen.getByRole("button", { name: /Account/ }));
+
+    expect(screen.queryByText("Risorse del servizio")).toBeFalsy();
+    expect(await screen.findByText("Le cose importanti")).toBeTruthy();
   });
 
   it("mostra uno skeleton finché le impostazioni stanno caricando", () => {

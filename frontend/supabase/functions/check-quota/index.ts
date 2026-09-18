@@ -107,13 +107,9 @@ async function collectApiCounts(
   token: string,
 ): Promise<CollectorResult> {
   try {
-    const url = new URL(
-      `${API_ROOT}/projects/${ref}/analytics/endpoints/usage.api-counts`,
-    );
+    const path = `analytics/endpoints/usage.api-counts?interval=${encodeURIComponent(USAGE_WINDOW)}`;
 
-    url.searchParams.set("interval", USAGE_WINDOW);
-
-    const payload = await managementGet(ref, token, url.pathname + url.search);
+    const payload = await managementGet(ref, token, path);
     const results = Array.isArray(payload?.result) ? payload.result : [];
 
     const usage = (results as JsonObject[]).reduce(
@@ -186,12 +182,22 @@ function rowTotal(row: unknown): number {
 
   const record = row as JsonObject;
 
-  for (const key of ["count", "total_count", "total_requests", "requests"]) {
+  for (const key of [
+    "count",
+    "total_count",
+    "total_requests",
+    "requests",
+    "total",
+  ]) {
     const value = record[key];
 
     if (typeof value === "number" && Number.isFinite(value)) {
       return value;
     }
+  }
+
+  if (record.data && typeof record.data === "object") {
+    return rowTotal(record.data);
   }
 
   return 0;
@@ -227,6 +233,12 @@ async function collectEdgeFunctions(
         ].join("");
 
         const stat = await managementGet(ref, token, path);
+
+        logger.info("edge combined-stats", {
+          slug,
+          payload: stat,
+        });
+
         const rows = Array.isArray(stat?.result) ? stat.result : [];
         const invocations = rows.reduce((acc, row) => acc + rowTotal(row), 0);
 

@@ -34,6 +34,7 @@ import AppearancePanel from "../components/settings/AppearancePanel";
 import NotificationsPanel from "../components/settings/NotificationsPanel";
 import AccountPanel from "../components/settings/AccountPanel";
 import SystemPanel from "../components/settings/SystemPanel";
+import QuotaPanel from "../components/settings/QuotaPanel";
 import ModalShell from "../components/settings/ModalShell";
 import SessionsModal from "../components/settings/SessionsModal";
 
@@ -46,6 +47,7 @@ import { deleteAccount } from "../services/accountService";
 import { APP_VERSION, RELEASE_NOTES } from "../config/releaseNotes";
 import { accentOptions } from "../config/appearance";
 import { resolveSyncState } from "../config/syncState";
+import { OWNER_EMAILS } from "../config/admin";
 import { reportError } from "../utils/reportError";
 import { getLevel } from "../config/levels";
 import { getTotalHistorical } from "../utils/stats";
@@ -161,6 +163,14 @@ export default function CagometroSettings() {
   const [installPromptOpen, setInstallPromptOpen] = useState(false);
 
   const showInstallButton = useMemo(() => isMobileDevice(), []);
+
+  const isOwner = Boolean(
+    user?.email &&
+      OWNER_EMAILS.some(
+        (email) =>
+          email.trim().toLowerCase() === user.email.trim().toLowerCase(),
+      ),
+  );
   const [typedAccountName, setTypedAccountName] = useState("");
 
   const openDangerAction = (action) => {
@@ -774,18 +784,30 @@ export default function CagometroSettings() {
               )}
 
               {activeSection === "account" && (
-                <AccountPanel
-                  theme={theme}
-                  accentColor={accentColor}
-                  themeMode={themeMode}
-                  accent={accent}
-                  isLoggedIn={Boolean(user)}
-                  onDanger={openDangerAction}
-                  onFeedback={openFeedback}
-                  onPrivacy={() => navigate("/privacy")}
-                  onDevices={() => setSessionsOpen(true)}
-                  onShowReleaseNotes={openReleaseNotes}
-                />
+                <>
+                  {isOwner && cloudEnabled && (
+                    <div className="mb-4">
+                      <QuotaPanel
+                        theme={theme}
+                        accentColor={accentColor}
+                        cloudEnabled={cloudEnabled}
+                      />
+                    </div>
+                  )}
+
+                  <AccountPanel
+                    theme={theme}
+                    accentColor={accentColor}
+                    themeMode={themeMode}
+                    accent={accent}
+                    isLoggedIn={Boolean(user)}
+                    onDanger={openDangerAction}
+                    onFeedback={openFeedback}
+                    onPrivacy={() => navigate("/privacy")}
+                    onDevices={() => setSessionsOpen(true)}
+                    onShowReleaseNotes={openReleaseNotes}
+                  />
+                </>
               )}
                 </>
               )}
