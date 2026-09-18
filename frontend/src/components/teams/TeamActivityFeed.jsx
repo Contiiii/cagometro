@@ -208,13 +208,19 @@ export default function TeamActivityFeed({
                   exit={
                     prefersReducedMotion
                       ? { opacity: 0 }
-                      : { opacity: 0, height: 0 }
+                      : { opacity: 0, x: 64, scale: 0.96, height: 0 }
                   }
-                  transition={{
-                    duration: prefersReducedMotion
-                      ? 0
-                      : 0.25,
-                  }}
+                  transition={
+                    prefersReducedMotion
+                      ? { duration: 0 }
+                      : {
+                          opacity: { duration: 0.25, ease: "easeOut" },
+                          y: { duration: 0.25, ease: "easeOut" },
+                          x: { duration: 0.3, ease: [0.6, 0, 1, 1] },
+                          scale: { duration: 0.3, ease: [0.6, 0, 1, 1] },
+                          height: { duration: 0.3, ease: [0.6, 0, 1, 1] },
+                        }
+                  }
                   className={`relative flex gap-3 px-4 py-4 ${
                     index !==
                     visibleActivities.length - 1

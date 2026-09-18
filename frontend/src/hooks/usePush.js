@@ -15,32 +15,9 @@ import {
   markPushSubscriptionTouched,
   claimPushSubscription,
   isPushSubscriptionOwnedByOther,
-  sendMyPushNotification,
 } from "../services/pushService";
 import { reportError } from "../utils/reportError";
 import { trackEvent } from "../services/analyticsService";
-
-// Push di test dopo un'attivazione esplicita: conferma il path DB -> edge ->
-// push service. La rilevazione di una VAPID errata resta comunque server-side
-// (notify_my_push e' fire-and-forget, la risposta di send-push non torna qui).
-async function sendTestPushNotification(userId) {
-  try {
-    await sendMyPushNotification({
-      type: "test",
-      title: "Notifiche attive",
-      body: "Se vedi questa notifica, le push funzionano.",
-      url: "/",
-    });
-
-    await trackEvent("push_test_sent");
-  } catch (error) {
-    reportError(error, {
-      feature: "push-test",
-      userId: userId ?? null,
-      message: "Errore invio push di test:",
-    });
-  }
-}
 
 export function usePush() {
   const { user } = useAuth();
@@ -165,10 +142,6 @@ export function usePush() {
       setCurrentEndpoint(result.subscription?.endpoint ?? null);
 
       await refreshDevices();
-
-      if (result.subscription) {
-        await sendTestPushNotification(userId);
-      }
 
       return { permission: result.permission, subscription: result.subscription, error: null };
     } catch (error) {

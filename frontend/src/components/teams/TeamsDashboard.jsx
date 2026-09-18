@@ -79,7 +79,7 @@ export default function TeamsDashboard({
           <div className="mx-auto mb-4 max-w-3xl">
             <button
               type="button"
-              onClick={() => navigate("/teams")}
+              onClick={() => navigate("/teams?list=1")}
               className={`inline-flex items-center gap-1.5 rounded-2xl px-2 py-1.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent hover:opacity-80 ${theme.muted}`}
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />

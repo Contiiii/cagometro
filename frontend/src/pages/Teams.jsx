@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronRight, Link, Plus, Trophy, UsersRound } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
@@ -19,12 +19,14 @@ import { getTheme } from "../config/theme";
 import { notify } from "../utils/teamNotify";
 import { rankLeaderboard } from "../utils/ranking";
 import { getTeamLeaderboard } from "../services/teamService";
+import { loadViewedTeamId } from "../utils/storage";
 
 const CreateTeamModal = lazy(() => import("../components/teams/modals/CreateTeamModal"));
 const JoinTeamModal = lazy(() => import("../components/teams/modals/JoinTeamModal"));
 
 export default function Teams() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { resolvedTheme } = useTheme();
   const { user } = useAuth();
@@ -44,11 +46,46 @@ export default function Teams() {
 
   const theme = useMemo(() => getTheme(isDark), [isDark]);
 
+  const userId = user?.id ?? null;
+
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
 
   const [positions, setPositions] = useState({});
   const positionsRequestRef = useRef(0);
+
+  const explicitList = useMemo(
+    () => new URLSearchParams(location.search).has("list"),
+    [location.search],
+  );
+
+  const rememberedTeamId = useMemo(() => {
+    if (loading || explicitList || teams.length === 0 || !userId) {
+      return null;
+    }
+
+    const rememberedId = loadViewedTeamId(userId);
+
+    if (
+      !rememberedId ||
+      !teams.some((item) => item.team_id === rememberedId)
+    ) {
+      return null;
+    }
+
+    return rememberedId;
+  }, [loading, explicitList, teams, userId]);
+
+  const rememberedRedirectRef = useRef(false);
+
+  useEffect(() => {
+    if (!rememberedTeamId || rememberedRedirectRef.current) {
+      return;
+    }
+
+    rememberedRedirectRef.current = true;
+    navigate(`/teams/${rememberedTeamId}`, { replace: true });
+  }, [rememberedTeamId, navigate]);
 
   useEffect(() => {
     if (!user?.id || teams.length === 0) {
@@ -112,6 +149,10 @@ export default function Teams() {
     }),
     [theme, isDark],
   );
+
+  if (rememberedTeamId) {
+    return null;
+  }
 
   if (loading) {
     return (

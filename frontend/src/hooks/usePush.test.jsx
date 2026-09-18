@@ -339,7 +339,7 @@ describe("usePush", () => {
     expect(pushService.claimPushSubscription).not.toHaveBeenCalled();
   });
 
-  it("l'attivazione esplicita invia la push di test e traccia l'evento", async () => {
+  it("l'attivazione esplicita non invia più la push di test", async () => {
     pushService.getPushSubscription.mockResolvedValue(null);
     pushService.subscribeToPush.mockResolvedValue({
       permission: "granted",
@@ -352,11 +352,8 @@ describe("usePush", () => {
       await result.current.subscribe();
     });
 
-    expect(pushService.sendMyPushNotification).toHaveBeenCalledTimes(1);
-    expect(pushService.sendMyPushNotification).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "test" }),
-    );
-    expect(trackEvent).toHaveBeenCalledWith("push_test_sent");
+    expect(pushService.sendMyPushNotification).not.toHaveBeenCalled();
+    expect(trackEvent).not.toHaveBeenCalledWith("push_test_sent");
   });
 
   it("il mount non invia la push di test", async () => {
@@ -371,28 +368,5 @@ describe("usePush", () => {
     });
 
     expect(pushService.sendMyPushNotification).not.toHaveBeenCalled();
-  });
-
-  it("un errore della push di test non rompe la subscribe", async () => {
-    pushService.getPushSubscription.mockResolvedValue(null);
-    pushService.subscribeToPush.mockResolvedValue({
-      permission: "granted",
-      subscription: { endpoint: "endpoint-1" },
-    });
-    pushService.sendMyPushNotification.mockRejectedValue(
-      new Error("rpc ko"),
-    );
-
-    const { result } = renderHook(() => usePush());
-
-    await act(async () => {
-      const ret = await result.current.subscribe();
-
-      expect(ret.error).toBeNull();
-      expect(ret.subscription).not.toBeNull();
-    });
-
-    expect(reportError).toHaveBeenCalled();
-    expect(result.current.subscribeError).toBeNull();
   });
 });
