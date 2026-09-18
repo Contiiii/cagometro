@@ -1,0 +1,24 @@
+# Cagometro
+
+> Cagometro è una PWA in italiano per registrare le visite quotidiane, mantenere la streak, sbloccare achievement e confrontarsi con la propria squadra. I dati si salvano in locale e si sincronizzano con un account opzionale; funziona anche offline.
+
+Cagometro è un'applicazione web progressiva (PWA). L'interazione principale è un singolo tap sul pulsante di registrazione: l'app tiene traccia delle quantità giornaliere, calcola serie consecutive (streak), invia promemoria e notifiche push e popola report settimanali e mensili. Le squadre permettono di condividere una classifica con XP e streak. L'esperienza è pensata per mobile ma funziona anche su desktop.
+
+## Pagine principali
+
+- [Home](https://cagometro-zeta.vercel.app/): registrazione giornaliera, streak corrente e attività recenti.
+- [Report](https://cagometro-zeta.vercel.app/report): riepiloghi settimanali e mensili con grafici e condivisione.
+- [Squadre](https://cagometro-zeta.vercel.app/teams): classifiche, membri, inviti e attività di squadra.
+- [Traguardi](https://cagometro-zeta.vercel.app/achievements): achievement sbloccabili e relativi progressi.
+- [Impostazioni](https://cagometro-zeta.vercel.app/settings): tema, colore accento, notifiche e account.
+- [Accesso](https://cagometro-zeta.vercel.app/login): login per il salvataggio e la sincronizzazione su cloud.
+
+## Riferimenti
+
+- [Versioni precedenti](https://cagometro-zeta.vercel.app/changelog): note di versione dell'app.
+- [Privacy](https://cagometro-zeta.vercel.app/privacy): informativa sul trattamento dei dati.
+- [Sitemap](https://cagometro-zeta.vercel.app/sitemap.xml): elenco delle pagine indicizzate.
+
+## Optional
+
+- [Repository GitHub](https://github.com/Contiiii/cagometro): codice sorgente del progetto.
