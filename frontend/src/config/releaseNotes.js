@@ -1,10 +1,46 @@
-import { BarChart3, BellPlus, BellRing, CalendarDays, Palette, RefreshCw, RotateCcw, Settings, Smartphone, TrendingUp, UsersRound, Zap } from "lucide-react";
+import { BarChart3, BellPlus, BellRing, CalendarDays, History, LayoutDashboard, Palette, RefreshCw, RotateCcw, Settings, Smartphone, TrendingUp, Trophy, UsersRound, Zap } from "lucide-react";
 
 export const APP_VERSION = __APP_VERSION__;
 
 export const RELEASE_NOTES = [
   {
     version: APP_VERSION,
+    date: "2026-09-18",
+    features: [
+      {
+        id: "mteam-1",
+        title: "Entra in più squadre",
+        description: "Puoi far parte di più squadre (fino a 3): ogni registrazione viene conteggiata in tutte le squadre a cui appartieni.",
+        icon: UsersRound,
+      },
+      {
+        id: "mteam-2",
+        title: "Ogni squadra ha il suo spazio",
+        description: "Ogni squadra ha una dashboard dedicata con classifica, membri, impostazioni e attività della squadra.",
+        icon: LayoutDashboard,
+      },
+      {
+        id: "mteam-3",
+        title: "Posizione a colpo d'occhio",
+        description: "Nella lista delle squadre vedi subito il tuo piazzamento in classifica per ciascuna squadra.",
+        icon: Trophy,
+      },
+      {
+        id: "mteam-4",
+        title: "Ritorni dove eri",
+        description: "Aprendo la sezione Squadre ritrovi subito l'ultima squadra che stavi consultando.",
+        icon: History,
+      },
+      {
+        id: "mteam-5",
+        title: "Attività sempre aggiornata",
+        description: "Quando annulli una registrazione, l'attività della squadra si aggiorna subito con una transizione fluida.",
+        icon: RotateCcw,
+      },
+    ],
+  },
+  {
+    version: "2.2.0",
     date: "2026-09-18",
     features: [
       {
