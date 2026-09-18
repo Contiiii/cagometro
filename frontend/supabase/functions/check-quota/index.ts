@@ -177,27 +177,43 @@ async function collectDatabaseAndStorage(
   }
 }
 
-function rowTotal(row: unknown): number {
+// Il result di functions.combined-stats è un array di bucket timestamp con
+// chiavi tipo: requests_count, success_count, redirect_count, client_err_count,
+// server_err_count, log_count. requests_count è il conteggio delle invocazioni;
+// in sua assenza somma i bucket di status, poi i log.
+function rowInvocations(row: unknown): number {
   if (!row || typeof row !== "object") return 0;
 
   const record = row as JsonObject;
-
-  for (const key of [
-    "count",
-    "total_count",
-    "total_requests",
-    "requests",
-    "total",
-  ]) {
+  const numeric = (key: string): number | null => {
     const value = record[key];
 
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return value;
-    }
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  };
+
+  const requests = numeric("requests_count");
+
+  if (requests !== null) {
+    return requests;
+  }
+
+  const byStatus = ["success_count", "redirect_count", "client_err_count", "server_err_count"].reduce(
+    (acc, key) => acc + (numeric(key) ?? 0),
+    0,
+  );
+
+  if (byStatus > 0) {
+    return byStatus;
+  }
+
+  const logs = numeric("log_count");
+
+  if (logs !== null) {
+    return logs;
   }
 
   if (record.data && typeof record.data === "object") {
-    return rowTotal(record.data);
+    return rowInvocations(record.data);
   }
 
   return 0;
@@ -234,13 +250,14 @@ async function collectEdgeFunctions(
 
         const stat = await managementGet(ref, token, path);
 
-        logger.info("edge combined-stats", {
-          slug,
-          payload: stat,
-        });
-
         const rows = Array.isArray(stat?.result) ? stat.result : [];
-        const invocations = rows.reduce((acc, row) => acc + rowTotal(row), 0);
+        const invocations = rows.reduce((acc, row) => acc + rowInvocations(row), 0);
+
+        logger.info("edge invocations", {
+          slug,
+          rows: rows.length,
+          invocations,
+        });
 
         totalInvocations += invocations;
         stats.push({ slug, invocations });
