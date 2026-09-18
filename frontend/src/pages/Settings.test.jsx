@@ -2,8 +2,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
+import { isMobileDevice } from "../utils/userAgent";
+
 vi.mock("react-router-dom", () => ({
   useNavigate: () => vi.fn(),
+}));
+
+vi.mock("../utils/userAgent", () => ({
+  isMobileDevice: vi.fn(() => true),
 }));
 
 vi.mock("../hooks/useAuth", () => ({
@@ -195,6 +201,16 @@ describe("CagometroSettings", () => {
         name: "Aggiungi Cagometro alla Home",
       }),
     ).toBeTruthy();
+  });
+
+  it("nasconde il pulsante installazione su un dispositivo desktop", () => {
+    vi.mocked(isMobileDevice).mockReturnValue(false);
+
+    renderSettings({ user: USER });
+
+    expect(
+      screen.queryByRole("button", { name: "Aggiungi alla Home" }),
+    ).toBeFalsy();
   });
 
   it("mostra uno skeleton finché le impostazioni stanno caricando", () => {

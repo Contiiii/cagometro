@@ -51,6 +51,7 @@ import { getLevel } from "../config/levels";
 import { getTotalHistorical } from "../utils/stats";
 import { clearAllLocalData } from "../utils/storage";
 import { buildTechExport } from "../utils/techExport";
+import { isMobileDevice } from "../utils/userAgent";
 
 const feedbackCategories = [
   { id: "miglioria", label: "Miglioria" },
@@ -158,6 +159,8 @@ export default function CagometroSettings() {
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
   const [installPromptOpen, setInstallPromptOpen] = useState(false);
+
+  const showInstallButton = useMemo(() => isMobileDevice(), []);
   const [typedAccountName, setTypedAccountName] = useState("");
 
   const openDangerAction = (action) => {
@@ -541,20 +544,22 @@ export default function CagometroSettings() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => setInstallPromptOpen(true)}
-                aria-haspopup="dialog"
-                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-extrabold text-accent-contrast transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 sm:w-auto"
-                style={{
-                  backgroundColor: accentColor,
-                  boxShadow: `0 12px 28px ${accentColor}40`,
-                  "--tw-ring-color": `${accentColor}55`,
-                }}
-              >
-                <Download className="h-4 w-4" strokeWidth={2.3} />
-                Aggiungi alla Home
-              </button>
+              {showInstallButton && (
+                <button
+                  type="button"
+                  onClick={() => setInstallPromptOpen(true)}
+                  aria-haspopup="dialog"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-extrabold text-accent-contrast transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 sm:w-auto"
+                  style={{
+                    backgroundColor: accentColor,
+                    boxShadow: `0 12px 28px ${accentColor}40`,
+                    "--tw-ring-color": `${accentColor}55`,
+                  }}
+                >
+                  <Download className="h-4 w-4" strokeWidth={2.3} />
+                  Aggiungi alla Home
+                </button>
+              )}
 
               <button
                 type="button"

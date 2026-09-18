@@ -29,6 +29,12 @@ export function parseUserAgent(userAgent) {
   return { browser, os, device };
 }
 
+export function isMobileDevice(userAgent = globalThis.navigator?.userAgent) {
+  const { device } = parseUserAgent(userAgent ?? "");
+
+  return device === "Mobile" || device === "Tablet";
+}
+
 export function formatDeviceName(userAgent) {
   const { browser, os, device } = parseUserAgent(userAgent);
 

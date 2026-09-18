@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { formatDeviceName, parseUserAgent } from "./userAgent";
+import { formatDeviceName, isMobileDevice, parseUserAgent } from "./userAgent";
 
 describe("parseUserAgent", () => {
   it("riconosce Chrome su Windows", () => {
@@ -61,6 +61,45 @@ describe("parseUserAgent", () => {
     expect(unknown.browser).toBeNull();
     expect(unknown.os).toBeNull();
     expect(unknown.device).toBe("Desktop");
+  });
+});
+
+describe("isMobileDevice", () => {
+  it("riconosce un iPhone come mobile", () => {
+    expect(
+      isMobileDevice(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+      ),
+    ).toBe(true);
+  });
+
+  it("riconosce un iPad come mobile", () => {
+    expect(
+      isMobileDevice(
+        "Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+      ),
+    ).toBe(true);
+  });
+
+  it("riconosce un Android come mobile", () => {
+    expect(
+      isMobileDevice(
+        "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+      ),
+    ).toBe(true);
+  });
+
+  it("scarta un browser desktop", () => {
+    expect(
+      isMobileDevice(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      ),
+    ).toBe(false);
+  });
+
+  it("gestisce input nullo e vuoto", () => {
+    expect(isMobileDevice(null)).toBe(false);
+    expect(isMobileDevice("")).toBe(false);
   });
 });
 

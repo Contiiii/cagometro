@@ -1,4 +1,8 @@
-import { test, expect } from "@playwright/test";
+import { devices, expect, test } from "@playwright/test";
+
+const MOBILE_CONTEXT = (({ defaultBrowserType, ...rest }) => rest)(
+  devices["Pixel 7"],
+);
 
 const IMAGES = [
   { path: "/icon-192.png", label: "icon 192", width: 192, height: 192 },
@@ -74,28 +78,32 @@ test.describe("PWA", () => {
       .toBe(true);
   });
 
-  test("offre l'installazione quando il browser la permette", async ({
-    page,
-  }) => {
-    await page.goto("/settings");
+  test.describe("installazione", () => {
+    test.use(MOBILE_CONTEXT);
 
-    await page
-      .getByRole("button", { name: "Aggiungi alla Home" })
-      .click();
+    test("offre l'installazione quando il browser la permette", async ({
+      page,
+    }) => {
+      await page.goto("/settings");
 
-    await expect(
-      page.getByRole("heading", { name: "Aggiungi Cagometro alla Home" }),
-    ).toBeVisible();
+      await page
+        .getByRole("button", { name: "Aggiungi alla Home" })
+        .click();
 
-    await page.evaluate(() => {
-      window.dispatchEvent(
-        new Event("beforeinstallprompt", { cancelable: true }),
-      );
+      await expect(
+        page.getByRole("heading", { name: "Aggiungi Cagometro alla Home" }),
+      ).toBeVisible();
+
+      await page.evaluate(() => {
+        window.dispatchEvent(
+          new Event("beforeinstallprompt", { cancelable: true }),
+        );
+      });
+
+      await expect(
+        page.getByRole("button", { name: "Installa app" }),
+      ).toBeVisible();
     });
-
-    await expect(
-      page.getByRole("button", { name: "Installa app" }),
-    ).toBeVisible();
   });
 
   for (const image of IMAGES) {
