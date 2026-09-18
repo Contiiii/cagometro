@@ -27,6 +27,40 @@ export async function requestNotificationPermission() {
   return Notification.requestPermission();
 }
 
+const PUSH_TOUCH_KEY = "cagometro_push_touch_date";
+const PUSH_TOUCH_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Throttle del touch sul solo percorso di mount (apertura app): il touch push
+// non va rifatto a ogni sessione, basta 1 volta al giorno. I percorsi espliciti
+// (attivazione, claim, pushsubscriptionchange) scrivono sempre.
+export function shouldRefreshPushSubscription(now = Date.now()) {
+  try {
+    const raw = window.localStorage.getItem(PUSH_TOUCH_KEY);
+
+    if (!raw) {
+      return true;
+    }
+
+    const touched = Number(raw);
+
+    if (!Number.isFinite(touched)) {
+      return true;
+    }
+
+    return now - touched >= PUSH_TOUCH_TTL_MS;
+  } catch {
+    return true;
+  }
+}
+
+export function markPushSubscriptionTouched(now = Date.now()) {
+  try {
+    window.localStorage.setItem(PUSH_TOUCH_KEY, String(now));
+  } catch {
+    // throttling non bloccante
+  }
+}
+
 const VAPID_PUBLIC_KEY_LENGTH = 65;
 const UNCOMPRESSED_POINT_PREFIX = 0x04;
 

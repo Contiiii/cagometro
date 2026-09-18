@@ -11,6 +11,8 @@ import {
   getMyPushSubscriptions,
   removePushSubscription,
   refreshPushSubscription,
+  shouldRefreshPushSubscription,
+  markPushSubscriptionTouched,
   claimPushSubscription,
   isPushSubscriptionOwnedByOther,
   sendMyPushNotification,
@@ -100,10 +102,17 @@ export function usePush() {
         setCurrentEndpoint(subscription?.endpoint ?? null);
 
         // Rinfresca last_seen_at senza richiedere il permesso: se il permesso
-        // non è concesso non tocchiamo nulla per non rischiare un prompt.
-        if (subscription && getNotificationPermission() === "granted") {
+        // non è concesso non tocchiamo nulla per non rischiare un prompt. Il
+        // touch è throttlato a 1 volta/24h: i percorsi espliciti (attivazione,
+        // claim, pushsubscriptionchange) scrivono sempre.
+        if (
+          subscription &&
+          getNotificationPermission() === "granted" &&
+          shouldRefreshPushSubscription()
+        ) {
           try {
             await refreshPushSubscription(subscription);
+            markPushSubscriptionTouched();
           } catch (error) {
             if (isPushSubscriptionOwnedByOther(error)) {
               // L'endpoint è legato a un altro account: lo segnaliamo senza

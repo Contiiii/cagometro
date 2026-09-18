@@ -28,6 +28,8 @@ vi.mock("../services/pushService", () => ({
   getMyPushSubscriptions: vi.fn(),
   removePushSubscription: vi.fn(),
   refreshPushSubscription: vi.fn(),
+  shouldRefreshPushSubscription: vi.fn(() => true),
+  markPushSubscriptionTouched: vi.fn(),
   claimPushSubscription: vi.fn(),
   isPushSubscriptionOwnedByOther: vi.fn(() => false),
   sendMyPushNotification: vi.fn(),
@@ -39,6 +41,7 @@ beforeEach(() => {
   pushService.getNotificationPermission.mockReturnValue("default");
   pushService.getMyPushSubscriptions.mockResolvedValue([]);
   pushService.refreshPushSubscription.mockResolvedValue(undefined);
+  pushService.shouldRefreshPushSubscription.mockReturnValue(true);
   pushService.removePushSubscription.mockResolvedValue(undefined);
   pushService.sendMyPushNotification.mockResolvedValue(undefined);
 });
@@ -139,6 +142,25 @@ describe("usePush", () => {
     await waitFor(() => {
       expect(pushService.refreshPushSubscription).toHaveBeenCalled();
     });
+
+    expect(pushService.markPushSubscriptionTouched).toHaveBeenCalled();
+  });
+
+  it("salta il touch push se già fatto di recente ma rinfresca i dispositivi", async () => {
+    pushService.getNotificationPermission.mockReturnValue("granted");
+    pushService.shouldRefreshPushSubscription.mockReturnValue(false);
+    pushService.getPushSubscription.mockResolvedValue({
+      endpoint: "endpoint-1",
+    });
+
+    const { result } = renderHook(() => usePush());
+
+    await waitFor(() => {
+      expect(result.current.isSubscribed).toBe(true);
+    });
+
+    expect(pushService.refreshPushSubscription).not.toHaveBeenCalled();
+    expect(pushService.getMyPushSubscriptions).toHaveBeenCalled();
   });
 
   it("non rinfresca senza permesso concesso", async () => {

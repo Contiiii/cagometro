@@ -16,6 +16,8 @@ import {
   claimPushSubscription,
   isPushSubscriptionOwnedByOther,
   isValidVapidPublicKey,
+  shouldRefreshPushSubscription,
+  markPushSubscriptionTouched,
 } from "./pushService";
 import { supabase } from "../lib/supabase";
 import { reportError } from "../utils/reportError";
@@ -181,6 +183,37 @@ describe("requestNotificationPermission", () => {
     const permission = await requestNotificationPermission();
 
     expect(permission).toBe("granted");
+  });
+});
+
+describe("shouldRefreshPushSubscription", () => {
+  const TOUCH_KEY = "cagometro_push_touch_date";
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("restituisce true senza alcun touch registrato", () => {
+    expect(shouldRefreshPushSubscription()).toBe(true);
+  });
+
+  it("restituisce false subito dopo markPushSubscriptionTouched", () => {
+    markPushSubscriptionTouched();
+
+    expect(shouldRefreshPushSubscription()).toBe(false);
+  });
+
+  it("restituisce true se il touch ha più di 24h", () => {
+    const now = Date.now();
+    window.localStorage.setItem(TOUCH_KEY, String(now - 25 * 60 * 60 * 1000));
+
+    expect(shouldRefreshPushSubscription(now)).toBe(true);
+  });
+
+  it("restituisce true con un valore corrotto", () => {
+    window.localStorage.setItem(TOUCH_KEY, "non-un-numero");
+
+    expect(shouldRefreshPushSubscription()).toBe(true);
   });
 });
 
