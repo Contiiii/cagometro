@@ -86,6 +86,7 @@ export function clearAllLocalData(userId) {
     localStorage.removeItem(getUserEntriesKey(userId));
     localStorage.removeItem(getPendingSyncKey(userId));
     localStorage.removeItem(getTeamSnapshotKey(userId));
+    localStorage.removeItem(getViewedTeamKey(userId));
     localStorage.removeItem(getProfileSnapshotKey(userId));
   }
 }
@@ -132,6 +133,24 @@ export function saveTeamSnapshot(userId, data) {
 export function clearTeamSnapshot(userId) {
   if (!userId) return;
   localStorage.removeItem(getTeamSnapshotKey(userId));
+}
+
+function getViewedTeamKey(userId) {
+  return `team_viewed_${userId}`;
+}
+
+export function loadViewedTeamId(userId) {
+  if (!userId) return null;
+  return localStorage.getItem(getViewedTeamKey(userId)) || null;
+}
+
+export function saveViewedTeamId(userId, teamId) {
+  if (!userId) return;
+  if (teamId) {
+    localStorage.setItem(getViewedTeamKey(userId), teamId);
+  } else {
+    localStorage.removeItem(getViewedTeamKey(userId));
+  }
 }
 
 const PROFILE_SNAPSHOT_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, useContext } from "react";
 
 import { EntriesContext } from "./entries-context";
+import { TeamContext } from "./team-context";
 
 import { useAuth } from "../hooks/useAuth";
 
@@ -45,6 +46,8 @@ const OP_TYPES = {
   REMOVE_TEAM_ACTIVITY: "removeTeamActivity",
 };
 
+const EMPTY_TEAM_IDS_REF = { current: [] };
+
 function formatEntries(entriesList) {
   return entriesList.reduce((acc, entry) => {
     acc[entry.date] = entry.count;
@@ -54,6 +57,14 @@ function formatEntries(entriesList) {
 
 export function EntriesProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
+
+  // Il contesto squadre è opzionale (tests standalone): senza provider le
+  // attività di squadra vengono create senza attribuzione, che è ininfluente.
+  const teamContext = useContext(TeamContext);
+  const teamIdsRef = useMemo(
+    () => teamContext?.teamIdsRef ?? EMPTY_TEAM_IDS_REF,
+    [teamContext],
+  );
 
   const userId = user?.id ?? null;
 
@@ -166,6 +177,7 @@ export function EntriesProvider({ children }) {
             op.payload.points,
             null,
             op.payload.dedupKey ?? op.id,
+            op.payload.teamIds ?? null,
           );
         }
 
@@ -173,6 +185,7 @@ export function EntriesProvider({ children }) {
           await removeTeamActivity(
             op.payload.activityType,
             op.payload.dedupKey ?? op.id,
+            op.payload.teamIds ?? null,
           );
         }
 
@@ -281,11 +294,13 @@ export function EntriesProvider({ children }) {
                 op.payload.points,
                 null,
                 op.payload.dedupKey ?? op.id,
+                op.payload.teamIds ?? null,
               );
             } else if (op.type === "removeTeamActivity") {
               await removeTeamActivity(
                 op.payload.activityType,
                 op.payload.dedupKey ?? op.id,
+                op.payload.teamIds ?? null,
               );
             }
           }
@@ -409,6 +424,10 @@ export function EntriesProvider({ children }) {
       // seconda riga se la RPC è andata a buon fine ma la risposta è andata persa.
       const removalDedupKey = removeActivity ? createOpId() : null;
 
+      // Le squadre vengono congelate al momento del salvataggio, così le op
+      // accodate offline conservano la stessa attribuzione del tentativo diretto.
+      const teamIds = teamIdsRef.current ?? null;
+
       try {
         await saveEntry({
           userId,
@@ -416,10 +435,10 @@ export function EntriesProvider({ children }) {
           count,
         });
         if (logActivity) {
-          await createTeamActivity("entry_created", 1, null, activityDedupKey);
+          await createTeamActivity("entry_created", 1, null, activityDedupKey, teamIds);
         }
         if (removeActivity) {
-          await removeTeamActivity("entry_created", removalDedupKey);
+          await removeTeamActivity("entry_created", removalDedupKey, teamIds);
         }
 
         await flushPendingOps();
@@ -444,6 +463,7 @@ export function EntriesProvider({ children }) {
               activityType: "entry_created",
               points: 1,
               dedupKey: activityDedupKey,
+              teamIds,
             },
           });
         }
@@ -454,6 +474,7 @@ export function EntriesProvider({ children }) {
             payload: {
               activityType: "entry_created",
               dedupKey: removalDedupKey,
+              teamIds,
             },
           });
         }
@@ -466,7 +487,7 @@ export function EntriesProvider({ children }) {
         prevSyncStatusRef.current = "pending";
       }
     },
-    [userId, createPendingOps, flushPendingOps],
+    [userId, teamIdsRef, createPendingOps, flushPendingOps],
   );
 
   const incrementToday = useCallback(() => {

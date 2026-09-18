@@ -125,7 +125,7 @@ export default function AccountPanel({
   onShowReleaseNotes,
 }) {
   const accentLabel =
-    accentOptions.find((item) => item.id === accent)?.label ?? "Rosa classico";
+    accentOptions.find((item) => item.id === accent)?.label ?? "Rosa";
 
   return (
     <PanelFrame

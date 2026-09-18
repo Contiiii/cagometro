@@ -1,7 +1,7 @@
 export const accentOptions = [
   {
     id: "pink",
-    label: "Rosa classico",
+    label: "Rosa",
     fill: "#ec4899",
     contrast: "#18181b",
     inkLight: "#be185d",
@@ -9,7 +9,7 @@ export const accentOptions = [
   },
   {
     id: "amber",
-    label: "Ambra sospetta",
+    label: "Ambra",
     fill: "#f59e0b",
     contrast: "#18181b",
     inkLight: "#92400e",
@@ -17,7 +17,7 @@ export const accentOptions = [
   },
   {
     id: "emerald",
-    label: "Verde compost",
+    label: "Verde",
     fill: "#10b981",
     contrast: "#18181b",
     inkLight: "#065f46",
@@ -25,7 +25,7 @@ export const accentOptions = [
   },
   {
     id: "violet",
-    label: "Viola illegale",
+    label: "Viola",
     fill: "#7c3aed",
     contrast: "#ffffff",
     inkLight: "#6d28d9",

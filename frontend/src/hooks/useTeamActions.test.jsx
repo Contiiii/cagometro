@@ -9,6 +9,8 @@ import { useSettings } from "./useSettings";
 import { reportError } from "../utils/reportError";
 import { useTeamActions } from "./useTeamActions";
 
+const navigateMock = vi.fn();
+
 vi.mock("./useAuth", () => ({
   useAuth: () => ({ user: { id: "u-owner" } }),
 }));
@@ -27,6 +29,10 @@ vi.mock("../services/pushService", () => ({
 
 vi.mock("../utils/reportError", () => ({
   reportError: vi.fn(),
+}));
+
+vi.mock("react-router-dom", () => ({
+  useNavigate: () => navigateMock,
 }));
 
 vi.mock("../services/teamService", () => ({
@@ -62,6 +68,7 @@ function createHarness(overrides = {}) {
   const props = {
     team: TEAM,
     isLastMember: false,
+    atTeamLimit: false,
     selectedMember: null,
     setSelectedMember,
     notify,
@@ -98,8 +105,8 @@ describe("useTeamActions", () => {
     vi.clearAllMocks();
     localStorage.clear();
 
-    teamService.createTeam.mockResolvedValue({});
-    teamService.joinTeam.mockResolvedValue(undefined);
+    teamService.createTeam.mockResolvedValue("team-uuid-1");
+    teamService.joinTeam.mockResolvedValue("team-uuid-joined");
     teamService.leaveTeam.mockResolvedValue(undefined);
     teamService.transferOwnership.mockResolvedValue(undefined);
     teamService.removeTeamMember.mockResolvedValue(undefined);
@@ -113,9 +120,10 @@ describe("useTeamActions", () => {
     vi.mocked(useSettings).mockReturnValue({ teamMemberAlerts: true });
     sendMyPushNotification.mockResolvedValue(undefined);
     reportError.mockClear();
+    navigateMock.mockClear();
   });
 
-  it("T1: create riuscita con refresh riusciti", async () => {
+  it("T1: create riuscita con refresh riuscito e navigazione", async () => {
     const { result, props, notify } = createHarness();
 
     await act(async () => {
@@ -132,16 +140,16 @@ describe("useTeamActions", () => {
       avatarEmoji: "🏆",
       maxMembers: 12,
     });
-    expect(props.refreshTeam).toHaveBeenCalledTimes(1);
-    expect(props.refreshMembers).toHaveBeenCalledTimes(1);
-    expect(notify).toHaveBeenCalledWith("Squadra creata", "success");
+    expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith("Squadra creata");
+    expect(navigateMock).toHaveBeenCalledWith("/teams/team-uuid-1");
     expect(countErrorNotifies(notify)).toBe(0);
   });
 
   it("T2: create riuscita ma refresh fallito => successo parziale", async () => {
     const { result, props, notify } = createHarness();
 
-    props.refreshMembers.mockRejectedValue(new Error("nope"));
+    props.refreshDashboard.mockRejectedValue(new Error("nope"));
 
     await act(async () => {
       await result.current.handleCreateTeam({
@@ -159,6 +167,7 @@ describe("useTeamActions", () => {
       "Non è stato possibile creare la squadra",
       "error",
     );
+    expect(navigateMock).toHaveBeenCalledWith("/teams/team-uuid-1");
   });
 
   it("T3: create fallita => l'errore viene rilanciato e nessun refresh parte", async () => {
@@ -176,13 +185,27 @@ describe("useTeamActions", () => {
     ).rejects.toThrow("creazione fallita");
 
     expect(notify).toHaveBeenCalledWith("creazione fallita", "error");
-    expect(props.refreshTeam).not.toHaveBeenCalled();
-    expect(props.refreshMembers).not.toHaveBeenCalled();
+    expect(props.refreshDashboard).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it("T4: join riuscito => refresh dashboard e notify (log attività nella RPC)", async () => {
-    teamService.joinTeam.mockResolvedValue(undefined);
+  it("T20: create bloccata dal limite squadre", async () => {
+    const { result, notify } = createHarness({ atTeamLimit: true });
 
+    await expect(
+      act(async () => {
+        await result.current.handleCreateTeam({ name: "Extra", maxMembers: 10 });
+      }),
+    ).rejects.toThrow("Hai raggiunto il limite massimo di 3 squadre");
+
+    expect(teamService.createTeam).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledWith(
+      "Hai raggiunto il limite massimo di 3 squadre",
+      "error",
+    );
+  });
+
+  it("T4: join riuscito => refresh dashboard e navigazione", async () => {
     const { result, props, notify } = createHarness();
 
     await act(async () => {
@@ -192,34 +215,11 @@ describe("useTeamActions", () => {
     expect(teamService.joinTeam).toHaveBeenCalledWith("CODE");
     expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenCalledWith("Sei entrato nella squadra");
-    expect(countErrorNotifies(notify)).toBe(0);
-  });
-
-  it("T4b: join immediate => navigazione non bloccata dal refresh", async () => {
-    teamService.joinTeam.mockResolvedValue(undefined);
-
-    const { result, props, notify } = createHarness();
-
-    props.refreshDashboard.mockResolvedValue({
-      hasErrors: false,
-      failedSections: [],
-    });
-
-    await act(async () => {
-      await result.current.handleJoinTeam("CODE", "Squadra test", {
-        immediate: true,
-      });
-    });
-
-    expect(teamService.joinTeam).toHaveBeenCalledWith("CODE");
-    expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
-    expect(notify).toHaveBeenCalledWith("Sei entrato in Squadra test.");
+    expect(navigateMock).toHaveBeenCalledWith("/teams/team-uuid-joined");
     expect(countErrorNotifies(notify)).toBe(0);
   });
 
   it("T5: join riuscito con refreshDashboard parziale => successo parziale", async () => {
-    teamService.joinTeam.mockResolvedValue(undefined);
-
     const { result, props, notify } = createHarness();
 
     props.refreshDashboard.mockResolvedValue({
@@ -236,6 +236,25 @@ describe("useTeamActions", () => {
       "Ingresso riuscito, ma alcuni dati non sono stati aggiornati",
       "error",
     );
+    expect(navigateMock).toHaveBeenCalledWith("/teams/team-uuid-joined");
+  });
+
+  it("T4b: join con refresh dashboard fallito => navigazione non bloccata", async () => {
+    const { result, props, notify } = createHarness();
+
+    props.refreshDashboard.mockRejectedValue(new Error("offline"));
+
+    await act(async () => {
+      await result.current.handleJoinTeam("CODE", "Squadra test");
+    });
+
+    expect(teamService.joinTeam).toHaveBeenCalledWith("CODE");
+    expect(notify).toHaveBeenCalledWith("Sei entrato in Squadra test.");
+    expect(notify).toHaveBeenCalledWith(
+      "Sei entrato nella squadra. Ricarica la pagina per aggiornare i dati.",
+      "error",
+    );
+    expect(navigateMock).toHaveBeenCalledWith("/teams/team-uuid-joined");
   });
 
   it("T6: join fallito => l'errore viene rilanciato senza notifiche", async () => {
@@ -253,7 +272,23 @@ describe("useTeamActions", () => {
     expect(props.refreshDashboard).not.toHaveBeenCalled();
   });
 
-  it("T7: leave riuscita => refresh dashboard e notify", async () => {
+  it("T21: join bloccato dal limite squadre", async () => {
+    const { result, notify } = createHarness({ atTeamLimit: true });
+
+    await expect(
+      act(async () => {
+        await result.current.handleJoinTeam("CODE");
+      }),
+    ).rejects.toThrow("Hai raggiunto il limite massimo di 3 squadre");
+
+    expect(teamService.joinTeam).not.toHaveBeenCalled();
+    expect(notify).toHaveBeenCalledWith(
+      "Hai raggiunto il limite massimo di 3 squadre",
+      "error",
+    );
+  });
+
+  it("T7: leave riuscita => refresh dashboard, notify e navigazione a /teams", async () => {
     teamService.leaveTeam.mockResolvedValue(undefined);
 
     const { result, props, notify, setSelectedMember } = createHarness();
@@ -266,10 +301,11 @@ describe("useTeamActions", () => {
 
     await runConfirm(result);
 
-    expect(teamService.leaveTeam).toHaveBeenCalledTimes(1);
+    expect(teamService.leaveTeam).toHaveBeenCalledWith("team-a");
     expect(setSelectedMember).toHaveBeenCalledWith(null);
     expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenCalledWith("Hai lasciato la squadra");
+    expect(navigateMock).toHaveBeenCalledWith("/teams");
   });
 
   it("T8: leave fallita => errore fatale senza successo e senza refresh", async () => {
@@ -309,7 +345,7 @@ describe("useTeamActions", () => {
 
     await runConfirm(result);
 
-    expect(teamService.removeTeamMember).toHaveBeenCalledWith("u-x");
+    expect(teamService.removeTeamMember).toHaveBeenCalledWith("u-x", "team-a");
     expect(props.refreshMembers).toHaveBeenCalledTimes(1);
     expect(props.refreshLeaderboard).toHaveBeenCalledTimes(1);
     expect(props.refreshActivity).toHaveBeenCalledTimes(1);
@@ -333,7 +369,7 @@ describe("useTeamActions", () => {
 
     await runConfirm(result);
 
-    expect(teamService.transferOwnership).toHaveBeenCalledWith("u-x");
+    expect(teamService.transferOwnership).toHaveBeenCalledWith("u-x", "team-a");
     expect(props.refreshTeam).toHaveBeenCalledTimes(1);
     expect(props.refreshMembers).toHaveBeenCalledTimes(1);
     expect(props.refreshActivity).toHaveBeenCalledTimes(1);
@@ -373,13 +409,12 @@ describe("useTeamActions", () => {
 
     await runConfirm(result);
 
-    expect(teamService.regenerateInviteCode).toHaveBeenCalledTimes(1);
+    expect(teamService.regenerateInviteCode).toHaveBeenCalledWith("team-a");
     expect(props.refreshTeam).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenCalledWith(
       "Codice rigenerato. Ricarica la pagina per aggiornare i dati.",
       "error",
     );
-    expect(teamService.regenerateInviteCode).toHaveBeenCalledTimes(1);
   });
 
   it("T13: toggle primaria fallita => rollback ottimistico senza refresh", async () => {
@@ -412,7 +447,7 @@ describe("useTeamActions", () => {
     });
 
     expect(result.current.invitesEnabled).toBe(false);
-    expect(teamService.toggleTeamInvites).toHaveBeenCalledWith(false);
+    expect(teamService.toggleTeamInvites).toHaveBeenCalledWith(false, "team-a");
     expect(props.refreshTeam).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenCalledWith(
       "Inviti disabilitati, ma alcuni dati non sono stati aggiornati",
@@ -421,8 +456,6 @@ describe("useTeamActions", () => {
   });
 
   it("T16: join riuscito con push attive => invia la notifica di benvenuto", async () => {
-    teamService.joinTeam.mockResolvedValue(undefined);
-
     const { result, props, notify } = createHarness();
 
     await act(async () => {
@@ -433,7 +466,7 @@ describe("useTeamActions", () => {
       type: "team",
       title: "Benvenuto nella squadra!",
       body: "Sei entrato in Squadra B.",
-      url: "/teams",
+      url: "/teams/team-uuid-joined",
     });
     expect(props.refreshDashboard).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenCalledWith("Sei entrato in Squadra B.");
@@ -489,7 +522,7 @@ describe("useTeamActions", () => {
   });
 
   it("T15: refresh obsoleto non altera il risultato del flusso", async () => {
-    teamService.joinTeam.mockResolvedValue(undefined);
+    teamService.joinTeam.mockResolvedValue("team-uuid-joined");
 
     const { result, props, notify } = createHarness();
 
@@ -520,7 +553,7 @@ describe("useTeamActions", () => {
       description: "x",
       avatarEmoji: "🔥",
       maxMembers: 15,
-    });
+    }, "team-a");
     expect(props.refreshTeam).toHaveBeenCalledTimes(1);
     expect(countErrorNotifies(notify)).toBe(0);
   });

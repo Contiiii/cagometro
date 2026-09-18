@@ -1,5 +1,7 @@
 import { lazy, Suspense, useMemo, useRef } from "react";
+import { ChevronLeft } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 import Header from "../Header";
 import BottomNav from "../BottomNav";
@@ -42,6 +44,7 @@ export default function TeamsDashboard({
   setSelectedMember,
 }) {
   const { theme } = useTeamUI();
+  const navigate = useNavigate();
 
   const settingsTriggerRef = useRef(null);
 
@@ -73,6 +76,17 @@ export default function TeamsDashboard({
         />
 
         <main className="mx-auto w-full max-w-5xl px-5 pb-36 pt-7 sm:px-8 sm:pt-10">
+          <div className="mx-auto mb-4 max-w-3xl">
+            <button
+              type="button"
+              onClick={() => navigate("/teams")}
+              className={`inline-flex items-center gap-1.5 rounded-2xl px-2 py-1.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent hover:opacity-80 ${theme.muted}`}
+            >
+              <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
+              Squadre
+            </button>
+          </div>
+
           <TeamHeroCard
             team={team}
             membersCount={members.length}

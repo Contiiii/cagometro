@@ -57,15 +57,15 @@ createRoot(document.getElementById("root")).render(
         <AuthProvider>
           <PushSyncProvider>
             <ProfileProvider>
-              <EntriesProvider>
-                <ThemeProvider>
-                  <SettingsProvider>
-                    <TeamProvider>
+              <ThemeProvider>
+                <SettingsProvider>
+                  <TeamProvider>
+                    <EntriesProvider>
                       <App />
-                    </TeamProvider>
-                  </SettingsProvider>
-                </ThemeProvider>
-              </EntriesProvider>
+                    </EntriesProvider>
+                  </TeamProvider>
+                </SettingsProvider>
+              </ThemeProvider>
             </ProfileProvider>
           </PushSyncProvider>
         </AuthProvider>

@@ -11,19 +11,26 @@ import { useSettings } from "../hooks/useSettings";
 import { TeamContext } from "./team-context";
 
 import {
-  getMyTeam,
+  getMyTeams,
+  getTeam,
   getTeamMembers,
   getTeamLeaderboard,
   getTeamActivity,
 } from "../services/teamService";
 
+import { MAX_TEAMS_PER_USER } from "../config/team";
+
 import {
   loadTeamSnapshot,
   saveTeamSnapshot,
   clearTeamSnapshot,
+  loadViewedTeamId,
+  saveViewedTeamId,
 } from "../utils/storage";
 
 export const TEAM_REALTIME_DEBOUNCE_MS = 500;
+
+export const MAX_TEAMS = MAX_TEAMS_PER_USER;
 
 const REALTIME_LEADERBOARD_EVENT_TYPES = new Set([
   "entry_created",
@@ -44,86 +51,157 @@ export function TeamProvider({ children }) {
 
   const { initialTeamActivityLimit } = useSettings();
 
-  const [team, setTeam] = useState(null);
-  const [members, setMembers] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [activity, setActivity] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [viewedTeamId, setViewedTeamId] = useState(null);
+  const [bundle, setBundle] = useState({
+    team: null,
+    members: [],
+    leaderboard: [],
+    activity: [],
+  });
   const [loading, setLoading] = useState(true);
   const [loadedUserId, setLoadedUserId] = useState(null);
   const dashboardRequestRef = useRef(0);
   const hydratedUserIdRef = useRef(null);
-  const teamIdRef = useRef(null);
+  const viewedTeamIdRef = useRef(null);
+  const cacheRef = useRef(new Map());
   const realtimeDebounceTimerRef = useRef(null);
   const realtimeLeaderboardDirtyRef = useRef(false);
   const realtimeMembersDirtyRef = useRef(false);
+  const teamIdsRef = useRef([]);
 
-  const clearTeamData = useCallback(() => {
-    setTeam(null);
-    setMembers([]);
-    setLeaderboard([]);
-    setActivity([]);
+  const userId = user?.id ?? null;
+
+  const applyTeams = useCallback((nextTeams) => {
+    const list = Array.isArray(nextTeams) ? nextTeams : [];
+    teamIdsRef.current = list.map((item) => item.team_id);
+    setTeams(list);
+    return list;
   }, []);
 
-  // Riflette lo stato di `team` (incluso idratazione da snapshot) per
-  // rilevare i cambi di squadra dentro refreshDashboard.
-  useEffect(() => {
-    teamIdRef.current = team?.id ?? team?.team_id ?? null;
-  }, [team]);
-
-  const refreshTeam = useCallback(async () => {
-    const generation = dashboardRequestRef.current;
-    const data = await getMyTeam();
-
-    if (generation !== dashboardRequestRef.current) {
-      return data;
-    }
-
-    setTeam(data);
-
-    return data;
+  const clearBundle = useCallback(() => {
+    setBundle({ team: null, members: [], leaderboard: [], activity: [] });
   }, []);
 
-  const refreshMembers = useCallback(async () => {
+  const resolveViewedTeamId = useCallback(
+    (nextTeams, fallbackId) => {
+      if (!Array.isArray(nextTeams) || nextTeams.length === 0) {
+        return null;
+      }
+
+      const storedId = loadViewedTeamId(userId);
+      const candidate = [storedId, fallbackId]
+        .filter(Boolean)
+        .find((id) => nextTeams.some((item) => item.team_id === id));
+
+      return candidate ?? nextTeams[0].team_id;
+    },
+    [userId],
+  );
+
+  const loadTeamBundle = useCallback(
+    async (teamId, requestId) => {
+      const prev = cacheRef.current.get(teamId);
+
+      const [teamResult, membersResult, leaderboardResult, activityResult] =
+        await Promise.allSettled([
+          getTeam(teamId),
+          getTeamMembers(teamId),
+          getTeamLeaderboard(teamId),
+          getTeamActivity(initialTeamActivityLimit, 0, teamId),
+        ]);
+
+      if (requestId !== dashboardRequestRef.current) {
+        return {
+          hasErrors: false,
+          failedSections: [],
+          cancelled: true,
+        };
+      }
+
+      if (teamResult.status === "rejected") {
+        reportError(teamResult.reason, {
+          feature: "team-load",
+          userId,
+          message: "Errore caricamento squadra:",
+        });
+      }
+
+      if (membersResult.status === "rejected") {
+        reportError(membersResult.reason, {
+          feature: "team-members-load",
+          userId,
+          message: "Errore caricamento membri Team:",
+        });
+      }
+
+      if (leaderboardResult.status === "rejected") {
+        reportError(leaderboardResult.reason, {
+          feature: "team-leaderboard-load",
+          userId,
+          message: "Errore caricamento classifica Team:",
+        });
+      }
+
+      if (activityResult.status === "rejected") {
+        reportError(activityResult.reason, {
+          feature: "team-activity-load",
+          userId,
+          message: "Errore caricamento attività Team:",
+        });
+      }
+
+      const nextBundle = {
+        team: teamResult.status === "fulfilled" ? (teamResult.value ?? null) : (prev?.team ?? null),
+        members:
+          membersResult.status === "fulfilled"
+            ? (membersResult.value ?? [])
+            : (prev?.members ?? []),
+        leaderboard:
+          leaderboardResult.status === "fulfilled"
+            ? (leaderboardResult.value ?? [])
+            : (prev?.leaderboard ?? []),
+        activity:
+          activityResult.status === "fulfilled"
+            ? (activityResult.value ?? [])
+            : (prev?.activity ?? []),
+      };
+
+      cacheRef.current.set(teamId, nextBundle);
+      viewedTeamIdRef.current = teamId;
+      setViewedTeamId(teamId);
+      setBundle(nextBundle);
+      saveViewedTeamId(userId, teamId);
+
+      const failedSections = [
+        membersResult.status === "rejected" ? "members" : null,
+        leaderboardResult.status === "rejected" ? "leaderboard" : null,
+        activityResult.status === "rejected" ? "activity" : null,
+      ].filter(Boolean);
+
+      return {
+        hasErrors: failedSections.length > 0,
+        failedSections,
+      };
+    },
+    [initialTeamActivityLimit, userId],
+  );
+
+  const refreshTeams = useCallback(async () => {
     const generation = dashboardRequestRef.current;
-    const data = await getTeamMembers();
+    const data = await getMyTeams();
 
     if (generation !== dashboardRequestRef.current) {
       return data ?? [];
     }
 
-    setMembers(data ?? []);
+    applyTeams(data ?? []);
 
     return data ?? [];
-  }, []);
-
-  const refreshLeaderboard = useCallback(async () => {
-    const generation = dashboardRequestRef.current;
-    const data = await getTeamLeaderboard();
-
-    if (generation !== dashboardRequestRef.current) {
-      return data ?? [];
-    }
-
-    setLeaderboard(data ?? []);
-
-    return data ?? [];
-  }, []);
-
-  const refreshActivity = useCallback(async () => {
-    const generation = dashboardRequestRef.current;
-    const data = await getTeamActivity(initialTeamActivityLimit, 0);
-
-    if (generation !== dashboardRequestRef.current) {
-      return data ?? [];
-    }
-
-    setActivity(data ?? []);
-
-    return data ?? [];
-  }, [initialTeamActivityLimit]);
+  }, [applyTeams]);
 
   const refreshDashboard = useCallback(
-    async (requestedUserId = user?.id) => {
+    async (requestedUserId = userId) => {
       if (!requestedUserId) {
         return {
           hasErrors: false,
@@ -132,12 +210,11 @@ export function TeamProvider({ children }) {
       }
 
       const requestId = ++dashboardRequestRef.current;
-      const previousTeamId = teamIdRef.current;
 
       setLoading(true);
 
       try {
-        const nextTeam = await getMyTeam();
+        const nextTeams = await getMyTeams();
 
         if (requestId !== dashboardRequestRef.current) {
           return {
@@ -147,18 +224,20 @@ export function TeamProvider({ children }) {
           };
         }
 
-        const nextTeamId = nextTeam?.id ?? nextTeam?.team_id ?? null;
-        const teamChanged = previousTeamId !== nextTeamId;
+        applyTeams(nextTeams ?? []);
 
-        teamIdRef.current = nextTeamId;
+        const nextViewedTeamId = resolveViewedTeamId(
+          nextTeams ?? [],
+          viewedTeamIdRef.current,
+        );
 
-        setTeam(nextTeam);
+        viewedTeamIdRef.current = nextViewedTeamId;
+        setViewedTeamId(nextViewedTeamId);
 
-        if (!nextTeam) {
+        if (!nextViewedTeamId) {
           clearTeamSnapshot(requestedUserId);
-          setMembers([]);
-          setLeaderboard([]);
-          setActivity([]);
+          cacheRef.current.clear();
+          clearBundle();
           setLoadedUserId(requestedUserId);
 
           return {
@@ -167,12 +246,7 @@ export function TeamProvider({ children }) {
           };
         }
 
-        const [membersResult, leaderboardResult, activityResult] =
-          await Promise.allSettled([
-            getTeamMembers(),
-            getTeamLeaderboard(),
-            getTeamActivity(initialTeamActivityLimit, 0),
-          ]);
+        const loadResult = await loadTeamBundle(nextViewedTeamId, requestId);
 
         if (requestId !== dashboardRequestRef.current) {
           return {
@@ -182,74 +256,17 @@ export function TeamProvider({ children }) {
           };
         }
 
-        if (membersResult.status === "fulfilled") {
-          setMembers(membersResult.value ?? []);
-        } else {
-          if (teamChanged) {
-            setMembers([]);
-          }
-
-          reportError(membersResult.reason, {
-            feature: "team-members-load",
-            userId: user?.id ?? null,
-            message: "Errore caricamento membri Team:",
-          });
-        }
-
-        if (leaderboardResult.status === "fulfilled") {
-          setLeaderboard(leaderboardResult.value ?? []);
-        } else {
-          if (teamChanged) {
-            setLeaderboard([]);
-          }
-
-          reportError(leaderboardResult.reason, {
-            feature: "team-leaderboard-load",
-            userId: user?.id ?? null,
-            message: "Errore caricamento classifica Team:",
-          });
-        }
-
-        if (activityResult.status === "fulfilled") {
-          setActivity(activityResult.value ?? []);
-        } else {
-          if (teamChanged) {
-            setActivity([]);
-          }
-
-          reportError(activityResult.reason, {
-            feature: "team-activity-load",
-            userId: user?.id ?? null,
-            message: "Errore caricamento attività Team:",
-          });
-        }
-
-        // Save snapshot after successful data load
-        if (
-          membersResult.status === "fulfilled" &&
-          leaderboardResult.status === "fulfilled" &&
-          activityResult.status === "fulfilled"
-        ) {
+        if (cacheRef.current.get(nextViewedTeamId)?.team) {
           saveTeamSnapshot(requestedUserId, {
-            team: nextTeam,
-            members: membersResult.value ?? [],
-            leaderboard: leaderboardResult.value ?? [],
-            activity: activityResult.value ?? [],
+            teams: nextTeams ?? [],
+            viewedTeamId: nextViewedTeamId,
+            ...(cacheRef.current.get(nextViewedTeamId) ?? {}),
           });
         }
-
-        const failedSections = [
-          membersResult.status === "rejected" ? "members" : null,
-          leaderboardResult.status === "rejected" ? "leaderboard" : null,
-          activityResult.status === "rejected" ? "activity" : null,
-        ].filter(Boolean);
 
         setLoadedUserId(requestedUserId);
 
-        return {
-          hasErrors: failedSections.length > 0,
-          failedSections,
-        };
+        return loadResult;
       } catch (error) {
         if (requestId !== dashboardRequestRef.current) {
           return {
@@ -259,8 +276,10 @@ export function TeamProvider({ children }) {
           };
         }
 
-        if (!loadTeamSnapshot(requestedUserId)) {
-          clearTeamData();
+        const cached = cacheRef.current.get(viewedTeamIdRef.current);
+
+        if (!cached) {
+          clearBundle();
         }
 
         setLoadedUserId(requestedUserId);
@@ -272,29 +291,54 @@ export function TeamProvider({ children }) {
         }
       }
     },
-    [clearTeamData, user, initialTeamActivityLimit],
+    [applyTeams, clearBundle, loadTeamBundle, resolveViewedTeamId, userId],
   );
 
+  // Riflette lo stato della squadra visualizzata in un ref: le funzioni di
+  // refresh leggono il ref (stabile) invece dello stato per non ricreare i
+  // callback a ogni cambio di bundle.
   useEffect(() => {
-    if (authLoading || !user?.id) {
+    viewedTeamIdRef.current = viewedTeamId;
+  }, [viewedTeamId]);
+
+  useEffect(() => {
+    if (authLoading || !userId) {
       return undefined;
     }
 
-    const requestedUserId = user.id;
+    const requestedUserId = userId;
     let cancelled = false;
 
     const timeoutId = window.setTimeout(() => {
-      // Hydrate dallo snapshot locale una sola volta per utente, poi rigenera.
-      if (!cancelled && hydratedUserIdRef.current !== requestedUserId) {
+      if (cancelled) {
+        return;
+      }
+
+      if (hydratedUserIdRef.current !== requestedUserId) {
         hydratedUserIdRef.current = requestedUserId;
 
         const snapshot = loadTeamSnapshot(requestedUserId);
 
         if (snapshot) {
-          setTeam(snapshot.team ?? null);
-          setMembers(snapshot.members ?? []);
-          setLeaderboard(snapshot.leaderboard ?? []);
-          setActivity(snapshot.activity ?? []);
+          const nextTeams = snapshot.teams ?? [];
+          applyTeams(nextTeams);
+          setViewedTeamId(snapshot.viewedTeamId ?? null);
+          viewedTeamIdRef.current = snapshot.viewedTeamId ?? null;
+
+          if (snapshot.team) {
+            const nextBundle = {
+              team: snapshot.team,
+              members: snapshot.members ?? [],
+              leaderboard: snapshot.leaderboard ?? [],
+              activity: snapshot.activity ?? [],
+            };
+
+            const cachedTeamId =
+              snapshot.viewedTeamId ?? snapshot.team?.team_id ?? null;
+
+            cacheRef.current.set(cachedTeamId, nextBundle);
+            setBundle(nextBundle);
+          }
         }
       }
 
@@ -302,7 +346,7 @@ export function TeamProvider({ children }) {
         if (!cancelled) {
           reportError(error, {
             feature: "team-dashboard-load",
-            userId: user?.id ?? null,
+            userId,
             message: "Impossibile caricare la dashboard Team:",
           });
         }
@@ -314,18 +358,170 @@ export function TeamProvider({ children }) {
       dashboardRequestRef.current += 1;
       window.clearTimeout(timeoutId);
     };
-  }, [authLoading, user?.id, refreshDashboard]);
+  }, [authLoading, userId, applyTeams, refreshDashboard]);
 
-  const isAuthenticated = Boolean(user?.id);
+  const selectTeam = useCallback(
+    async (teamId) => {
+      if (!teamId) {
+        return;
+      }
 
-  const hasCurrentUserData = isAuthenticated && loadedUserId === user?.id;
+      await refreshTeams();
 
-  const currentTeamId = hasCurrentUserData
-    ? (team?.id ?? team?.team_id ?? null)
-    : null;
+      if (viewedTeamIdRef.current === teamId && cacheRef.current.has(teamId)) {
+        const cached = cacheRef.current.get(teamId);
+        setViewedTeamId(teamId);
+        setBundle(cached);
+        return;
+      }
+
+      const requestId = ++dashboardRequestRef.current;
+
+      setLoading(true);
+
+      try {
+        return await loadTeamBundle(teamId, requestId);
+      } finally {
+        if (requestId === dashboardRequestRef.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [loadTeamBundle, refreshTeams],
+  );
+
+  const refreshTeam = useCallback(async () => {
+    const teamId = viewedTeamIdRef.current;
+
+    if (!teamId) {
+      return null;
+    }
+
+    const generation = dashboardRequestRef.current;
+    const data = await getTeam(teamId);
+
+    if (generation !== dashboardRequestRef.current) {
+      return data;
+    }
+
+    const prev = cacheRef.current.get(teamId) ?? {
+      team: null,
+      members: [],
+      leaderboard: [],
+      activity: [],
+    };
+    const next = { ...prev, team: data };
+
+    cacheRef.current.set(teamId, next);
+
+    if (viewedTeamIdRef.current === teamId) {
+      setBundle(next);
+    }
+
+    return data;
+  }, []);
+
+  const refreshMembers = useCallback(async () => {
+    const teamId = viewedTeamIdRef.current;
+
+    if (!teamId) {
+      return [];
+    }
+
+    const generation = dashboardRequestRef.current;
+    const data = await getTeamMembers(teamId);
+
+    if (generation !== dashboardRequestRef.current) {
+      return data ?? [];
+    }
+
+    const prev = cacheRef.current.get(teamId) ?? {
+      team: null,
+      members: [],
+      leaderboard: [],
+      activity: [],
+    };
+    const next = { ...prev, members: data ?? [] };
+
+    cacheRef.current.set(teamId, next);
+
+    if (viewedTeamIdRef.current === teamId) {
+      setBundle(next);
+    }
+
+    return data ?? [];
+  }, []);
+
+  const refreshLeaderboard = useCallback(async () => {
+    const teamId = viewedTeamIdRef.current;
+
+    if (!teamId) {
+      return [];
+    }
+
+    const generation = dashboardRequestRef.current;
+    const data = await getTeamLeaderboard(teamId);
+
+    if (generation !== dashboardRequestRef.current) {
+      return data ?? [];
+    }
+
+    const prev = cacheRef.current.get(teamId) ?? {
+      team: null,
+      members: [],
+      leaderboard: [],
+      activity: [],
+    };
+    const next = { ...prev, leaderboard: data ?? [] };
+
+    cacheRef.current.set(teamId, next);
+
+    if (viewedTeamIdRef.current === teamId) {
+      setBundle(next);
+    }
+
+    return data ?? [];
+  }, []);
+
+  const refreshActivity = useCallback(async () => {
+    const teamId = viewedTeamIdRef.current;
+
+    if (!teamId) {
+      return [];
+    }
+
+    const generation = dashboardRequestRef.current;
+    const data = await getTeamActivity(initialTeamActivityLimit, 0, teamId);
+
+    if (generation !== dashboardRequestRef.current) {
+      return data ?? [];
+    }
+
+    const prev = cacheRef.current.get(teamId) ?? {
+      team: null,
+      members: [],
+      leaderboard: [],
+      activity: [],
+    };
+    const next = { ...prev, activity: data ?? [] };
+
+    cacheRef.current.set(teamId, next);
+
+    if (viewedTeamIdRef.current === teamId) {
+      setBundle(next);
+    }
+
+    return data ?? [];
+  }, [initialTeamActivityLimit]);
+
+  const isAuthenticated = Boolean(userId);
+
+  const hasCurrentUserData = isAuthenticated && loadedUserId === userId;
+
+  const currentViewedTeamId = hasCurrentUserData ? viewedTeamId : null;
 
   useEffect(() => {
-    if (authLoading || !user?.id || !currentTeamId) {
+    if (authLoading || !userId || !currentViewedTeamId) {
       return undefined;
     }
 
@@ -363,7 +559,7 @@ export function TeamProvider({ children }) {
               if (result.status === "rejected") {
                 reportError(result.reason, {
                   feature: "team-realtime-refresh",
-                  userId: user?.id ?? null,
+                  userId,
                   message: "Errore aggiornamento realtime Team:",
                 });
               }
@@ -372,7 +568,7 @@ export function TeamProvider({ children }) {
           .catch((error) => {
             reportError(error, {
               feature: "team-realtime-refresh",
-              userId: user?.id ?? null,
+              userId,
               message: "Errore aggiornamento realtime Team:",
             });
           });
@@ -380,14 +576,14 @@ export function TeamProvider({ children }) {
     }
 
     const channel = supabase
-      .channel(`team-activity-${currentTeamId}`)
+      .channel(`team-activity-${currentViewedTeamId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "team_activity",
-          filter: `team_id=eq.${currentTeamId}`,
+          filter: `team_id=eq.${currentViewedTeamId}`,
         },
         (payload) => {
           const activityType = payload.new?.activity_type;
@@ -400,7 +596,7 @@ export function TeamProvider({ children }) {
           event: "DELETE",
           schema: "public",
           table: "team_activity",
-          filter: `team_id=eq.${currentTeamId}`,
+          filter: `team_id=eq.${currentViewedTeamId}`,
         },
         (payload) => {
           const activityType = payload.old?.activity_type;
@@ -411,7 +607,7 @@ export function TeamProvider({ children }) {
         if (error) {
           reportError(error, {
             feature: "team-realtime",
-            userId: user?.id ?? null,
+            userId,
             message: "Errore Team Realtime:",
           });
         }
@@ -419,7 +615,7 @@ export function TeamProvider({ children }) {
         if (status === "CHANNEL_ERROR") {
           reportError(null, {
             feature: "team-realtime-channel",
-            userId: user?.id ?? null,
+            userId,
             message: "Canale Team Realtime non disponibile",
           });
         }
@@ -438,8 +634,8 @@ export function TeamProvider({ children }) {
     };
   }, [
     authLoading,
-    user?.id,
-    currentTeamId,
+    userId,
+    currentViewedTeamId,
     refreshActivity,
     refreshLeaderboard,
     refreshMembers,
@@ -447,13 +643,19 @@ export function TeamProvider({ children }) {
 
   const contextValue = useMemo(
     () => ({
-      team: hasCurrentUserData ? team : null,
-      members: hasCurrentUserData ? members : [],
-      leaderboard: hasCurrentUserData ? leaderboard : [],
-      activity: hasCurrentUserData ? activity : [],
+      team: hasCurrentUserData ? bundle.team : null,
+      members: hasCurrentUserData ? bundle.members : [],
+      leaderboard: hasCurrentUserData ? bundle.leaderboard : [],
+      activity: hasCurrentUserData ? bundle.activity : [],
+      teams: hasCurrentUserData ? teams : [],
+      viewedTeamId: hasCurrentUserData ? viewedTeamId : null,
       loading:
         authLoading || (isAuthenticated && (!hasCurrentUserData || loading)),
+      atTeamLimit: (hasCurrentUserData ? teams : []).length >= MAX_TEAMS,
+      teamIdsRef,
+      selectTeam,
       refreshDashboard,
+      refreshTeams,
       refreshTeam,
       refreshMembers,
       refreshLeaderboard,
@@ -463,12 +665,13 @@ export function TeamProvider({ children }) {
       authLoading,
       isAuthenticated,
       hasCurrentUserData,
-      team,
-      members,
-      leaderboard,
-      activity,
+      bundle,
+      teams,
+      viewedTeamId,
       loading,
+      selectTeam,
       refreshDashboard,
+      refreshTeams,
       refreshTeam,
       refreshMembers,
       refreshLeaderboard,

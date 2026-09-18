@@ -15,8 +15,20 @@ export async function createTeam({ name, description, avatarEmoji, maxMembers })
   return data;
 }
 
-export async function getMyTeam() {
-  const { data, error } = await supabase.rpc("get_my_team");
+export async function getMyTeams() {
+  const { data, error } = await supabase.rpc("get_my_teams");
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function getTeam(teamId) {
+  const { data, error } = await supabase.rpc("get_team", {
+    p_team_id: teamId,
+  });
 
   if (error) {
     throw error;
@@ -49,16 +61,20 @@ export async function joinTeam(inviteCode) {
   return data;
 }
 
-export async function leaveTeam() {
-  const { error } = await supabase.rpc("leave_team");
+export async function leaveTeam(teamId) {
+  const { error } = await supabase.rpc("leave_team", {
+    p_team_id: teamId,
+  });
 
   if (error) {
     throw error;
   }
 }
 
-export async function getTeamMembers() {
-  const { data, error } = await supabase.rpc("get_team_members");
+export async function getTeamMembers(teamId) {
+  const { data, error } = await supabase.rpc("get_team_members", {
+    p_team_id: teamId,
+  });
 
   if (error) {
     throw error;
@@ -67,13 +83,14 @@ export async function getTeamMembers() {
   return data ?? [];
 }
 
-export async function transferOwnership(newOwnerUserId) {
+export async function transferOwnership(newOwnerUserId, teamId) {
   if (!newOwnerUserId) {
     throw new Error("Seleziona un membro a cui trasferire la proprietà.");
   }
 
   const { error } = await supabase.rpc("transfer_ownership", {
     new_owner_user_id: newOwnerUserId,
+    p_team_id: teamId,
   });
 
   if (error) {
@@ -81,9 +98,10 @@ export async function transferOwnership(newOwnerUserId) {
   }
 }
 
-export async function removeTeamMember(userId) {
+export async function removeTeamMember(userId, teamId) {
   const { error } = await supabase.rpc("remove_team_member", {
     target_user_id: userId,
+    p_team_id: teamId,
   });
 
   if (error) {
@@ -91,8 +109,10 @@ export async function removeTeamMember(userId) {
   }
 }
 
-export async function getTeamLeaderboard() {
-  const { data, error } = await supabase.rpc("get_team_leaderboard");
+export async function getTeamLeaderboard(teamId) {
+  const { data, error } = await supabase.rpc("get_team_leaderboard", {
+    p_team_id: teamId,
+  });
 
   if (error) {
     throw error;
@@ -101,12 +121,13 @@ export async function getTeamLeaderboard() {
   return data ?? [];
 }
 
-export async function updateTeam({ name, description, avatarEmoji, maxMembers }) {
+export async function updateTeam({ name, description, avatarEmoji, maxMembers }, teamId) {
   const { data, error } = await supabase.rpc("update_team", {
     p_name: name,
     p_description: description,
     p_avatar_emoji: avatarEmoji,
     p_max_members: maxMembers,
+    p_team_id: teamId,
   });
 
   if (error) {
@@ -116,9 +137,10 @@ export async function updateTeam({ name, description, avatarEmoji, maxMembers })
   return data;
 }
 
-export async function toggleTeamInvites(enabled) {
+export async function toggleTeamInvites(enabled, teamId) {
   const { error } = await supabase.rpc("toggle_team_invites", {
     p_enabled: enabled,
+    p_team_id: teamId,
   });
 
   if (error) {
@@ -126,8 +148,10 @@ export async function toggleTeamInvites(enabled) {
   }
 }
 
-export async function regenerateInviteCode() {
-  const { data, error } = await supabase.rpc("regenerate_invite_code");
+export async function regenerateInviteCode(teamId) {
+  const { data, error } = await supabase.rpc("regenerate_invite_code", {
+    p_team_id: teamId,
+  });
 
   if (error) {
     throw error;
@@ -136,10 +160,11 @@ export async function regenerateInviteCode() {
   return data;
 }
 
-export async function getTeamActivity(limit = 20, offset = 0) {
+export async function getTeamActivity(limit = 20, offset = 0, teamId) {
   const { data, error } = await supabase.rpc("get_team_activity", {
     p_limit: limit,
     p_offset: offset,
+    p_team_id: teamId,
   });
 
   if (error) {
@@ -154,12 +179,14 @@ export async function createTeamActivity(
   points = null,
   metadata = null,
   dedupKey = null,
+  teamIds = null,
 ) {
   const { data, error } = await supabase.rpc("create_team_activity", {
     p_activity_type: activityType,
     p_points: points,
     p_metadata: metadata,
     p_dedup_key: dedupKey,
+    p_team_ids: teamIds,
   });
 
   if (error) {
@@ -172,10 +199,12 @@ export async function createTeamActivity(
 export async function removeTeamActivity(
   activityType = "entry_created",
   dedupKey = null,
+  teamIds = null,
 ) {
   const { data, error } = await supabase.rpc("remove_team_activity", {
     p_activity_type: activityType,
     p_dedup_key: dedupKey,
+    p_team_ids: teamIds,
   });
 
   if (error) {
@@ -187,11 +216,12 @@ export async function removeTeamActivity(
 
 export async function createAchievementTeamActivities(
   newAchievements,
-  teamId,
+  teamIds,
   userId,
 ) {
   if (
-    !teamId ||
+    !Array.isArray(teamIds) ||
+    teamIds.length === 0 ||
     userId == null ||
     !Array.isArray(newAchievements) ||
     newAchievements.length === 0
@@ -208,7 +238,8 @@ export async function createAchievementTeamActivities(
           achievementId: achievement.id,
           achievementName: achievement.title,
         },
-        `${userId}:achievement:${achievement.id}`,
+        `${teamIds.join(":")}:${userId}:achievement:${achievement.id}`,
+        teamIds,
       ),
     ),
   );

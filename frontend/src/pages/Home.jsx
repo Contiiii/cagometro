@@ -113,7 +113,7 @@ export default function Home() {
     subscribeError: pushSubscribeError,
   } = usePush();
 
-  const { team } = useTeam();
+  const { teams } = useTeam();
 
   const { streak, bestStreak } = useStats(entries);
 
@@ -232,7 +232,11 @@ export default function Home() {
 
         const newAchievements = checkAchievements(total, updatedStreak);
 
-        createAchievementTeamActivities(newAchievements, team?.id, user?.id).then(
+        createAchievementTeamActivities(
+          newAchievements,
+          teams.map((item) => item.team_id),
+          user?.id,
+        ).then(
           (results) => {
             results.forEach((result) => {
               if (result.status === "rejected") {

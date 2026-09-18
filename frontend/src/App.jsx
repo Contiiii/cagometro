@@ -11,6 +11,7 @@ const Report = lazy(() => import("./pages/Report"));
 const Achievements = lazy(() => import("./pages/Achievements"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Teams = lazy(() => import("./pages/Teams"));
+const TeamDashboardPage = lazy(() => import("./pages/TeamDashboardPage"));
 const JoinTeamPage = lazy(() => import("./pages/JoinTeamPage"));
 const Login = lazy(() => import("./pages/Login"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -63,6 +64,8 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
 
           <Route path="/teams" element={<Teams />} />
+
+          <Route path="/teams/:teamId" element={<TeamDashboardPage />} />
 
           <Route path="/achievements" element={<Achievements />} />
 

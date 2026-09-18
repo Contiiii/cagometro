@@ -52,14 +52,14 @@ describe("AppearancePanel", () => {
       expect(swatch.style.backgroundColor).toMatch(/^rgb\(/);
     }
 
-    expect(screen.getByText("Rosa classico")).toBeTruthy();
-    expect(screen.getByText("Viola illegale")).toBeTruthy();
+    expect(screen.getByText("Rosa")).toBeTruthy();
+    expect(screen.getByText("Viola")).toBeTruthy();
   });
 
   it("chiama setAccent quando si seleziona uno stile", () => {
     renderPanel();
 
-    fireEvent.click(screen.getByRole("button", { name: /Ambra sospetta/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Ambra/ }));
 
     expect(setAccent).toHaveBeenCalledWith("amber");
   });

@@ -22,7 +22,10 @@ export default function JoinTeamPage() {
     refreshActivity,
   } = useTeam();
 
+  const { atTeamLimit } = useTeam();
+
   const { handleJoinTeam } = useTeamActions({
+    atTeamLimit,
     notify,
     refreshDashboard,
     refreshTeam,
@@ -141,7 +144,7 @@ export default function JoinTeamPage() {
     setErrorMessage("");
 
     try {
-      await handleJoinTeam(inviteCode, inviteTeam.name, { immediate: true });
+      await handleJoinTeam(inviteCode, inviteTeam.name);
     } catch (error) {
       reportError(error, {
         feature: "team-join",
@@ -162,10 +165,6 @@ export default function JoinTeamPage() {
     }
 
     setJoinStatus("success");
-
-    navigate("/teams", {
-      replace: true,
-    });
   }
 
   function handleCancel() {

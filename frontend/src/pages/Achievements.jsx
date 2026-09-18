@@ -29,7 +29,13 @@ export default function Achievements() {
   const prefersReducedMotion = useReducedMotion();
   const { resolvedTheme } = useTheme();
   const { entries } = useEntries();
-  const { leaderboard, members } = useTeam();
+  const {
+    leaderboard,
+    members,
+    teams = [],
+    viewedTeamId,
+    selectTeam,
+  } = useTeam();
   const isDark = resolvedTheme === "dark";
 
   const { unlockedAchievement, closeAchievement } = useAchievements();
@@ -112,6 +118,30 @@ export default function Achievements() {
             theme={theme}
             isDark={isDark}
           />
+
+          {section === "squadra" && teams.length > 1 && (
+            <div className="mt-4">
+              <label
+                htmlFor="achievements-team-select"
+                className={`block text-[11px] font-bold uppercase tracking-[0.12em] ${theme.muted}`}
+              >
+                Squadra
+              </label>
+
+              <select
+                id="achievements-team-select"
+                value={viewedTeamId ?? ""}
+                onChange={(event) => selectTeam(event.target.value)}
+                className={`mt-1.5 min-h-11 w-full max-w-sm rounded-2xl border bg-transparent px-3 text-sm font-bold outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 ${theme.input} ${theme.primaryText}`}
+              >
+                {teams.map((item) => (
+                  <option key={item.team_id} value={item.team_id}>
+                    {item.avatar_emoji || "💩"} {item.team_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </section>
 
         <AchievementsHero

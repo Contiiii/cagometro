@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 import {
   createTeam,
   joinTeam,
@@ -17,10 +19,12 @@ import { useSettings } from "./useSettings";
 import { sendMyPushNotification } from "../services/pushService";
 import { reportError } from "../utils/reportError";
 import { getFriendlyErrorMessage } from "../utils/friendlyError";
+import { MAX_TEAMS_PER_USER } from "../config/team";
 
 export function useTeamActions({
   team = null,
   isLastMember = false,
+  atTeamLimit = false,
   selectedMember = null,
   setSelectedMember = () => {},
   notify,
@@ -33,8 +37,11 @@ export function useTeamActions({
   const { user } = useAuth();
   const { isSubscribed: pushSubscribed } = usePush();
   const { teamMemberAlerts } = useSettings();
+  const navigate = useNavigate();
 
   const userId = user?.id ?? null;
+
+  const currentTeamId = team?.team_id ?? null;
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -76,55 +83,26 @@ export function useTeamActions({
       throw new Error("Nome squadra mancante");
     }
 
+    if (atTeamLimit) {
+      notify(`Hai raggiunto il limite massimo di ${MAX_TEAMS_PER_USER} squadre`, "error");
+      throw new Error(`Hai raggiunto il limite massimo di ${MAX_TEAMS_PER_USER} squadre`);
+    }
+
+    let teamId;
+
     try {
-      await createTeam({
+      teamId = await createTeam({
         name,
         description: payload.description?.trim() || null,
         avatarEmoji: "🏆",
         maxMembers: payload.maxMembers,
       });
-
-      // Nota: privacy/accent non vengono inviati perché la RPC create_team
-      // non li supporta (campi visivi, gestione separata).
-      const refreshResults = await Promise.allSettled([
-        refreshTeam(),
-        refreshMembers(),
-      ]);
-
-      const hasRefreshFailure = refreshResults.some(
-        (result) => result.status === "rejected",
-      );
-
-      if (hasRefreshFailure) {
-reportError(
-            refreshResults
-              .filter((result) => result.status === "rejected")
-              .map((result) => result.reason),
-            {
-              feature: "team-create-refresh",
-              userId,
-              message: "Squadra creata, ma aggiornamento dati fallito:",
-            },
-          );
-      }
-
-      if (!localStorage.getItem("cagometro.teamOnboardingSeen")) {
-        localStorage.setItem("cagometro.teamOnboardingSeen", "1");
-        setOnboardingOpen(true);
-      }
-
-      notify(
-        hasRefreshFailure
-          ? "Squadra creata, ma alcuni dati non sono stati aggiornati"
-          : "Squadra creata",
-        hasRefreshFailure ? "error" : "success",
-      );
     } catch (error) {
       reportError(error, {
-            feature: "team-create",
-            userId,
-            message: "Errore durante la creazione della squadra:",
-          });
+        feature: "team-create",
+        userId,
+        message: "Errore durante la creazione della squadra:",
+      });
       notify(
         getFriendlyErrorMessage(
           error,
@@ -134,12 +112,36 @@ reportError(
       );
       throw error;
     }
+
+    if (!localStorage.getItem("cagometro.teamOnboardingSeen")) {
+      localStorage.setItem("cagometro.teamOnboardingSeen", "1");
+      setOnboardingOpen(true);
+    }
+
+    try {
+      await refreshDashboard();
+
+      notify("Squadra creata");
+    } catch (error) {
+      reportError(error, {
+        feature: "team-create-refresh",
+        userId,
+        message: "Squadra creata, ma aggiornamento dashboard fallito:",
+      });
+
+      notify("Squadra creata, ma alcuni dati non sono stati aggiornati", "error");
+    }
+
+    navigate(`/teams/${teamId}`);
   }
 
-  async function handleJoinTeam(code, teamName = null, options = {}) {
-    const immediate = Boolean(options?.immediate);
+  async function handleJoinTeam(code, teamName = null) {
+    if (atTeamLimit) {
+      notify(`Hai raggiunto il limite massimo di ${MAX_TEAMS_PER_USER} squadre`, "error");
+      throw new Error(`Hai raggiunto il limite massimo di ${MAX_TEAMS_PER_USER} squadre`);
+    }
 
-    await joinTeam(code);
+    const teamId = await joinTeam(code);
 
     if (pushSubscribed && teamMemberAlerts) {
       sendMyPushNotification({
@@ -148,7 +150,7 @@ reportError(
         body: teamName
           ? `Sei entrato in ${teamName}.`
           : "Sei entrato nella squadra.",
-        url: "/teams",
+        url: `/teams/${teamId}`,
       }).catch((error) => {
         reportError(error, {
           feature: "team-join-welcome-push",
@@ -160,23 +162,6 @@ reportError(
 
     notify(teamName ? `Sei entrato in ${teamName}.` : "Sei entrato nella squadra");
 
-    if (immediate) {
-      refreshDashboard().catch((error) => {
-        reportError(error, {
-          feature: "team-join-dashboard",
-          userId,
-          message: "Ingresso riuscito, ma aggiornamento dashboard fallito:",
-        });
-
-        notify(
-          "Sei entrato nella squadra. Ricarica la pagina per aggiornare i dati.",
-          "error",
-        );
-      });
-
-      return;
-    }
-
     try {
       const result = await refreshDashboard();
 
@@ -187,17 +172,19 @@ reportError(
         );
       }
     } catch (error) {
-reportError(error, {
-              feature: "team-join-dashboard",
-              userId,
-              message: "Ingresso riuscito, ma aggiornamento dashboard fallito:",
-            });
+      reportError(error, {
+        feature: "team-join-dashboard",
+        userId,
+        message: "Ingresso riuscito, ma aggiornamento dashboard fallito:",
+      });
 
       notify(
         "Sei entrato nella squadra. Ricarica la pagina per aggiornare i dati.",
         "error",
       );
     }
+
+    navigate(`/teams/${teamId}`);
   }
 
   function handleLeaveTeam() {
@@ -215,7 +202,7 @@ reportError(error, {
 
           // member_left è loggato dalla RPC leave_team(), nella stessa
           // transazione dell'uscita (nessuna chiamata client extra).
-          await leaveTeam();
+          await leaveTeam(currentTeamId);
 
           setSelectedMember(null);
           setInviteOpen(false);
@@ -234,7 +221,6 @@ reportError(error, {
                   : "Sei uscito, ma alcuni dati non sono stati aggiornati",
                 "error",
               );
-              return;
             }
           } catch (error) {
             reportError(error, {
@@ -249,7 +235,6 @@ reportError(error, {
                 : "Sei uscito. Ricarica la pagina per aggiornare i dati.",
               "error",
             );
-            return;
           }
 
           notify(
@@ -257,6 +242,7 @@ reportError(error, {
               ? "Squadra sciolta con successo"
               : "Hai lasciato la squadra",
           );
+          navigate("/teams");
         } catch (error) {
           reportError(error, {
             feature: "team-leave",
@@ -280,7 +266,7 @@ reportError(error, {
       variant: "warning",
       onConfirm: async () => {
         try {
-          await transferOwnership(member.user_id);
+          await transferOwnership(member.user_id, currentTeamId);
 
           const refreshResults = await Promise.allSettled([
             refreshTeam(),
@@ -337,7 +323,7 @@ reportError(error, {
       variant: "danger",
       onConfirm: async () => {
         try {
-          await removeTeamMember(member.user_id);
+          await removeTeamMember(member.user_id, currentTeamId);
 
           const refreshResults = await Promise.allSettled([
             refreshMembers(),
@@ -396,14 +382,14 @@ reportError(error, {
       variant: "warning",
       onConfirm: async () => {
         try {
-          await regenerateInviteCode();
+          await regenerateInviteCode(currentTeamId);
         } catch (error) {
-reportError(error, {
-              feature: "team-invite-regenerate",
-              userId,
-              message:
-                "Errore durante la rigenerazione del codice invito:",
-            });
+          reportError(error, {
+            feature: "team-invite-regenerate",
+            userId,
+            message:
+              "Errore durante la rigenerazione del codice invito:",
+          });
           throw error;
         }
 
@@ -412,11 +398,11 @@ reportError(error, {
 
           notify("Nuovo codice invito generato");
         } catch (error) {
-reportError(error, {
-              feature: "team-invite-regenerate-refresh",
-              userId,
-              message: "Codice rigenerato, ma aggiornamento dati fallito:",
-            });
+          reportError(error, {
+            feature: "team-invite-regenerate-refresh",
+            userId,
+            message: "Codice rigenerato, ma aggiornamento dati fallito:",
+          });
 
           notify(
             "Codice rigenerato. Ricarica la pagina per aggiornare i dati.",
@@ -434,7 +420,7 @@ reportError(error, {
         description: payload.description?.trim() || null,
         avatarEmoji: payload.avatarEmoji,
         maxMembers: payload.maxMembers,
-      });
+      }, currentTeamId);
     } catch (error) {
       reportError(error, {
         feature: "team-update",
@@ -470,7 +456,7 @@ reportError(error, {
 
     try {
       try {
-        await toggleTeamInvites(nextEnabled);
+        await toggleTeamInvites(nextEnabled, currentTeamId);
       } catch (error) {
         reportError(error, {
           feature: "team-invites-toggle",

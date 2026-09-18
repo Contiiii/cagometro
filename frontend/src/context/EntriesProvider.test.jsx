@@ -518,6 +518,7 @@ describe("EntriesProvider", () => {
       1,
       null,
       expect.any(String),
+      [],
     );
     expect(latest.syncStatus).toBe("synced");
     expect(latest.pendingOps).toEqual([]);
@@ -553,6 +554,7 @@ describe("EntriesProvider", () => {
       activityType: "entry_created",
       points: 1,
       dedupKey,
+      teamIds: [],
     });
 
     setOnline(true);
@@ -568,6 +570,7 @@ describe("EntriesProvider", () => {
       1,
       null,
       dedupKey,
+      [],
     );
   });
 
@@ -601,6 +604,7 @@ describe("EntriesProvider", () => {
       1,
       null,
       queuedActivity.payload.dedupKey,
+      [],
     ]);
     expect(latest.syncStatus).toBe("pending");
 
@@ -618,6 +622,7 @@ describe("EntriesProvider", () => {
       1,
       null,
       firstCall[3],
+      [],
     );
     expect(latest.syncStatus).toBe("synced");
   });
@@ -650,6 +655,7 @@ describe("EntriesProvider", () => {
       1,
       null,
       "legacy-op-1",
+      null,
     );
   });
 
@@ -748,6 +754,7 @@ describe("EntriesProvider", () => {
     expect(removeTeamActivity).toHaveBeenCalledWith(
       "entry_created",
       expect.any(String),
+      [],
     );
     expect(latest.syncStatus).toBe("synced");
   });
