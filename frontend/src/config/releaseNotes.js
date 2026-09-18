@@ -1,11 +1,11 @@
-import { BarChart3, BellRing, CalendarDays, RefreshCw, Settings, Smartphone, TrendingUp, UsersRound, Zap } from "lucide-react";
+import { BarChart3, BellPlus, BellRing, CalendarDays, Palette, RefreshCw, RotateCcw, Settings, Smartphone, TrendingUp, UsersRound, Zap } from "lucide-react";
 
 export const APP_VERSION = __APP_VERSION__;
 
 export const RELEASE_NOTES = [
   {
     version: APP_VERSION,
-    date: "2026-09-17",
+    date: "2026-09-18",
     features: [
       {
         id: "offline-1",
@@ -60,6 +60,30 @@ export const RELEASE_NOTES = [
         title: "Riprova più trasparente",
         description: "Se qualcosa va storto, il pulsante 'Riprova' ora mostra che sta riprovando.",
         icon: RefreshCw,
+      },
+      {
+        id: "optin-1",
+        title: "Notifiche proposte alla prima apertura",
+        description: "Alla prima apertura ti proponiamo di attivare le notifiche: in un tap sei pronto.",
+        icon: BellPlus,
+      },
+      {
+        id: "push-devices-1",
+        title: "Gestisci i tuoi dispositivi",
+        description: "Vedi tutti i dispositivi collegati e rimuovi quelli che non usi più.",
+        icon: Smartphone,
+      },
+      {
+        id: "team-undo-1",
+        title: "Attività squadra sempre aggiornata",
+        description: "Se annulli una registrazione, sparisce anche dall'attività della squadra.",
+        icon: RotateCcw,
+      },
+      {
+        id: "a11y-1",
+        title: "Migliorata la leggibilità",
+        description: "Colori e contrasti migliorati su tutta l'app.",
+        icon: Palette,
       },
     ],
   },
