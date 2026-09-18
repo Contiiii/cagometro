@@ -71,7 +71,7 @@ export default function Privacy() {
   const isDark = resolvedTheme === "dark";
 
   const accentColor = useMemo(
-    () => accentOptions.find((item) => item.id === accent)?.color ?? "#ec4899",
+    () => accentOptions.find((item) => item.id === accent)?.fill ?? "#ec4899",
     [accent],
   );
 

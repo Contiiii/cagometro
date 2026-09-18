@@ -1,4 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { devices, expect, test } from "@playwright/test";
+
+const MOBILE_CONTEXT = { ...devices["Pixel 7"] };
+delete MOBILE_CONTEXT.defaultBrowserType;
 
 const IMAGES = [
   { path: "/icon-192.png", label: "icon 192", width: 192, height: 192 },
@@ -72,6 +75,34 @@ test.describe("PWA", () => {
         }),
       )
       .toBe(true);
+  });
+
+  test.describe("installazione", () => {
+    test.use(MOBILE_CONTEXT);
+
+    test("offre l'installazione quando il browser la permette", async ({
+      page,
+    }) => {
+      await page.goto("/settings");
+
+      await page
+        .getByRole("button", { name: "Aggiungi alla Home" })
+        .click();
+
+      await expect(
+        page.getByRole("heading", { name: "Aggiungi Cagometro alla Home" }),
+      ).toBeVisible();
+
+      await page.evaluate(() => {
+        window.dispatchEvent(
+          new Event("beforeinstallprompt", { cancelable: true }),
+        );
+      });
+
+      await expect(
+        page.getByRole("button", { name: "Installa app" }),
+      ).toBeVisible();
+    });
   });
 
   for (const image of IMAGES) {

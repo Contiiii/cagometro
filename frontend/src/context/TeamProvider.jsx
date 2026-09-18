@@ -17,6 +17,12 @@ import {
   getTeamActivity,
 } from "../services/teamService";
 
+import {
+  loadTeamSnapshot,
+  saveTeamSnapshot,
+  clearTeamSnapshot,
+} from "../utils/storage";
+
 export const TEAM_REALTIME_DEBOUNCE_MS = 500;
 
 const REALTIME_LEADERBOARD_EVENT_TYPES = new Set([
@@ -45,6 +51,8 @@ export function TeamProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [loadedUserId, setLoadedUserId] = useState(null);
   const dashboardRequestRef = useRef(0);
+  const hydratedUserIdRef = useRef(null);
+  const teamIdRef = useRef(null);
   const realtimeDebounceTimerRef = useRef(null);
   const realtimeLeaderboardDirtyRef = useRef(false);
   const realtimeMembersDirtyRef = useRef(false);
@@ -55,6 +63,12 @@ export function TeamProvider({ children }) {
     setLeaderboard([]);
     setActivity([]);
   }, []);
+
+  // Riflette lo stato di `team` (incluso idratazione da snapshot) per
+  // rilevare i cambi di squadra dentro refreshDashboard.
+  useEffect(() => {
+    teamIdRef.current = team?.id ?? team?.team_id ?? null;
+  }, [team]);
 
   const refreshTeam = useCallback(async () => {
     const generation = dashboardRequestRef.current;
@@ -118,6 +132,7 @@ export function TeamProvider({ children }) {
       }
 
       const requestId = ++dashboardRequestRef.current;
+      const previousTeamId = teamIdRef.current;
 
       setLoading(true);
 
@@ -132,9 +147,15 @@ export function TeamProvider({ children }) {
           };
         }
 
+        const nextTeamId = nextTeam?.id ?? nextTeam?.team_id ?? null;
+        const teamChanged = previousTeamId !== nextTeamId;
+
+        teamIdRef.current = nextTeamId;
+
         setTeam(nextTeam);
 
         if (!nextTeam) {
+          clearTeamSnapshot(requestedUserId);
           setMembers([]);
           setLeaderboard([]);
           setActivity([]);
@@ -164,7 +185,9 @@ export function TeamProvider({ children }) {
         if (membersResult.status === "fulfilled") {
           setMembers(membersResult.value ?? []);
         } else {
-          setMembers([]);
+          if (teamChanged) {
+            setMembers([]);
+          }
 
           reportError(membersResult.reason, {
             feature: "team-members-load",
@@ -176,7 +199,9 @@ export function TeamProvider({ children }) {
         if (leaderboardResult.status === "fulfilled") {
           setLeaderboard(leaderboardResult.value ?? []);
         } else {
-          setLeaderboard([]);
+          if (teamChanged) {
+            setLeaderboard([]);
+          }
 
           reportError(leaderboardResult.reason, {
             feature: "team-leaderboard-load",
@@ -188,12 +213,28 @@ export function TeamProvider({ children }) {
         if (activityResult.status === "fulfilled") {
           setActivity(activityResult.value ?? []);
         } else {
-          setActivity([]);
+          if (teamChanged) {
+            setActivity([]);
+          }
 
           reportError(activityResult.reason, {
             feature: "team-activity-load",
             userId: user?.id ?? null,
             message: "Errore caricamento attività Team:",
+          });
+        }
+
+        // Save snapshot after successful data load
+        if (
+          membersResult.status === "fulfilled" &&
+          leaderboardResult.status === "fulfilled" &&
+          activityResult.status === "fulfilled"
+        ) {
+          saveTeamSnapshot(requestedUserId, {
+            team: nextTeam,
+            members: membersResult.value ?? [],
+            leaderboard: leaderboardResult.value ?? [],
+            activity: activityResult.value ?? [],
           });
         }
 
@@ -218,7 +259,10 @@ export function TeamProvider({ children }) {
           };
         }
 
-        clearTeamData();
+        if (!loadTeamSnapshot(requestedUserId)) {
+          clearTeamData();
+        }
+
         setLoadedUserId(requestedUserId);
 
         throw error;
@@ -240,6 +284,20 @@ export function TeamProvider({ children }) {
     let cancelled = false;
 
     const timeoutId = window.setTimeout(() => {
+      // Hydrate dallo snapshot locale una sola volta per utente, poi rigenera.
+      if (!cancelled && hydratedUserIdRef.current !== requestedUserId) {
+        hydratedUserIdRef.current = requestedUserId;
+
+        const snapshot = loadTeamSnapshot(requestedUserId);
+
+        if (snapshot) {
+          setTeam(snapshot.team ?? null);
+          setMembers(snapshot.members ?? []);
+          setLeaderboard(snapshot.leaderboard ?? []);
+          setActivity(snapshot.activity ?? []);
+        }
+      }
+
       refreshDashboard(requestedUserId).catch((error) => {
         if (!cancelled) {
           reportError(error, {
@@ -271,6 +329,56 @@ export function TeamProvider({ children }) {
       return undefined;
     }
 
+    function handleActivityChange(activityType) {
+      if (REALTIME_LEADERBOARD_EVENT_TYPES.has(activityType)) {
+        realtimeLeaderboardDirtyRef.current = true;
+      }
+
+      if (REALTIME_MEMBERS_EVENT_TYPES.has(activityType)) {
+        realtimeMembersDirtyRef.current = true;
+      }
+
+      if (realtimeDebounceTimerRef.current) {
+        window.clearTimeout(realtimeDebounceTimerRef.current);
+      }
+
+      realtimeDebounceTimerRef.current = window.setTimeout(() => {
+        realtimeDebounceTimerRef.current = null;
+
+        const operations = [refreshActivity()];
+
+        if (realtimeLeaderboardDirtyRef.current) {
+          realtimeLeaderboardDirtyRef.current = false;
+          operations.push(refreshLeaderboard());
+        }
+
+        if (realtimeMembersDirtyRef.current) {
+          realtimeMembersDirtyRef.current = false;
+          operations.push(refreshMembers());
+        }
+
+        Promise.allSettled(operations)
+          .then((results) => {
+            results.forEach((result) => {
+              if (result.status === "rejected") {
+                reportError(result.reason, {
+                  feature: "team-realtime-refresh",
+                  userId: user?.id ?? null,
+                  message: "Errore aggiornamento realtime Team:",
+                });
+              }
+            });
+          })
+          .catch((error) => {
+            reportError(error, {
+              feature: "team-realtime-refresh",
+              userId: user?.id ?? null,
+              message: "Errore aggiornamento realtime Team:",
+            });
+          });
+      }, TEAM_REALTIME_DEBOUNCE_MS);
+    }
+
     const channel = supabase
       .channel(`team-activity-${currentTeamId}`)
       .on(
@@ -283,54 +391,20 @@ export function TeamProvider({ children }) {
         },
         (payload) => {
           const activityType = payload.new?.activity_type;
-
-          if (REALTIME_LEADERBOARD_EVENT_TYPES.has(activityType)) {
-            realtimeLeaderboardDirtyRef.current = true;
-          }
-
-          if (REALTIME_MEMBERS_EVENT_TYPES.has(activityType)) {
-            realtimeMembersDirtyRef.current = true;
-          }
-
-          if (realtimeDebounceTimerRef.current) {
-            window.clearTimeout(realtimeDebounceTimerRef.current);
-          }
-
-          realtimeDebounceTimerRef.current = window.setTimeout(() => {
-            realtimeDebounceTimerRef.current = null;
-
-            const operations = [refreshActivity()];
-
-            if (realtimeLeaderboardDirtyRef.current) {
-              realtimeLeaderboardDirtyRef.current = false;
-              operations.push(refreshLeaderboard());
-            }
-
-            if (realtimeMembersDirtyRef.current) {
-              realtimeMembersDirtyRef.current = false;
-              operations.push(refreshMembers());
-            }
-
-            Promise.allSettled(operations)
-              .then((results) => {
-                results.forEach((result) => {
-                  if (result.status === "rejected") {
-                    reportError(result.reason, {
-                      feature: "team-realtime-refresh",
-                      userId: user?.id ?? null,
-                      message: "Errore aggiornamento realtime Team:",
-                    });
-                  }
-                });
-              })
-              .catch((error) => {
-                reportError(error, {
-                  feature: "team-realtime-refresh",
-                  userId: user?.id ?? null,
-                  message: "Errore aggiornamento realtime Team:",
-                });
-              });
-          }, TEAM_REALTIME_DEBOUNCE_MS);
+          handleActivityChange(activityType);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "team_activity",
+          filter: `team_id=eq.${currentTeamId}`,
+        },
+        (payload) => {
+          const activityType = payload.old?.activity_type;
+          handleActivityChange(activityType);
         },
       )
       .subscribe((status, error) => {

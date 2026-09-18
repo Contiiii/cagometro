@@ -3,8 +3,10 @@ import { MotionConfig } from "framer-motion";
 
 import { Suspense, lazy } from "react";
 import { Toaster } from "react-hot-toast";
+import OfflineBanner from "./components/OfflineBanner";
+import Home from "./pages/Home";
+import NotFound from "./pages/NotFound";
 
-const Home = lazy(() => import("./pages/Home"));
 const Report = lazy(() => import("./pages/Report"));
 const Achievements = lazy(() => import("./pages/Achievements"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -13,7 +15,6 @@ const JoinTeamPage = lazy(() => import("./pages/JoinTeamPage"));
 const Login = lazy(() => import("./pages/Login"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Changelog = lazy(() => import("./pages/Changelog"));
-import NotFound from "./pages/NotFound";
 
 export default function App() {
   return (
@@ -36,6 +37,8 @@ export default function App() {
         aria-atomic="true"
         className="sr-only"
       />
+
+      <OfflineBanner />
 
       <MotionConfig reducedMotion="user">
         <Suspense

@@ -22,13 +22,17 @@ export async function upsertMySettings({
   dailyReminder,
   streakAlerts,
   achievementAlerts,
-  teamAlerts,
+  teamEntryAlerts,
+  teamMemberAlerts,
+  teamAchievementAlerts,
 }) {
   const { error } = await supabase.rpc("upsert_my_settings", {
     p_daily_reminder: dailyReminder,
     p_streak_alerts: streakAlerts,
     p_achievement_alerts: achievementAlerts,
-    p_team_alerts: teamAlerts,
+    p_team_entry_alerts: teamEntryAlerts,
+    p_team_member_alerts: teamMemberAlerts,
+    p_team_achievement_alerts: teamAchievementAlerts,
   });
 
   if (error) {

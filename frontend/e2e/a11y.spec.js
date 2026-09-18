@@ -59,3 +59,47 @@ for (const route of ROUTES) {
     expect(blocking, blocking.map((v) => v.help).join("\n")).toEqual([]);
   });
 }
+
+for (const route of ROUTES) {
+  test(`a11y: contrasto colore AA 4.5:1 su ${route.name}`, async ({ page }) => {
+    await page.addInitScript(
+      (version) => {
+        localStorage.setItem("cagometro_last_seen_version", version);
+      },
+      packageJson.version,
+    );
+
+    await page.goto(route.path);
+
+    const contrastRun = await new AxeBuilder({ page })
+      .withRules(["color-contrast"])
+      .analyze();
+
+    const failures = contrastRun.violations.flatMap((violation) =>
+      (violation.nodes ?? []).map(
+        (node) =>
+          `${violation.impact} ${violation.help} → ${node.html}`,
+      ),
+    );
+
+    const unresolved = contrastRun.incomplete.flatMap((violation) =>
+      (violation.nodes ?? []).map(
+        (node) =>
+          `${violation.impact} ${violation.help} → ${node.html}`,
+      ),
+    );
+
+    if (unresolved.length > 0) {
+      console.log(
+        `⚠️  ${route.name}: ${unresolved.length} contrasti non verificabili ` +
+          `(sfondo translucido/non in DOM), campionati: ` +
+          unresolved.slice(0, 5).join(" | "),
+      );
+    }
+
+    expect(
+      failures,
+      `Contrasti sotto AA su ${route.name}:\n` + failures.join("\n"),
+    ).toEqual([]);
+  });
+}

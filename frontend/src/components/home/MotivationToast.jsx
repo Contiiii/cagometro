@@ -61,14 +61,14 @@ export default function MotivationToast({
               className="border border-accent/40 bg-accent/20"
             >
               <Sparkles
-                className="h-4 w-4 text-accent"
+                className="h-4 w-4 text-accent-ink"
                 strokeWidth={2.3}
                 aria-hidden="true"
               />
             </IconTile>
 
             <div className="min-w-0 flex-1">
-              <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-accent">
+              <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-accent-ink">
                 Registrazione aggiunta
               </span>
 

@@ -1,10 +1,94 @@
-import { BarChart3, CalendarDays, Settings, Smartphone, UsersRound, Zap } from "lucide-react";
+import { BarChart3, BellPlus, BellRing, CalendarDays, Palette, RefreshCw, RotateCcw, Settings, Smartphone, TrendingUp, UsersRound, Zap } from "lucide-react";
 
 export const APP_VERSION = __APP_VERSION__;
 
 export const RELEASE_NOTES = [
   {
     version: APP_VERSION,
+    date: "2026-09-18",
+    features: [
+      {
+        id: "offline-1",
+        title: "Cagometro funziona anche offline",
+        description: "La navigazione e l'apertura delle pagine restano disponibili anche senza connessione.",
+        icon: Smartphone,
+      },
+      {
+        id: "reliability-1",
+        title: "Registrazioni con retry automatico",
+        description: "I salvataggi che falliscono per la rete vengono riprovati automaticamente",
+        icon: Zap,
+      },
+      {
+        id: "push-1",
+        title: "Notifiche sul dispositivo",
+        description: "Attiva solo gli avvisi che preferisci: promemoria, streak, traguardi e attività della squadra.",
+        icon: BellRing,
+      },
+      {
+        id: "push-2",
+        title: "Serie a rischio",
+        description: "Se rischi di perdere la tua serie, ti avvisiamo prima che sia troppo tardi.",
+        icon: TrendingUp,
+      },
+      {
+        id: "push-3",
+        title: "Squadra sempre aggiornata",
+        description: "Notifiche quando un membro entra o esce, registra o sblocca un traguardo.",
+        icon: UsersRound,
+      },
+      {
+        id: "push-4",
+        title: "Notifiche push in tutta l'app",
+        description: "Avvisi per promemoria, serie a rischio, traguardi e attività della squadra: consegna più affidabile e apertura diretta della pagina Squadre.",
+        icon: BellRing,
+      },
+      {
+        id: "install-1",
+        title: "Installa Cagometro in un tocco",
+        description: "Nelle Impostazioni puoi aggiungere l'app alla schermata home con il pulsante di installazione.",
+        icon: Smartphone,
+      },
+      {
+        id: "loading-1",
+        title: "Caricamenti più chiari",
+        description: "Mentre i dati arrivano vedi un segnaposto invece di schermate vuote: niente più sfarfallii.",
+        icon: Zap,
+      },
+      {
+        id: "retry-1",
+        title: "Riprova più trasparente",
+        description: "Se qualcosa va storto, il pulsante 'Riprova' ora mostra che sta riprovando.",
+        icon: RefreshCw,
+      },
+      {
+        id: "optin-1",
+        title: "Notifiche proposte alla prima apertura",
+        description: "Alla prima apertura ti proponiamo di attivare le notifiche: in un tap sei pronto.",
+        icon: BellPlus,
+      },
+      {
+        id: "push-devices-1",
+        title: "Gestisci i tuoi dispositivi",
+        description: "Vedi tutti i dispositivi collegati e rimuovi quelli che non usi più.",
+        icon: Smartphone,
+      },
+      {
+        id: "team-undo-1",
+        title: "Attività squadra sempre aggiornata",
+        description: "Se annulli una registrazione, sparisce anche dall'attività della squadra.",
+        icon: RotateCcw,
+      },
+      {
+        id: "a11y-1",
+        title: "Migliorata la leggibilità",
+        description: "Colori e contrasti migliorati su tutta l'app.",
+        icon: Palette,
+      },
+    ],
+  },
+  {
+    version: "2.1.0",
     date: "2026-09-14",
     features: [
       {

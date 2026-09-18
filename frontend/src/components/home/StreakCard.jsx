@@ -26,7 +26,7 @@ export default function StreakCard({ streak, bestStreak, theme }) {
         </div>
       </div>
 
-      <span className="shrink-0 rounded-full bg-amber-400/15 px-3 py-1.5 text-xs font-bold text-amber-500">
+      <span className="shrink-0 rounded-full bg-amber-400/15 px-3 py-1.5 text-xs font-bold text-amber-800 dark:text-amber-400">
         {streak > 0 ? "In fiamme" : "Da iniziare"}
       </span>
     </div>

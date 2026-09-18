@@ -58,7 +58,7 @@ export default function TeamWeeklyGoal({
             </span>
           </div>
 
-          <span className="text-sm font-extrabold text-accent">
+          <span className="text-sm font-extrabold text-accent-ink">
             {weeklyProgress}%
           </span>
         </div>

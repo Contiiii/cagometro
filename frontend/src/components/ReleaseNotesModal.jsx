@@ -3,6 +3,7 @@ import { Check, Sparkles, UsersRound, X, ChevronDown, ChevronUp, ArrowRight } fr
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import useModalFocusTrap from "../hooks/useModalFocusTrap";
+import { getTheme } from "../config/theme";
 
 export default function ReleaseNotesModal({
   open,
@@ -31,21 +32,7 @@ export default function ReleaseNotesModal({
   const visibleFeatures = showAllVersions ? latestFeatures : latestFeatures.slice(0, 3);
   const hiddenFeaturesCount = Math.max(latestFeatures.length - visibleFeatures.length, 0);
 
-  const theme = isDark
-    ? {
-        panel: "border-white/[0.09] bg-[#17171b]",
-        soft: "border-white/[0.08] bg-white/[0.04]",
-        text: "text-zinc-50",
-        muted: "text-zinc-400",
-        overlay: "bg-zinc-950/70",
-      }
-    : {
-        panel: "border-zinc-900/[0.09] bg-[#fffaf6]",
-        soft: "border-zinc-900/[0.08] bg-zinc-900/[0.035]",
-        text: "text-zinc-950",
-        muted: "text-zinc-600",
-        overlay: "bg-zinc-950/45",
-      };
+  const theme = getTheme(isDark);
 
   const renderFeature = (feature, index, isExpanded = false) => {
     const Icon = feature.icon ?? Check;
@@ -70,7 +57,7 @@ export default function ReleaseNotesModal({
         }}
         className={`flex items-start gap-3 rounded-[1.35rem] border p-4 ${theme.softSurface}`}
       >
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent-ink">
           <Icon className="h-[18px] w-[18px]" strokeWidth={2.3} />
         </span>
 
@@ -97,7 +84,7 @@ export default function ReleaseNotesModal({
     return (
       <div key={note.version} className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent">
+            <span className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent-ink">
               <Sparkles className="h-3.5 w-3.5" strokeWidth={2.4} />
               Ultima versione
             </span>
@@ -190,7 +177,7 @@ export default function ReleaseNotesModal({
             <div className="relative p-6 sm:p-7">
               <div className="flex items-start justify-between gap-5">
                 <div className="min-w-0">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent-ink">
                     <Sparkles className="h-3.5 w-3.5" strokeWidth={2.4} />
                     Nuova versione
                   </div>
@@ -245,7 +232,7 @@ export default function ReleaseNotesModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-6 flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:bg-accent hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
+                className="mt-6 flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-3.5 text-sm font-extrabold text-accent-contrast shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:bg-accent hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
               >
                 <UsersRound className="h-5 w-5" strokeWidth={2.3} />
                 Scopri la nuova versione

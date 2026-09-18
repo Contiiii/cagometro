@@ -1,5 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { reportError } from "../utils/reportError";
 
 export default function useTeamInvite(team) {
   const [copied, setCopied] = useState(false);
@@ -24,10 +25,10 @@ export default function useTeamInvite(team) {
         setCopied(false);
       }, 2200);
     } catch (error) {
-      console.error(
-        "Errore durante la copia dell'invito:",
-        error,
-      );
+      reportError(error, {
+        feature: "team-invite-copy",
+        message: "Errore durante la copia dell'invito:",
+      });
 
       toast.error("Non è stato possibile copiare il link");
     }
@@ -55,10 +56,10 @@ export default function useTeamInvite(team) {
           return;
         }
 
-        console.error(
-          "Errore durante la condivisione:",
-          error,
-        );
+        reportError(error, {
+          feature: "team-invite-share",
+          message: "Errore durante la condivisione:",
+        });
       }
     }
 

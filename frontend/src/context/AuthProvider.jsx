@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { AuthContext } from "./auth-context";
+import { reportError } from "../utils/reportError";
+import { detachPushSubscription } from "../services/pushService";
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
@@ -18,7 +20,10 @@ export function AuthProvider({ children }) {
       if (!isMounted) return;
 
       if (error) {
-        console.error("Errore caricamento sessione:", error);
+        reportError(error, {
+          feature: "auth-session-load",
+          message: "Errore caricamento sessione:",
+        });
       }
 
       setSession(session);
@@ -51,11 +56,23 @@ export function AuthProvider({ children }) {
     });
 
     if (error) {
-      console.error("Errore durante il login:", error);
+      reportError(error, {
+        feature: "auth-login",
+        message: "Errore durante il login:",
+      });
     }
   }, []);
 
   const logout = useCallback(async () => {
+    // Best-effort: se il service worker è lento o assente il detach non deve
+    // né bloccare né impedire il logout. Il try/catch è la rete di sicurezza
+    // finale nel caso il detach sollevasse comunque un errore.
+    try {
+      await detachPushSubscription();
+    } catch {
+      // errore ignorato: il logout prosegue
+    }
+
     const { error } = await supabase.auth.signOut();
     if (error) throw new Error(error.message);
   }, []);

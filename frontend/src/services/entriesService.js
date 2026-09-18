@@ -16,7 +16,7 @@ export async function saveEntry({
   date,
   count,
 }) {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("entries")
     .upsert(
       {
@@ -27,12 +27,11 @@ export async function saveEntry({
       {
         onConflict: "user_id,date",
       },
-    )
-    .select();
+    );
 
   if (error) throw error;
 
-  return data;
+  return null;
 }
 
 

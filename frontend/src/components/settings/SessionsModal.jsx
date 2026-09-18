@@ -7,6 +7,7 @@ import {
   revokeSession,
 } from "../../services/accountService";
 import { parseUserAgent } from "../../utils/userAgent";
+import { reportError } from "../../utils/reportError";
 import IconTile from "../ui/IconTile";
 import ModalShell from "./ModalShell";
 
@@ -41,10 +42,10 @@ export default function SessionsModal({
         const data = await getMySessions();
         if (alive) setSessions(data);
       } catch (error) {
-        console.error(
-          "Errore durante il caricamento delle sessioni:",
-          error,
-        );
+        reportError(error, {
+          feature: "sessions-load",
+          message: "Errore durante il caricamento delle sessioni:",
+        });
         if (alive) setLoadError(true);
       } finally {
         if (alive) setLoading(false);
@@ -67,7 +68,10 @@ export default function SessionsModal({
         current.filter((session) => session.session_id !== sessionId),
       );
     } catch (error) {
-      console.error("Errore durante la revoca della sessione:", error);
+      reportError(error, {
+        feature: "sessions-revoke-one",
+        message: "Errore durante la revoca della sessione:",
+      });
     } finally {
       setBusySessionId(null);
     }
@@ -82,7 +86,10 @@ export default function SessionsModal({
         current.filter((session) => session.is_current),
       );
     } catch (error) {
-      console.error("Errore durante la revoca delle sessioni:", error);
+      reportError(error, {
+        feature: "sessions-revoke-all",
+        message: "Errore durante la revoca delle sessioni:",
+      });
     } finally {
       setBusySessionId(null);
     }
@@ -187,7 +194,7 @@ export default function SessionsModal({
           type="button"
           onClick={handleRevokeOthers}
           disabled={busySessionId !== null}
-          className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 text-sm font-extrabold text-rose-500 disabled:opacity-50"
+          className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 text-sm font-extrabold text-rose-700 dark:text-rose-400 disabled:opacity-50"
         >
           <Shield className="h-4 w-4" strokeWidth={2.3} />
           Revoca le altre sessioni

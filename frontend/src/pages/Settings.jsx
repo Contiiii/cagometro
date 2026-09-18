@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   BellRing,
   Cloud,
+  Download,
   LogIn,
   Palette,
   Pencil,
@@ -26,11 +27,14 @@ import { useSettings } from "../hooks/useSettings";
 import IconTile from "../components/ui/IconTile";
 import StatCard from "../components/ui/StatCard";
 import ReleaseNotesModal from "../components/ReleaseNotesModal";
+import PushOptInModal from "../components/PushOptInModal";
+import SkeletonBlock from "../components/ui/SkeletonBlock";
 
 import AppearancePanel from "../components/settings/AppearancePanel";
 import NotificationsPanel from "../components/settings/NotificationsPanel";
 import AccountPanel from "../components/settings/AccountPanel";
 import SystemPanel from "../components/settings/SystemPanel";
+import QuotaPanel from "../components/settings/QuotaPanel";
 import ModalShell from "../components/settings/ModalShell";
 import SessionsModal from "../components/settings/SessionsModal";
 
@@ -43,10 +47,13 @@ import { deleteAccount } from "../services/accountService";
 import { APP_VERSION, RELEASE_NOTES } from "../config/releaseNotes";
 import { accentOptions } from "../config/appearance";
 import { resolveSyncState } from "../config/syncState";
+import { OWNER_EMAILS } from "../config/admin";
+import { reportError } from "../utils/reportError";
 import { getLevel } from "../config/levels";
 import { getTotalHistorical } from "../utils/stats";
 import { clearAllLocalData } from "../utils/storage";
 import { buildTechExport } from "../utils/techExport";
+import { isMobileDevice } from "../utils/userAgent";
 
 const feedbackCategories = [
   { id: "miglioria", label: "Miglioria" },
@@ -108,11 +115,14 @@ export default function CagometroSettings() {
     dailyReminder,
     streakAlerts,
     achievementAlerts,
-    teamAlerts,
+    teamEntryAlerts,
+    teamMemberAlerts,
+    teamAchievementAlerts,
     updateSetting,
+    loading: settingsLoading,
   } = useSettings();
 
-  const { entries, syncStatus, pendingChanges, clearLocalData, retrySync } =
+  const { entries, syncStatus, pendingOps, clearLocalData, retrySync } =
     useEntries();
 
   const dayCount = useMemo(() => Object.keys(entries).length, [entries]);
@@ -135,8 +145,8 @@ export default function CagometroSettings() {
     typeof navigator.vibrate === "function";
 
   const syncState = useMemo(
-    () => resolveSyncState(user, syncStatus, pendingChanges),
-    [user, syncStatus, pendingChanges],
+    () => resolveSyncState(user, syncStatus, pendingOps),
+    [user, syncStatus, pendingOps],
   );
 
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
@@ -150,6 +160,17 @@ export default function CagometroSettings() {
   const [feedbackSending, setFeedbackSending] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
+  const [installPromptOpen, setInstallPromptOpen] = useState(false);
+
+  const showInstallButton = useMemo(() => isMobileDevice(), []);
+
+  const isOwner = Boolean(
+    user?.email &&
+      OWNER_EMAILS.some(
+        (email) =>
+          email.trim().toLowerCase() === user.email.trim().toLowerCase(),
+      ),
+  );
   const [typedAccountName, setTypedAccountName] = useState("");
 
   const openDangerAction = (action) => {
@@ -173,7 +194,7 @@ export default function CagometroSettings() {
   const resolvedDark = resolvedTheme === "dark";
 
   const accentColor = useMemo(
-    () => accentOptions.find((item) => item.id === accent)?.color ?? "#ec4899",
+    () => accentOptions.find((item) => item.id === accent)?.fill ?? "#ec4899",
     [accent],
   );
 
@@ -182,7 +203,7 @@ export default function CagometroSettings() {
   useEffect(() => {
     const activeTab = mobileTabButtonsRef.current[activeSection];
 
-    if (!activeTab) return;
+    if (!activeTab?.scrollIntoView) return;
 
     activeTab.scrollIntoView({
       behavior: "smooth",
@@ -207,7 +228,7 @@ export default function CagometroSettings() {
       utenteLoggato: Boolean(user),
       syncStatus,
       label: syncState.label,
-      modificheInAttesa: pendingChanges,
+      modificheInAttesa: pendingOps,
       giorniRegistrati: dayCount,
       totaleSegnalazioni: totalCount,
       entries,
@@ -314,7 +335,11 @@ export default function CagometroSettings() {
       setFeedbackMessage("");
       showToast("Segnalazione inviata. Grazie!");
     } catch (error) {
-      console.error("Errore durante l'invio della segnalazione:", error);
+      reportError(error, {
+        feature: "settings-feedback",
+        userId: user?.id ?? null,
+        message: "Errore durante l'invio della segnalazione:",
+      });
       showToast("Non è stato possibile inviare la segnalazione");
     } finally {
       setFeedbackSending(false);
@@ -340,7 +365,11 @@ export default function CagometroSettings() {
       showToast("Profilo aggiornato");
       setProfileEditorOpen(false);
     } catch (error) {
-      console.error(error);
+      reportError(error, {
+        feature: "settings-profile-save",
+        userId: user?.id ?? null,
+        message: "Errore durante il salvataggio del profilo:",
+      });
       showToast("Errore durante il salvataggio");
     } finally {
       setSaving(false);
@@ -370,16 +399,21 @@ export default function CagometroSettings() {
         try {
           await logout();
         } catch (error) {
-          console.error("Sessione già revocata:", error);
+          reportError(error, {
+            feature: "settings-logout-after-delete",
+            userId: user?.id ?? null,
+            message: "Errore durante il logout:",
+          });
         }
 
         navigate("/");
         showToast("Account eliminato");
       } catch (error) {
-        console.error(
-          "Errore durante l'eliminazione dell'account:",
-          error,
-        );
+        reportError(error, {
+          feature: "settings-account-delete",
+          userId: user?.id ?? null,
+          message: "Errore durante l'eliminazione dell'account:",
+        });
         showToast("Non è stato possibile eliminare l'account");
       }
 
@@ -398,7 +432,11 @@ export default function CagometroSettings() {
       navigate("/");
       showToast("Ti sei disconnesso");
     } catch (error) {
-      console.error("Errore durante il logout:", error);
+      reportError(error, {
+        feature: "settings-logout",
+        userId: user?.id ?? null,
+        message: "Errore durante il logout:",
+      });
       showToast("Non è stato possibile disconnettersi");
     }
   }
@@ -474,7 +512,7 @@ export default function CagometroSettings() {
             <div className="flex min-w-0 items-center gap-4">
               <IconTile
                 size="3xl"
-                className="relative overflow-hidden text-2xl font-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.16)]"
+                className="relative overflow-hidden text-2xl font-black text-accent-contrast shadow-[0_14px_30px_rgba(0,0,0,0.16)]"
                 style={{ backgroundColor: accentColor }}
               >
                 {profileAvatar ? (
@@ -498,7 +536,7 @@ export default function CagometroSettings() {
                     Il tuo spazio
                   </p>
 
-                  <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.06em] text-emerald-500">
+                  <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.06em] text-emerald-700 dark:text-emerald-400">
                     Beta
                   </span>
                 </div>
@@ -516,6 +554,23 @@ export default function CagometroSettings() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
+              {showInstallButton && (
+                <button
+                  type="button"
+                  onClick={() => setInstallPromptOpen(true)}
+                  aria-haspopup="dialog"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-extrabold text-accent-contrast transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 sm:w-auto"
+                  style={{
+                    backgroundColor: accentColor,
+                    boxShadow: `0 12px 28px ${accentColor}40`,
+                    "--tw-ring-color": `${accentColor}55`,
+                  }}
+                >
+                  <Download className="h-4 w-4" strokeWidth={2.3} />
+                  Aggiungi alla Home
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={openProfileEditor}
@@ -672,7 +727,11 @@ export default function CagometroSettings() {
               transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
               className={`min-w-0 rounded-[1.8rem] border p-5 sm:p-7 ${theme.surface}`}
             >
-              {activeSection === "appearance" && (
+              {settingsLoading ? (
+                <SkeletonBlock className="h-80 w-full" />
+              ) : (
+                <>
+                  {activeSection === "appearance" && (
                 <AppearancePanel
                   theme={theme}
                   accent={accent}
@@ -694,7 +753,9 @@ export default function CagometroSettings() {
                   dailyReminder={dailyReminder}
                   streakAlerts={streakAlerts}
                   achievementAlerts={achievementAlerts}
-                  teamAlerts={teamAlerts}
+                  teamEntryAlerts={teamEntryAlerts}
+                  teamMemberAlerts={teamMemberAlerts}
+                  teamAchievementAlerts={teamAchievementAlerts}
                   updateSetting={updateSetting}
                 />
               )}
@@ -710,7 +771,7 @@ export default function CagometroSettings() {
                   cloudEnabled={cloudEnabled}
                   dayCount={dayCount}
                   totalCount={totalCount}
-                  pendingCount={pendingChanges.length}
+                  pendingCount={pendingOps.length}
                   onRetrySync={retrySync}
                   vibrationEnabled={vibrationEnabled}
                   setVibrationEnabled={(value) =>
@@ -723,18 +784,32 @@ export default function CagometroSettings() {
               )}
 
               {activeSection === "account" && (
-                <AccountPanel
-                  theme={theme}
-                  accentColor={accentColor}
-                  themeMode={themeMode}
-                  accent={accent}
-                  isLoggedIn={Boolean(user)}
-                  onDanger={openDangerAction}
-                  onFeedback={openFeedback}
-                  onPrivacy={() => navigate("/privacy")}
-                  onDevices={() => setSessionsOpen(true)}
-                  onShowReleaseNotes={openReleaseNotes}
-                />
+                <>
+                  {isOwner && cloudEnabled && (
+                    <div className="mb-4">
+                      <QuotaPanel
+                        theme={theme}
+                        accentColor={accentColor}
+                        cloudEnabled={cloudEnabled}
+                      />
+                    </div>
+                  )}
+
+                  <AccountPanel
+                    theme={theme}
+                    accentColor={accentColor}
+                    themeMode={themeMode}
+                    accent={accent}
+                    isLoggedIn={Boolean(user)}
+                    onDanger={openDangerAction}
+                    onFeedback={openFeedback}
+                    onPrivacy={() => navigate("/privacy")}
+                    onDevices={() => setSessionsOpen(true)}
+                    onShowReleaseNotes={openReleaseNotes}
+                  />
+                </>
+              )}
+                </>
               )}
             </motion.section>
           </AnimatePresence>
@@ -775,7 +850,7 @@ export default function CagometroSettings() {
                 type="button"
                 onClick={saveProfile}
                 disabled={saving}
-                className="mt-2 flex min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(0,0,0,0.16)] disabled:opacity-60"
+                className="mt-2 flex min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-accent-contrast shadow-[0_10px_24px_rgba(0,0,0,0.16)] disabled:opacity-60"
                 style={{
                   backgroundColor: accentColor,
                   "--tw-ring-color": `${accentColor}55`,
@@ -797,7 +872,7 @@ export default function CagometroSettings() {
             onClose={closeDangerAction}
             prefersReducedMotion={prefersReducedMotion}
           >
-            <div className="rounded-[1.4rem] border border-rose-500/20 bg-rose-500/10 p-4 text-rose-500">
+            <div className="rounded-[1.4rem] border border-rose-500/20 bg-rose-500/10 p-4 text-rose-700 dark:text-rose-400">
               <p className="text-sm font-black">
                 {dangerModal === "logout" && "Vuoi davvero disconnetterti?"}
                 {dangerModal === "delete-data" &&
@@ -817,7 +892,7 @@ export default function CagometroSettings() {
                 <label className="grid gap-2">
                   <span
                     className={`text-xs font-bold uppercase tracking-[0.12em] ${
-                      resolvedDark ? "text-zinc-400" : "text-zinc-500"
+                      resolvedDark ? "text-zinc-400" : "text-zinc-600"
                     }`}
                   >
                     Digita {profileName} per confermare
@@ -857,7 +932,7 @@ export default function CagometroSettings() {
                   dangerModal === "delete-account" &&
                   typedAccountName.trim() !== profileName
                 }
-                className="min-h-12 rounded-2xl bg-rose-500 px-4 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-12 rounded-2xl bg-rose-500 px-4 text-sm font-extrabold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Conferma
               </button>
@@ -883,6 +958,14 @@ export default function CagometroSettings() {
         notes={RELEASE_NOTES}
         isDark={resolvedDark}
         prefersReducedMotion={prefersReducedMotion}
+      />
+
+      <PushOptInModal
+        open={installPromptOpen}
+        mode="install"
+        isDark={resolvedDark}
+        prefersReducedMotion={prefersReducedMotion}
+        onClose={() => setInstallPromptOpen(false)}
       />
 
       <AnimatePresence>
@@ -921,7 +1004,7 @@ export default function CagometroSettings() {
               <label className="grid gap-2">
                 <span
                   className={`text-xs font-bold uppercase tracking-[0.12em] ${
-                    resolvedDark ? "text-zinc-400" : "text-zinc-500"
+                    resolvedDark ? "text-zinc-400" : "text-zinc-600"
                   }`}
                 >
                   Messaggio
@@ -953,7 +1036,7 @@ export default function CagometroSettings() {
                 type="button"
                 onClick={sendFeedback}
                 disabled={feedbackSending}
-                className="mt-1 flex min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(0,0,0,0.16)] disabled:opacity-60"
+                className="mt-1 flex min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-accent-contrast shadow-[0_10px_24px_rgba(0,0,0,0.16)] disabled:opacity-60"
                 style={{ backgroundColor: accentColor }}
               >
                 <Send className="h-4 w-4" strokeWidth={2.3} />
@@ -981,7 +1064,7 @@ export default function CagometroSettings() {
             className="fixed inset-x-0 bottom-5 z-[70] flex justify-center px-4"
           >
             <div
-              className="rounded-full px-4 py-3 text-sm font-black text-white shadow-[0_12px_28px_rgba(0,0,0,0.22)]"
+              className="rounded-full px-4 py-3 text-sm font-black text-accent-contrast shadow-[0_12px_28px_rgba(0,0,0,0.22)]"
               style={{ backgroundColor: accentColor }}
             >
               {toast}
@@ -1005,7 +1088,7 @@ function Field({
     <label className="grid gap-2">
       <span
         className={`text-xs font-bold uppercase tracking-[0.12em] ${
-          dark ? "text-zinc-400" : "text-zinc-500"
+          dark ? "text-zinc-400" : "text-zinc-600"
         }`}
       >
         {label}

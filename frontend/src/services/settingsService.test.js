@@ -84,14 +84,18 @@ describe("upsertMySettings", () => {
       dailyReminder: true,
       streakAlerts: false,
       achievementAlerts: true,
-      teamAlerts: false,
+      teamEntryAlerts: false,
+      teamMemberAlerts: true,
+      teamAchievementAlerts: false,
     });
 
     expect(supabase.rpc).toHaveBeenCalledWith("upsert_my_settings", {
       p_daily_reminder: true,
       p_streak_alerts: false,
       p_achievement_alerts: true,
-      p_team_alerts: false,
+      p_team_entry_alerts: false,
+      p_team_member_alerts: true,
+      p_team_achievement_alerts: false,
     });
   });
 
@@ -103,7 +107,9 @@ describe("upsertMySettings", () => {
         dailyReminder: true,
         streakAlerts: true,
         achievementAlerts: true,
-        teamAlerts: true,
+        teamEntryAlerts: true,
+        teamMemberAlerts: true,
+        teamAchievementAlerts: true,
       }),
     ).rejects.toThrow("aggiornamento fallito");
   });

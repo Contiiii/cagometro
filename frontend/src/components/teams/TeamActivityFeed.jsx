@@ -5,6 +5,7 @@ import {
   Crown,
   Flame,
   Plus,
+  Trophy,
   UserPlus,
   UsersRound,
   Wifi,
@@ -31,6 +32,7 @@ function getActivityIcon(type) {
     ownership_transferred: Crown,
     member_removed: X,
     streak_bonus: Flame,
+    achievement_unlocked: Trophy,
   };
 
   return icons[type] || Activity;
@@ -39,8 +41,8 @@ function getActivityIcon(type) {
 function getActivityStyle(type, isDark) {
   const styles = {
     entry_created: isDark
-      ? "bg-accent/15 text-accent"
-      : "bg-accent/12 text-accent",
+      ? "bg-accent/15 text-accent-ink"
+      : "bg-accent/12 text-accent-ink",
 
     member_joined: isDark
       ? "bg-emerald-400/15 text-emerald-400"
@@ -52,7 +54,7 @@ function getActivityStyle(type, isDark) {
 
     ownership_transferred: isDark
       ? "bg-amber-400/15 text-amber-300"
-      : "bg-amber-400/15 text-amber-700",
+      : "bg-amber-400/15 text-amber-800",
 
     member_removed: isDark
       ? "bg-rose-400/15 text-rose-400"
@@ -101,6 +103,9 @@ function getActivityText(item) {
           : "punti bonus streak"
       }`;
 
+    case "achievement_unlocked":
+      return `${displayName} ha sbloccato un traguardo`;
+
     default:
       return `${displayName} ha aggiornato la squadra`;
   }
@@ -145,7 +150,7 @@ export default function TeamActivityFeed({
         title="Attività recente"
         theme={theme}
         aside={
-          <span className="flex items-center gap-1.5 pb-1 text-xs font-bold text-emerald-600 dark:text-emerald-500">
+          <span className="flex items-center gap-1.5 pb-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
             <Wifi className="h-4 w-4" strokeWidth={2.2} />
             Live
           </span>

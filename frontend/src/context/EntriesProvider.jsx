@@ -4,7 +4,10 @@ import { EntriesContext } from "./entries-context";
 
 import { useAuth } from "../hooks/useAuth";
 
-import { createTeamActivity } from "../services/teamService";
+import {
+  createTeamActivity,
+  removeTeamActivity,
+} from "../services/teamService";
 
 import {
   getEntries,
@@ -18,14 +21,29 @@ import {
   loadUserEntries,
   saveUserEntries,
   hasAnonymousEntries,
-  savePendingSync,
-  clearPendingSync,
-  loadPendingSync,
 } from "../utils/storage";
+
+import {
+  loadPendingOps,
+  savePendingOps,
+  clearPendingOps,
+  removePendingOps,
+  createOpId,
+} from "../utils/pendingQueue";
 
 import { getLocalDateKey } from "../utils/date";
 
 import { announce } from "../utils/announce";
+
+import { reportError } from "../utils/reportError";
+
+import { trackEvent } from "../services/analyticsService";
+
+const OP_TYPES = {
+  SAVE_ENTRY: "saveEntry",
+  CREATE_TEAM_ACTIVITY: "createTeamActivity",
+  REMOVE_TEAM_ACTIVITY: "removeTeamActivity",
+};
 
 function formatEntries(entriesList) {
   return entriesList.reduce((acc, entry) => {
@@ -43,9 +61,15 @@ export function EntriesProvider({ children }) {
 
   const [syncStatus, setSyncStatus] = useState("synced");
 
-  const [pendingChanges, setPendingChanges] = useState([]);
+  const [pendingOps, setPendingOps] = useState([]);
 
   const [today, setToday] = useState(() => getLocalDateKey());
+
+  // Vero finché il primo hydrate (cache + server) non è concluso, così la UI
+  // può evitare di mostrare un "vuoto" ingannevole al primo avvio. Si tiene
+  // traccia dell'utente ormai idratato, così un cambio account torna a
+  // "loading" senza setState sincroni dentro l'effetto.
+  const [hydratedUserId, setHydratedUserId] = useState(() => userId);
 
   const entriesRef = useRef(entries);
 
@@ -112,47 +136,83 @@ export function EntriesProvider({ children }) {
     };
   }, []);
 
-  const flushPendingChanges = useCallback(
-    async (changes = pendingChanges) => {
-      if (!userId || changes.length === 0) {
+  const flushPendingOps = useCallback(
+    async () => {
+      if (!userId || pendingOps.length === 0) {
         return true;
       }
 
+      const batch = pendingOps;
+      const batchIds = batch.map((op) => op.id);
+
       try {
-        const entriesByDate = Object.fromEntries(
-          changes.map((change) => [change.date, change.count]),
+        const saveEntryOps = batch.filter((op) => op.type === OP_TYPES.SAVE_ENTRY);
+        const activityOps = batch.filter((op) => op.type === OP_TYPES.CREATE_TEAM_ACTIVITY);
+        const removalOps = batch.filter(
+          (op) => op.type === OP_TYPES.REMOVE_TEAM_ACTIVITY,
         );
 
-        await importEntries(userId, entriesByDate);
+        if (saveEntryOps.length > 0) {
+          const entriesByDate = Object.fromEntries(
+            saveEntryOps.map((op) => [op.payload.date, op.payload.count]),
+          );
 
-        clearPendingSync(userId);
-        setPendingChanges([]);
-        setSyncStatus("synced");
+          await importEntries(userId, entriesByDate);
+        }
+
+        for (const op of activityOps) {
+          await createTeamActivity(
+            op.payload.activityType,
+            op.payload.points,
+            null,
+            op.payload.dedupKey ?? op.id,
+          );
+        }
+
+        for (const op of removalOps) {
+          await removeTeamActivity(
+            op.payload.activityType,
+            op.payload.dedupKey ?? op.id,
+          );
+        }
+
+        // Rimuove SOLO le operazioni del batch: quelle accodate durante
+        // l'await (es. nuovo tap offline) restano nella coda.
+        const remainingOps = removePendingOps(userId, batchIds);
+        setPendingOps((prev) => prev.filter((op) => !batchIds.includes(op.id)));
+        setSyncStatus(remainingOps.length > 0 ? "pending" : "synced");
 
         if (prevSyncStatusRef.current === "error") {
           announce("Sincronizzazione ripristinata");
         }
 
-        prevSyncStatusRef.current = "synced";
+        prevSyncStatusRef.current = remainingOps.length > 0 ? "pending" : "synced";
+
+        trackEvent("sync_batch", { ok: true, ops: batch.length });
 
         return true;
       } catch (error) {
-        console.error("Errore sincronizzazione pending:", error);
+        reportError(error, {
+          feature: "entries-sync",
+          userId,
+          message: "Errore sincronizzazione pending:",
+        });
 
-        savePendingSync(userId, changes);
+        trackEvent("sync_batch", { ok: false, ops: batch.length });
+
         setSyncStatus("error");
         prevSyncStatusRef.current = "error";
 
         return false;
       }
     },
-    [userId, pendingChanges],
+    [userId, pendingOps],
   );
 
   useEffect(() => {
     function handleOnline() {
-      if (pendingChanges.length > 0) {
-        flushPendingChanges();
+      if (pendingOps.length > 0) {
+        flushPendingOps();
       }
     }
 
@@ -161,7 +221,7 @@ export function EntriesProvider({ children }) {
     return () => {
       window.removeEventListener("online", handleOnline);
     };
-  }, [flushPendingChanges, pendingChanges]);
+  }, [flushPendingOps, pendingOps]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -173,10 +233,11 @@ export function EntriesProvider({ children }) {
 
       if (!userId) {
         entriesOwnerRef.current = null;
-        setPendingChanges([]);
+        setPendingOps([]);
         setSyncStatus("synced");
         prevSyncStatusRef.current = "synced";
         setEntries(loadAnonymousEntries());
+        setHydratedUserId(null);
         return;
       }
 
@@ -185,7 +246,7 @@ export function EntriesProvider({ children }) {
       entriesOwnerRef.current = userId;
 
       if (previousOwner !== userId) {
-        setPendingChanges([]);
+        setPendingOps([]);
         setSyncStatus("synced");
         prevSyncStatusRef.current = "synced";
         setEntries({});
@@ -199,24 +260,52 @@ export function EntriesProvider({ children }) {
       }
 
       // 2. Recupera eventuali pending
-      const savedPending = loadPendingSync(userId);
-      setPendingChanges(savedPending);
+      const savedPendingOps = loadPendingOps(userId);
+      setPendingOps(savedPendingOps);
 
       // 3. Se online prova a sincronizzarli
-      if (navigator.onLine && savedPending.length > 0) {
-        try {
-          const pendingByDate = Object.fromEntries(
-            savedPending.map((change) => [change.date, change.count]),
-          );
+      if (navigator.onLine && savedPendingOps.length > 0) {
+        const bootstrapIds = savedPendingOps.map((op) => op.id);
 
-          await importEntries(userId, pendingByDate);
+        try {
+          for (const op of savedPendingOps) {
+            if (op.type === "saveEntry") {
+              await saveEntry({
+                userId,
+                date: op.payload.date,
+                count: op.payload.count,
+              });
+            } else if (op.type === "createTeamActivity") {
+              await createTeamActivity(
+                op.payload.activityType,
+                op.payload.points,
+                null,
+                op.payload.dedupKey ?? op.id,
+              );
+            } else if (op.type === "removeTeamActivity") {
+              await removeTeamActivity(
+                op.payload.activityType,
+                op.payload.dedupKey ?? op.id,
+              );
+            }
+          }
 
           if (cancelled) return;
 
-          clearPendingSync(userId);
-          setPendingChanges([]);
+          removePendingOps(userId, bootstrapIds);
+          setPendingOps((prev) =>
+            prev.filter((op) => !bootstrapIds.includes(op.id)),
+          );
+
+          trackEvent("sync_batch", { ok: true, ops: savedPendingOps.length });
         } catch (error) {
-          console.error("Errore sync pending:", error);
+          reportError(error, {
+            feature: "entries-sync",
+            userId,
+            message: "Errore sync pending al bootstrap:",
+          });
+
+          trackEvent("sync_batch", { ok: false, ops: savedPendingOps.length });
         }
       }
 
@@ -238,6 +327,8 @@ export function EntriesProvider({ children }) {
 
           setEntries(formatEntries(migratedData));
 
+          setHydratedUserId(userId);
+
           return;
         }
 
@@ -247,6 +338,8 @@ export function EntriesProvider({ children }) {
 
         // Se siamo offline resta la cache locale
       }
+
+      setHydratedUserId(userId);
     }
 
     bootstrapEntries();
@@ -275,29 +368,47 @@ export function EntriesProvider({ children }) {
 
   const todayCount = entries[today] || 0;
 
-  const createPendingChanges = useCallback(
-    (date, count) => {
-      setPendingChanges((prev) => {
-        const nextPendingChanges = [
-          ...prev.filter((change) => change.date !== date),
-          {
-            date,
-            count,
-          },
-        ];
+  const hydrated = hydratedUserId === userId;
+
+  const loading = authLoading || (userId ? !hydrated : false);
+
+  const createPendingOps = useCallback(
+    (ops) => {
+      const datedOps = ops.map((op) => ({
+        ...op,
+        timestamp: Date.now(),
+        id: createOpId(),
+      }));
+
+      setPendingOps((prev) => {
+        const nextOps = [...prev, ...datedOps];
 
         if (userId) {
-          savePendingSync(userId, nextPendingChanges);
+          savePendingOps(userId, nextOps);
         }
 
-        return nextPendingChanges;
+        return nextOps;
       });
     },
     [userId],
   );
 
+  // Modello di sync: ogni salvataggio scrive un CONTEGGIO ASSOLUTO nella
+  // entry del giorno (upsert idempotente). In caso di conflitto tra device
+  // vince l'ultima scrittura (last-write-wins): l'approccio è deterministico
+  // per un singolo device, dove i conteggi locali rimangono monotoni anche
+  // offline. Non usiamo delta proprio per mantenere l'upsert idempotente.
   const syncEntry = useCallback(
-    async (date, count, logActivity = false) => {
+    async (date, count, logActivity = false, removeActivity = false) => {
+      // Chiave di deduplicazione condivisa tra il tentativo diretto e l'op
+      // accodata: un retry dopo un timeout "commit riuscito ma risposta persa"
+      // non crea una seconda riga di attività (on conflict in create_team_activity).
+      const activityDedupKey = logActivity ? createOpId() : null;
+
+      // Stessa logica per l'annullamento: la chiave evita di eliminare una
+      // seconda riga se la RPC è andata a buon fine ma la risposta è andata persa.
+      const removalDedupKey = removeActivity ? createOpId() : null;
+
       try {
         await saveEntry({
           userId,
@@ -305,23 +416,57 @@ export function EntriesProvider({ children }) {
           count,
         });
         if (logActivity) {
-          await createTeamActivity("entry_created", 1);
+          await createTeamActivity("entry_created", 1, null, activityDedupKey);
+        }
+        if (removeActivity) {
+          await removeTeamActivity("entry_created", removalDedupKey);
         }
 
-        await flushPendingChanges();
+        await flushPendingOps();
 
         setSyncStatus("synced");
         prevSyncStatusRef.current = "synced";
       } catch (error) {
-        console.error(error);
+        reportError(error, {
+          feature: "entries-sync",
+          userId,
+          message: "Errore salvataggio entry:",
+        });
 
-        createPendingChanges(date, count);
+        const ops = [
+          { type: OP_TYPES.SAVE_ENTRY, payload: { date, count } },
+        ];
+
+        if (logActivity) {
+          ops.push({
+            type: OP_TYPES.CREATE_TEAM_ACTIVITY,
+            payload: {
+              activityType: "entry_created",
+              points: 1,
+              dedupKey: activityDedupKey,
+            },
+          });
+        }
+
+        if (removeActivity) {
+          ops.push({
+            type: OP_TYPES.REMOVE_TEAM_ACTIVITY,
+            payload: {
+              activityType: "entry_created",
+              dedupKey: removalDedupKey,
+            },
+          });
+        }
+
+        createPendingOps(ops);
+
+        trackEvent("offline_registration", { date, count });
 
         setSyncStatus("pending");
         prevSyncStatusRef.current = "pending";
       }
     },
-    [userId, flushPendingChanges, createPendingChanges],
+    [userId, createPendingOps, flushPendingOps],
   );
 
   const incrementToday = useCallback(() => {
@@ -362,7 +507,7 @@ export function EntriesProvider({ children }) {
       setEntries(newEntries);
 
       if (userId) {
-        await syncEntry(today, newCount);
+        await syncEntry(today, newCount, false, true);
       }
 
       return newEntries;
@@ -373,20 +518,24 @@ export function EntriesProvider({ children }) {
     entriesOwnerRef.current = null;
     setEntries({});
     entriesRef.current = {};
-    setPendingChanges([]);
+    if (userId) {
+      clearPendingOps(userId);
+    }
+    setPendingOps([]);
     setSyncStatus("synced");
     prevSyncStatusRef.current = "synced";
-  }, []);
+  }, [userId]);
 
   const retrySync = useCallback(async () => {
-    return flushPendingChanges();
-  }, [flushPendingChanges]);
+    return flushPendingOps();
+  }, [flushPendingOps]);
 
   const value = useMemo(
     () => ({
       entries,
+      loading,
       syncStatus,
-      pendingChanges,
+      pendingOps,
       today,
       todayCount,
       incrementToday,
@@ -396,8 +545,9 @@ export function EntriesProvider({ children }) {
     }),
     [
       entries,
+      loading,
       syncStatus,
-      pendingChanges,
+      pendingOps,
       today,
       todayCount,
       incrementToday,
