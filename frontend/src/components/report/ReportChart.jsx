@@ -84,7 +84,7 @@ export default function ReportChart({
                 <span
                   className={`text-xs font-black ${
                     isSelected
-                      ? "text-accent"
+                      ? "text-accent-ink"
                       : "opacity-0"
                   }`}
                 >
@@ -127,7 +127,7 @@ export default function ReportChart({
                 <span
                   className={`h-3 text-[10px] font-bold ${
                     isSelected
-                      ? "text-accent"
+                      ? "text-accent-ink"
                       : theme.subtle
                   }`}
                 >

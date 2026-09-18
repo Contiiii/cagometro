@@ -121,7 +121,7 @@ export default function BottomNav() {
                 focus-visible:ring-(--accent)
                 ${
                   active
-                    ? "text-(--accent)"
+                    ? "text-(--accent-ink)"
                     : isDark
                       ? "text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-200"
                       : "text-zinc-500 hover:bg-zinc-900/[0.05] hover:text-zinc-800"

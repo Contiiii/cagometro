@@ -12,6 +12,9 @@ import {
 } from "../services/teamService";
 
 import { useAuth } from "./useAuth";
+import { usePush } from "./usePush";
+import { useSettings } from "./useSettings";
+import { sendMyPushNotification } from "../services/pushService";
 import { reportError } from "../utils/reportError";
 import { getFriendlyErrorMessage } from "../utils/friendlyError";
 
@@ -28,6 +31,8 @@ export function useTeamActions({
   refreshActivity,
 }) {
   const { user } = useAuth();
+  const { isSubscribed: pushSubscribed } = usePush();
+  const { teamMemberAlerts } = useSettings();
 
   const userId = user?.id ?? null;
 
@@ -135,6 +140,23 @@ reportError(
     const immediate = Boolean(options?.immediate);
 
     await joinTeam(code);
+
+    if (pushSubscribed && teamMemberAlerts) {
+      sendMyPushNotification({
+        type: "team",
+        title: "Benvenuto nella squadra!",
+        body: teamName
+          ? `Sei entrato in ${teamName}.`
+          : "Sei entrato nella squadra.",
+        url: "/teams",
+      }).catch((error) => {
+        reportError(error, {
+          feature: "team-join-welcome-push",
+          userId,
+          message: "Errore invio notifica di benvenuto:",
+        });
+      });
+    }
 
     notify(teamName ? `Sei entrato in ${teamName}.` : "Sei entrato nella squadra");
 

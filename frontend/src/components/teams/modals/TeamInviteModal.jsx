@@ -133,7 +133,7 @@ export default function TeamInviteModal({
             type="button"
             onClick={shareInvite}
             disabled={!inviteLink}
-            className="flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-sm font-extrabold text-white shadow-[0_10px_22px_color-mix(in_oklab,var(--accent)_20%,transparent)] transition hover:bg-accent hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-13 items-center justify-center gap-2 rounded-2xl bg-accent px-4 text-sm font-extrabold text-accent-contrast shadow-[0_10px_22px_color-mix(in_oklab,var(--accent)_20%,transparent)] transition hover:bg-accent hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Share2
               className="h-4 w-4"

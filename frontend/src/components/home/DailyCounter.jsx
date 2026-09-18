@@ -47,7 +47,7 @@ export default function DailyCounter({
 
       <div className="mt-1 flex items-center gap-2 rounded-full border border-emerald-500/15 bg-emerald-500/[0.08] px-3 py-2">
         <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.65)]" />
-        <span className="text-xs font-bold text-emerald-500">
+        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
           Live
         </span>
       </div>

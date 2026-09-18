@@ -30,14 +30,14 @@ const SYNC_TONE = {
   },
 };
 
-export function resolveSyncState(user, syncStatus, pendingChanges) {
+export function resolveSyncState(user, syncStatus, pendingOps) {
   let tone;
 
   if (!user) {
     tone = "off";
   } else if (syncStatus === "error") {
     tone = "error";
-  } else if (pendingChanges.length > 0) {
+  } else if (pendingOps.length > 0) {
     tone = "pending";
   } else if (syncStatus === "pending") {
     tone = "pending";
@@ -51,7 +51,7 @@ export function resolveSyncState(user, syncStatus, pendingChanges) {
     tone,
     label:
       typeof entry.label === "function"
-        ? entry.label(pendingChanges.length)
+        ? entry.label(pendingOps.length)
         : entry.label,
     dotClass: entry.dotClass,
     iconColor: entry.iconColor,

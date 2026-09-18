@@ -1,13 +1,13 @@
 import { Moon, Smartphone, Sun } from "lucide-react";
 
-import { accentOptions } from "../../config/appearance";
+import { accentOptions, getAccentContrast } from "../../config/appearance";
 import PanelFrame from "./PanelFrame";
 
-function CheckMark({ color }) {
+function CheckMark({ color, contrast }) {
   return (
     <span
       className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-black text-white"
-      style={{ backgroundColor: color }}
+      style={{ backgroundColor: color, color: contrast }}
     >
       ✓
     </span>
@@ -97,24 +97,24 @@ export default function AppearancePanel({
                 aria-pressed={active}
                 className={`flex min-h-14 items-center justify-between rounded-2xl border px-4 text-left transition focus-visible:outline-none focus-visible:ring-2 ${theme.softSurface}`}
                 style={{
-                  borderColor: active ? option.color : undefined,
+                  borderColor: active ? option.fill : undefined,
                   boxShadow: active
-                    ? `0 0 0 1px ${option.color} inset`
+                    ? `0 0 0 1px ${option.fill} inset`
                     : undefined,
-                  "--tw-ring-color": option.color,
+                  "--tw-ring-color": option.fill,
                 }}
               >
                 <span className="flex items-center gap-3">
                   <span
                     className="h-7 w-7 rounded-full shadow-sm"
-                    style={{ backgroundColor: option.color }}
+                    style={{ backgroundColor: option.fill }}
                   />
                   <span className={`text-sm font-black ${theme.primaryText}`}>
                     {option.label}
                   </span>
                 </span>
 
-                {active && <CheckMark color={option.color} />}
+                {active && <CheckMark color={option.fill} contrast={getAccentContrast(option.id)} />}
               </button>
             );
           })}
@@ -143,7 +143,7 @@ export default function AppearancePanel({
                 onClick={() => setInitialTeamActivityLimit(option)}
                 aria-pressed={active}
                 className={`flex h-11 items-center justify-center text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 ${
-                  active ? "text-white" : `${theme.softSurface} ${theme.muted}`
+                  active ? "text-accent-contrast" : `${theme.softSurface} ${theme.muted}`
                 }`}
                 style={{
                   backgroundColor: active ? accentColor : undefined,

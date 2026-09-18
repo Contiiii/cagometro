@@ -51,9 +51,8 @@ export default function CreateTeamModal({
         soft: "border-zinc-900/[0.08] bg-zinc-900/[0.035]",
         softer: "bg-zinc-900/[0.045]",
         text: "text-zinc-950",
-        muted: "text-zinc-600",
-        subtle: "text-zinc-500",
-        overlay: "bg-zinc-950/45",
+muted: "text-zinc-600",
+        subtle: "text-zinc-600",
         input:
           "border-zinc-900/[0.10] bg-white text-zinc-950 placeholder:text-zinc-400",
       };

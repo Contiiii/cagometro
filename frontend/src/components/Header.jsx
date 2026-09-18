@@ -2,7 +2,7 @@ import { Moon, Settings, Sun } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
-import poopIcon from "../assets/poop.webp";
+import poopIcon from "../assets/poop-display.webp";
 
 import { useTheme } from "../hooks/useTheme";
 import { useProfile } from "../hooks/useProfile";
@@ -177,7 +177,7 @@ export default function Header({
     right-2.5
     h-4
     w-4
-    ${isDark ? "text-accent" : "text-zinc-400"}
+    ${isDark ? "text-accent-ink" : "text-zinc-400"}
   `}
               aria-hidden="true"
             />
@@ -220,8 +220,8 @@ export default function Header({
               onClick={() => navigate("/login")}
               className={`h-11 rounded-2xl border px-4 text-sm font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 isDark
-                  ? "border-accent/20 bg-accent/10 text-accent"
-                  : "border-accent/20 bg-accent/10 text-accent"
+                  ? "border-accent/20 bg-accent/10 text-accent-ink"
+              : "border-accent/20 bg-accent/10 text-accent-ink"
               }`}
             >
               Accedi

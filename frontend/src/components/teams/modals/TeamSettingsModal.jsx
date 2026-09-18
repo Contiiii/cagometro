@@ -105,7 +105,7 @@ export default function TeamSettingsModal({
           type="button"
           onClick={onLeave}
           disabled={leaving}
-          className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl text-sm font-bold text-rose-500 transition hover:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-5 flex min-h-12 w-full items-center justify-center rounded-2xl text-sm font-bold text-rose-700 transition hover:bg-rose-500/10 dark:text-rose-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {leaving ? "Uscita in corso..." : "Abbandona squadra"}
         </button>

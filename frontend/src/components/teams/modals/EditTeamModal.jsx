@@ -291,7 +291,7 @@ export default function EditTeamModal({
             type="button"
             onClick={handleSave}
             disabled={saving || !hasChanges || !name.trim()}
-            className="flex-1 rounded-2xl bg-accent py-3 text-sm font-bold text-white transition hover:bg-accent hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-2xl bg-accent py-3 text-sm font-bold text-accent-contrast transition hover:bg-accent hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "Salvataggio..." : "Salva modifiche"}
           </button>

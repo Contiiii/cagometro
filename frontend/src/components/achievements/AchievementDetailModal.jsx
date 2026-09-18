@@ -24,33 +24,33 @@ export default function AchievementDetailModal({
 
   const styles = {
     pink: {
-      solid: "bg-accent text-white",
-      soft: "bg-accent/10 text-accent",
-      text: isDark ? "text-accent" : "text-pink-600",
+      solid: "bg-accent text-accent-contrast",
+      soft: "bg-accent/10 text-accent-ink",
+      text: isDark ? "text-accent-ink" : "text-pink-700",
       progress: "bg-accent",
     },
     amber: {
       solid: "bg-amber-500 text-zinc-950",
       soft: isDark
         ? "bg-amber-400/15 text-amber-500"
-        : "bg-amber-400/15 text-amber-700",
+        : "bg-amber-400/15 text-amber-800",
       text: isDark ? "text-amber-500" : "text-amber-700",
       progress: "bg-amber-500",
     },
     emerald: {
-      solid: "bg-emerald-500 text-white",
+      solid: "bg-emerald-500 text-zinc-950",
       soft: isDark
         ? "bg-emerald-500/10 text-emerald-500"
         : "bg-emerald-500/10 text-emerald-700",
       text: isDark ? "text-emerald-500" : "text-emerald-700",
       progress: "bg-emerald-500",
     },
-    zinc: {
-      solid: isDark ? "bg-zinc-700 text-zinc-300" : "bg-zinc-800 text-white",
+zinc: {
+      solid: isDark ? "bg-zinc-700 text-zinc-300" : "bg-zinc-900/10 text-zinc-600",
       soft: isDark
         ? "bg-zinc-800 text-zinc-400"
-        : "bg-zinc-900/10 text-zinc-500",
-      text: isDark ? "text-zinc-400" : "text-zinc-500",
+        : "bg-zinc-900/10 text-zinc-600",
+      text: isDark ? "text-zinc-400" : "text-zinc-600",
       progress: "bg-zinc-500",
     },
   };
@@ -114,7 +114,7 @@ export default function AchievementDetailModal({
             className={`mt-7 rounded-[1.5rem] border p-5 ${theme.softSurface}`}
           >
             <div className="flex items-center justify-between gap-4">
-              <span className="flex items-center gap-2 text-sm font-extrabold text-emerald-500">
+              <span className="flex items-center gap-2 text-sm font-extrabold text-emerald-700 dark:text-emerald-400">
                 <Check className="h-5 w-5" strokeWidth={2.5} />
                 Traguardo ottenuto
               </span>

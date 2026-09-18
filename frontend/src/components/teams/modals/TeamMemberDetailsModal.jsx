@@ -80,7 +80,7 @@ export default function TeamMemberDetailsModal({ onClose }) {
                 </h2>
 
                 {isCurrentUser && (
-                  <span className="rounded-full bg-accent/12 px-2 py-0.5 text-[10px] font-extrabold text-accent dark:text-accent">
+                  <span className="rounded-full bg-accent/12 px-2 py-0.5 text-[10px] font-extrabold text-accent-ink dark:text-accent-ink">
                     TU
                   </span>
                 )}
@@ -144,7 +144,7 @@ export default function TeamMemberDetailsModal({ onClose }) {
               Contributo settimanale
             </p>
 
-            <span className="text-sm font-black text-accent">
+            <span className="text-sm font-black text-accent-ink">
               {weeklyTotal.toLocaleString("it-IT")}
             </span>
           </div>

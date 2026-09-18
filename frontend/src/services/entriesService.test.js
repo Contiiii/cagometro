@@ -57,10 +57,10 @@ describe("getEntries", () => {
 });
 
 describe("saveEntry", () => {
-  it("esegue un upsert con onConflict user_id,date", async () => {
-    const chain = mockFromChain({ data: [{ user_id: "user-1", date: "2026-09-13", count: 1 }] });
+  it("esegue un upsert con onConflict user_id,date senza select", async () => {
+    const chain = mockFromChain();
 
-    const data = await saveEntry({
+    const result = await saveEntry({
       userId: "user-1",
       date: "2026-09-13",
       count: 1,
@@ -71,7 +71,8 @@ describe("saveEntry", () => {
       { user_id: "user-1", date: "2026-09-13", count: 1 },
       { onConflict: "user_id,date" },
     );
-    expect(data).toEqual([{ user_id: "user-1", date: "2026-09-13", count: 1 }]);
+    expect(chain.select).not.toHaveBeenCalled();
+    expect(result).toBeNull();
   });
 
   it("propaga l'errore del database", async () => {

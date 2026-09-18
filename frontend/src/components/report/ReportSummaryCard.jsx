@@ -63,7 +63,7 @@ export default function ReportSummaryCard({
       {safeBestPoint.date}
     </p>
 
-    <p className="mt-0.5 text-xs font-bold text-accent">
+    <p className="mt-0.5 text-xs font-bold text-accent-ink">
       {safeBestPoint.value} registrazioni
     </p>
   </div>
@@ -79,7 +79,7 @@ export default function ReportSummaryCard({
       {safeAverage.toFixed(1)}
     </p>
 
-    <p className="mt-0.5 text-xs font-medium text-emerald-500">
+    <p className="mt-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
       {averageDescription}
     </p>
   </div>

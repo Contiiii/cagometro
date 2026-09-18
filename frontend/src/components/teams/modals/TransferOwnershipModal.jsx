@@ -85,7 +85,7 @@ export default function TransferOwnershipModal({
                   type="button"
                   onClick={() => onTransferOwnership(member)}
                   aria-label={`Rendi proprietario ${member.display_name || "membro"}`}
-                  className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-400/10 text-xs font-bold text-amber-700 transition dark:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                  className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-400/10 text-xs font-bold text-amber-800 transition dark:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                 >
                   <Crown className="h-4 w-4" strokeWidth={2.2} />
                   Rendi proprietario

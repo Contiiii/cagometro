@@ -72,7 +72,7 @@ export default function AchievementCard({
             </h3>
 
             {achievement.unlocked && (
-              <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-extrabold text-emerald-500">
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400">
                 <Check
                   className="h-3 w-3"
                   strokeWidth={2.5}

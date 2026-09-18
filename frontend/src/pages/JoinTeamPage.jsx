@@ -7,6 +7,7 @@ import { useTeam } from "../hooks/useTeam";
 import { useTeamActions } from "../hooks/useTeamActions";
 import { notify } from "../utils/teamNotify";
 import { getFriendlyErrorMessage } from "../utils/friendlyError";
+import { reportError } from "../utils/reportError";
 
 export default function JoinTeamPage() {
   const { code } = useParams();
@@ -90,10 +91,11 @@ export default function JoinTeamPage() {
         setInviteTeam(team);
         setPreviewStatus("ready");
       } catch (error) {
-        console.error(
-          "Errore caricamento anteprima invito:",
-          error,
-        );
+        reportError(error, {
+          feature: "team-invite-preview",
+          userId: user?.id ?? null,
+          message: "Errore caricamento anteprima invito:",
+        });
 
         if (!cancelled) {
           setPreviewStatus("error");
@@ -141,7 +143,11 @@ export default function JoinTeamPage() {
     try {
       await handleJoinTeam(inviteCode, inviteTeam.name, { immediate: true });
     } catch (error) {
-      console.error("Errore ingresso nella squadra:", error);
+      reportError(error, {
+        feature: "team-join",
+        userId: user?.id ?? null,
+        message: "Errore ingresso nella squadra:",
+      });
 
       setJoinStatus("error");
       setErrorMessage(
@@ -171,7 +177,7 @@ export default function JoinTeamPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-[#0c0c0f] px-5 text-zinc-100">
       <section className="w-full max-w-sm rounded-[1.75rem] border border-white/[0.08] bg-zinc-900/80 p-6 shadow-2xl">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-ink">
           Invito squadra
         </p>
 
@@ -252,7 +258,7 @@ export default function JoinTeamPage() {
               !inviteTeam ||
               authLoading
             }
-            className="min-h-12 rounded-2xl bg-accent px-4 text-sm font-extrabold text-white shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition-colors hover:bg-accent hover:brightness-110 disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/35"
+            className="min-h-12 rounded-2xl bg-accent px-4 text-sm font-extrabold text-accent-contrast shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition-colors hover:bg-accent hover:brightness-110 disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/35"
           >
             {isJoining
               ? "Accesso in corso..."

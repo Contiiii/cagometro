@@ -7,6 +7,7 @@ import CloseButton from "./CloseButton";
 
 import { useTeamUI } from "../../../hooks/useTeamUI";
 import { getFriendlyErrorMessage } from "../../../utils/friendlyError";
+import { reportError } from "../../../utils/reportError";
 
 export default function JoinTeamModal({
   onClose,
@@ -41,10 +42,10 @@ export default function JoinTeamModal({
       setJoinCode("");
       onClose();
     } catch (error) {
-      console.error(
-        "Errore durante l'ingresso nella squadra:",
-        error,
-      );
+      reportError(error, {
+        feature: "team-join",
+        message: "Errore durante l'ingresso nella squadra:",
+      });
 
       toast.error(
         getFriendlyErrorMessage(
@@ -118,7 +119,7 @@ export default function JoinTeamModal({
           type="button"
           onClick={handleJoin}
           disabled={joining || !joinCode.trim()}
-          className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_22%,transparent)] transition hover:bg-accent hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
+          className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-accent-contrast shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_22%,transparent)] transition hover:bg-accent hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
         >
           <UsersRound className="h-5 w-5" strokeWidth={2.3} />
           {joining ? "Ingresso..." : "Entra nella squadra"}

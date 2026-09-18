@@ -15,6 +15,8 @@ import {
   regenerateInviteCode,
   getTeamActivity,
   createTeamActivity,
+  removeTeamActivity,
+  createAchievementTeamActivities,
 } from "./teamService";
 import { supabase } from "../lib/supabase";
 
@@ -354,11 +356,26 @@ describe("createTeamActivity", () => {
       p_activity_type: "entry_created",
       p_points: 5,
       p_metadata: { date: "2026-09-13" },
+      p_dedup_key: null,
     });
     expect(activity).toEqual({ id: "act-1" });
   });
 
-  it("usa null come default per punti e metadata", async () => {
+  it("passa la chiave di deduplicazione alla rpc", async () => {
+    mockRpc({ data: { id: "act-2" } });
+
+    const activity = await createTeamActivity("entry_created", 1, null, "dedup-1");
+
+    expect(supabase.rpc).toHaveBeenCalledWith("create_team_activity", {
+      p_activity_type: "entry_created",
+      p_points: 1,
+      p_metadata: null,
+      p_dedup_key: "dedup-1",
+    });
+    expect(activity).toEqual({ id: "act-2" });
+  });
+
+  it("usa null come default per punti, metadata e dedup key", async () => {
     mockRpc({ data: null });
 
     await createTeamActivity("entry_created");
@@ -367,6 +384,7 @@ describe("createTeamActivity", () => {
       p_activity_type: "entry_created",
       p_points: null,
       p_metadata: null,
+      p_dedup_key: null,
     });
   });
 
@@ -376,5 +394,128 @@ describe("createTeamActivity", () => {
     await expect(createTeamActivity("entry_created")).rejects.toThrow(
       "attività rifiutata",
     );
+  });
+});
+
+describe("removeTeamActivity", () => {
+  it("chiama la rpc remove_team_activity con tipo e dedup key", async () => {
+    mockRpc({ data: 1 });
+
+    const removed = await removeTeamActivity("entry_created", "dedup-1");
+
+    expect(supabase.rpc).toHaveBeenCalledWith("remove_team_activity", {
+      p_activity_type: "entry_created",
+      p_dedup_key: "dedup-1",
+    });
+    expect(removed).toBe(1);
+  });
+
+  it("usa entry_created e null come default", async () => {
+    mockRpc({ data: 0 });
+
+    await removeTeamActivity();
+
+    expect(supabase.rpc).toHaveBeenCalledWith("remove_team_activity", {
+      p_activity_type: "entry_created",
+      p_dedup_key: null,
+    });
+  });
+
+  it("propaga l'errore del database", async () => {
+    mockRpc({ error: { message: "rimozione rifiutata" } });
+
+    await expect(removeTeamActivity()).rejects.toThrow("rimozione rifiutata");
+  });
+});
+
+describe("createAchievementTeamActivities", () => {
+  const achievements = [
+    { id: "prima-cacca", title: "Prima Cacca" },
+    { id: "abitudinario", title: "Abitudinario" },
+  ];
+
+  it("non genera attività se l'utente non è in squadra", async () => {
+    mockRpc();
+
+    await expect(
+      createAchievementTeamActivities(achievements, null, "user-1"),
+    ).resolves.toEqual([]);
+
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("non genera attività senza un userId valido", async () => {
+    mockRpc();
+
+    await expect(
+      createAchievementTeamActivities(achievements, "team-1", null),
+    ).resolves.toEqual([]);
+
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("non genera attività con una lista vuota", async () => {
+    mockRpc();
+
+    await expect(
+      createAchievementTeamActivities([], "team-1", "user-1"),
+    ).resolves.toEqual([]);
+
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("genera un'attività achievement_unlocked per ogni nuovo achievement", async () => {
+    mockRpc();
+
+    const results = await createAchievementTeamActivities(
+      achievements,
+      "team-1",
+      "user-1",
+    );
+
+    expect(results).toHaveLength(2);
+    expect(supabase.rpc).toHaveBeenCalledTimes(2);
+    expect(supabase.rpc).toHaveBeenCalledWith("create_team_activity", {
+      p_activity_type: "achievement_unlocked",
+      p_points: null,
+      p_metadata: { achievementId: "prima-cacca", achievementName: "Prima Cacca" },
+      p_dedup_key: "user-1:achievement:prima-cacca",
+    });
+    expect(supabase.rpc).toHaveBeenCalledWith("create_team_activity", {
+      p_activity_type: "achievement_unlocked",
+      p_points: null,
+      p_metadata: { achievementId: "abitudinario", achievementName: "Abitudinario" },
+      p_dedup_key: "user-1:achievement:abitudinario",
+    });
+  });
+
+  it("usa una dedup key stabile per lo stesso utente e diversa tra utenti", async () => {
+    mockRpc();
+
+    await createAchievementTeamActivities(achievements.slice(0, 1), "team-1", "user-1");
+    await createAchievementTeamActivities(achievements.slice(0, 1), "team-1", "user-1");
+    await createAchievementTeamActivities(achievements.slice(0, 1), "team-1", "user-2");
+
+    const dedupKeys = supabase.rpc.mock.calls.map(
+      (call) => call[1].p_dedup_key,
+    );
+
+    expect(dedupKeys[0]).toBe("user-1:achievement:prima-cacca");
+    expect(dedupKeys[1]).toBe(dedupKeys[0]);
+    expect(dedupKeys[2]).toBe("user-2:achievement:prima-cacca");
+  });
+
+  it("non propaga il fallimento di una singola activity", async () => {
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: { message: "errore" } });
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: null });
+
+    const results = await createAchievementTeamActivities(
+      achievements,
+      "team-1",
+      "user-1",
+    );
+
+    expect(results[0].status).toBe("rejected");
+    expect(results[1].status).toBe("fulfilled");
   });
 });

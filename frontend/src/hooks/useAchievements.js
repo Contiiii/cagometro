@@ -45,7 +45,7 @@ export function useAchievements() {
       );
 
     if (newAchievements.length === 0) {
-      return;
+      return [];
     }
 
     const updatedShownAchievements = [
@@ -67,6 +67,8 @@ export function useAchievements() {
         ...newAchievements,
       ],
     );
+
+    return newAchievements;
   }
 
   function resetLockedAchievements(

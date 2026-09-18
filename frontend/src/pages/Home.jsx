@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
-import AchievementUnlockModal from "../components/achievements/AchievementUnlockModal";
 import CloudBackupWarning from "../components/CloudBackupWarning";
 
 import Header from "../components/Header";
@@ -12,7 +11,7 @@ import DailyCounter from "../components/home/DailyCounter";
 import PoopButton from "../components/home/PoopButton";
 import UndoButton from "../components/home/UndoButton";
 import MotivationToast from "../components/home/MotivationToast";
-import ReleaseNotesModal from "../components/ReleaseNotesModal";
+import SkeletonBlock from "../components/ui/SkeletonBlock";
 
 import {
   APP_VERSION,
@@ -24,13 +23,43 @@ import { pickRandomPhrase } from "../config/motivation";
 
 import { useTheme } from "../hooks/useTheme.js";
 import { getTheme } from "../config/theme.js";
+import { useAuth } from "../hooks/useAuth.js";
 import { useEntries } from "../hooks/useEntries.js";
 import { useStats } from "../hooks/useStats.js";
 import { useAchievements } from "../hooks/useAchievements.js";
 import { useSettings } from "../hooks/useSettings.js";
+import { usePush } from "../hooks/usePush.js";
+import { useTeam } from "../hooks/useTeam.js";
+import { sendMyPushNotification } from "../services/pushService.js";
+import { createAchievementTeamActivities } from "../services/teamService.js";
+import { trackEvent } from "../services/analyticsService.js";
 import { calculateStreak } from "../utils/stats.js";
+import { reportError } from "../utils/reportError.js";
+import {
+  getPushOptInEligibility,
+  hasSeenPushInstallPrompt,
+  hasSeenPushOptIn,
+  isIosNonStandalone,
+  markPushInstallPromptSeen,
+  markPushOptInSeen,
+} from "../utils/pushOptIn.js";
+
+const AchievementUnlockModal = lazy(
+  () => import("../components/achievements/AchievementUnlockModal"),
+);
+const PushOptInModal = lazy(() => import("../components/PushOptInModal"));
+const ReleaseNotesModal = lazy(() => import("../components/ReleaseNotesModal"));
 
 const CURRENT_APP_VERSION = APP_VERSION;
+
+const NOTIFICATION_ALERT_KEYS = [
+  "dailyReminder",
+  "streakAlerts",
+  "achievementAlerts",
+  "teamEntryAlerts",
+  "teamMemberAlerts",
+  "teamAchievementAlerts",
+];
 
 const HOME_DATE_FORMATTER = new Intl.DateTimeFormat("it-IT", {
   weekday: "long",
@@ -57,7 +86,9 @@ export default function Home() {
 
   const isDark = resolvedTheme === "dark";
 
-  const { entries, todayCount, incrementToday, decrementToday } = useEntries();
+  const { user } = useAuth();
+
+  const { entries, loading: entriesLoading, todayCount, incrementToday, decrementToday } = useEntries();
 
   const {
     unlockedAchievement,
@@ -66,7 +97,23 @@ export default function Home() {
     resetLockedAchievements,
   } = useAchievements();
 
-  const { triggerHapticFeedback } = useSettings();
+  const {
+    triggerHapticFeedback,
+    achievementAlerts,
+    streakAlerts,
+    updateSetting,
+  } = useSettings();
+
+  const {
+    isSubscribed: pushSubscribed,
+    isSupported: pushSupported,
+    permission: pushPermission,
+    initialized: pushInitialized,
+    subscribe: subscribePush,
+    subscribeError: pushSubscribeError,
+  } = usePush();
+
+  const { team } = useTeam();
 
   const { streak, bestStreak } = useStats(entries);
 
@@ -75,9 +122,90 @@ export default function Home() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const [motivationToast, setMotivationToast] = useState(null);
+  const [pushOptInBusy, setPushOptInBusy] = useState(false);
+  const [optInSeen, setOptInSeen] = useState(() => hasSeenPushOptIn());
+  const [installPromptSeen, setInstallPromptSeen] = useState(() =>
+    hasSeenPushInstallPrompt(),
+  );
+  const [iosNonStandalone] = useState(() => isIosNonStandalone());
+
+  const pushOptInEligibility = useMemo(
+    () =>
+      getPushOptInEligibility({
+        user,
+        isSupported: pushSupported,
+        initialized: pushInitialized,
+        permission: pushPermission,
+        isSubscribed: pushSubscribed,
+        optInSeen,
+        installPromptSeen,
+        iosNonStandalone,
+      }),
+    [
+      user,
+      pushSupported,
+      pushInitialized,
+      pushPermission,
+      pushSubscribed,
+      optInSeen,
+      installPromptSeen,
+      iosNonStandalone,
+    ],
+  );
+
+  const pushOptInOpen = pushOptInEligibility.shouldPrompt && !releaseNotesOpen;
+
+  useEffect(() => {
+    if (pushOptInOpen) {
+      trackEvent("push_optin_shown", { mode: pushOptInEligibility.mode });
+    }
+  }, [pushOptInOpen, pushOptInEligibility.mode]);
+
+  function closePushOptIn() {
+    if (pushOptInEligibility.mode === "install") {
+      markPushInstallPromptSeen();
+      setInstallPromptSeen(true);
+    } else {
+      markPushOptInSeen();
+      setOptInSeen(true);
+    }
+
+    trackEvent("push_optin_dismissed", { mode: pushOptInEligibility.mode });
+  }
+
+  async function acceptPushOptIn() {
+    if (pushOptInBusy) {
+      return;
+    }
+
+    setPushOptInBusy(true);
+
+    try {
+      const result = await subscribePush();
+
+      // Errore riproponibile: lasciamo il modale aperto per ritentare.
+      if (result?.error) {
+        return;
+      }
+
+      if (result?.subscription) {
+        NOTIFICATION_ALERT_KEYS.forEach((key) => updateSetting(key, true));
+      }
+
+      markPushOptInSeen();
+      setOptInSeen(true);
+
+      trackEvent("push_optin_accepted", {
+        permission: result?.permission ?? null,
+        subscribed: Boolean(result?.subscription),
+      });
+    } finally {
+      setPushOptInBusy(false);
+    }
+  }
 
   const registerActivity = async () => {
-    if (isRegistering || isUndoing) return;
+    if (isRegistering || isUndoing || entriesLoading) return;
 
     try {
       setIsRegistering(true);
@@ -102,10 +230,62 @@ export default function Home() {
 
         const updatedStreak = calculateStreak(newEntries);
 
-        checkAchievements(total, updatedStreak);
+        const newAchievements = checkAchievements(total, updatedStreak);
+
+        createAchievementTeamActivities(newAchievements, team?.id, user?.id).then(
+          (results) => {
+            results.forEach((result) => {
+              if (result.status === "rejected") {
+                reportError(result.reason, {
+                  feature: "home-achievement-team",
+                  userId: user?.id ?? null,
+                  message: "Errore invio attività squadra (traguardo):",
+                });
+              }
+            });
+          },
+        );
+
+        if (pushSubscribed && achievementAlerts && newAchievements.length > 0) {
+          const achievementNames = newAchievements
+            .map((achievement) => achievement.title)
+            .join(", ");
+
+          sendMyPushNotification({
+            type: "achievement",
+            title: "Traguardo sbloccato!",
+            body: `Hai sbloccato ${achievementNames}.`,
+            url: "/achievements",
+          }).catch((error) => {
+            reportError(error, {
+              feature: "home-achievement-push",
+              userId: user?.id ?? null,
+              message: "Errore invio notifica traguardo:",
+            });
+          });
+        }
+
+        if (pushSubscribed && streakAlerts && updatedStreak > bestStreak) {
+          sendMyPushNotification({
+            type: "streak",
+            title: "Nuovo record di serie!",
+            body: `Hai raggiunto una serie di ${updatedStreak} giorni consecutivi.`,
+            url: "/",
+          }).catch((error) => {
+            reportError(error, {
+              feature: "home-streak-push",
+              userId: user?.id ?? null,
+              message: "Errore invio notifica streak:",
+            });
+          });
+        }
       }
     } catch (error) {
-      console.error("Errore durante la registrazione:", error);
+      reportError(error, {
+        feature: "home-register",
+        userId: user?.id ?? null,
+        message: "Errore durante la registrazione:",
+      });
       setMessage("Non è stato possibile salvare la registrazione.");
     } finally {
       setIsRegistering(false);
@@ -133,10 +313,11 @@ export default function Home() {
 
       resetLockedAchievements(total, updatedStreak);
     } catch (error) {
-      console.error(
-        "Errore durante l'annullamento della registrazione:",
-        error,
-      );
+      reportError(error, {
+        feature: "home-undo",
+        userId: user?.id ?? null,
+        message: "Errore durante l'annullamento della registrazione:",
+      });
 
       setMessage("Non è stato possibile annullare la registrazione.");
     } finally {
@@ -180,14 +361,18 @@ export default function Home() {
           <h1
             className={`max-w-md text-[clamp(2rem,7vw,3.6rem)] font-black leading-[0.98] tracking-[-0.065em] ${theme.primaryText}`}
           >
-            Ogni <span className="text-accent">click</span>
+            Ogni <span className="text-accent-ink">click</span>
             <br />
             racconta una storia.
           </h1>
 
           <CloudBackupWarning />
 
-          <StreakCard streak={streak} bestStreak={bestStreak} theme={theme} />
+          {entriesLoading ? (
+            <SkeletonBlock className="mt-6 h-[72px] w-full" />
+          ) : (
+            <StreakCard streak={streak} bestStreak={bestStreak} theme={theme} />
+          )}
         </section>
 
         <Card
@@ -198,11 +383,15 @@ export default function Home() {
           <div className="pointer-events-none absolute -right-12 top-2 h-36 w-36 rounded-full bg-accent/[0.07] blur-3xl" />
           <div className="pointer-events-none absolute -left-16 bottom-0 h-32 w-32 rounded-full bg-amber-400/[0.05] blur-3xl" />
 
-          <DailyCounter
-            todayCount={todayCount}
-            theme={theme}
-            prefersReducedMotion={prefersReducedMotion}
-          />
+          {entriesLoading ? (
+            <SkeletonBlock className="h-24 w-full" />
+          ) : (
+            <DailyCounter
+              todayCount={todayCount}
+              theme={theme}
+              prefersReducedMotion={prefersReducedMotion}
+            />
+          )}
 
           <p className={`relative mt-2 text-sm font-medium ${theme.muted}`}>
             {displayMessage}
@@ -231,7 +420,7 @@ export default function Home() {
 
             <UndoButton
               onClick={undoActivity}
-              disabled={todayCount === 0 || isUndoing || isRegistering}
+              disabled={todayCount === 0 || isUndoing || isRegistering || entriesLoading}
               isUndoing={isUndoing}
               isDark={isDark}
               theme={theme}
@@ -241,13 +430,15 @@ export default function Home() {
         </Card>
       </main>
 
-      <AchievementUnlockModal
-        achievement={unlockedAchievement}
-        open={!!unlockedAchievement}
-        onClose={closeAchievement}
-        theme={theme}
-        prefersReducedMotion={prefersReducedMotion}
-      />
+      <Suspense fallback={null}>
+        <AchievementUnlockModal
+          achievement={unlockedAchievement}
+          open={!!unlockedAchievement}
+          onClose={closeAchievement}
+          theme={theme}
+          prefersReducedMotion={prefersReducedMotion}
+        />
+      </Suspense>
 
       <MotivationToast
         toast={motivationToast}
@@ -258,13 +449,28 @@ export default function Home() {
 
       <BottomNav />
 
-      <ReleaseNotesModal
-        open={releaseNotesOpen}
-        onClose={closeReleaseNotes}
-        notes={RELEASE_NOTES}
-        isDark={isDark}
-        prefersReducedMotion={prefersReducedMotion}
-      />
+      <Suspense fallback={null}>
+        <ReleaseNotesModal
+          open={releaseNotesOpen}
+          onClose={closeReleaseNotes}
+          notes={RELEASE_NOTES}
+          isDark={isDark}
+          prefersReducedMotion={prefersReducedMotion}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <PushOptInModal
+          open={pushOptInOpen}
+          mode={pushOptInEligibility.mode}
+          isBusy={pushOptInBusy}
+          error={pushSubscribeError}
+          isDark={isDark}
+          prefersReducedMotion={prefersReducedMotion}
+          onAccept={acceptPushOptIn}
+          onClose={closePushOptIn}
+        />
+      </Suspense>
     </div>
   );
 }

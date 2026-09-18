@@ -85,7 +85,7 @@ export default function TeamMembersModal({
                       </p>
 
                       {isCurrentUser && (
-                        <span className="rounded-full bg-accent/12 px-2 py-0.5 text-[10px] font-extrabold text-accent dark:text-accent">
+                        <span className="rounded-full bg-accent/12 px-2 py-0.5 text-[10px] font-extrabold text-accent-ink dark:text-accent-ink">
                           TU
                         </span>
                       )}
@@ -162,7 +162,7 @@ export default function TeamMembersModal({
                           onRemoveMember(member)
                         }
                         aria-label={`Rimuovi ${member.display_name || "membro"}`}
-                        className="min-h-11 rounded-xl bg-rose-500/10 text-xs font-bold text-rose-600 dark:text-rose-400"
+                        className="min-h-11 rounded-xl bg-rose-500/10 text-xs font-bold text-rose-700 dark:text-rose-400"
                       >
                         Rimuovi
                       </button>

@@ -153,11 +153,13 @@ export async function createTeamActivity(
   activityType,
   points = null,
   metadata = null,
+  dedupKey = null,
 ) {
   const { data, error } = await supabase.rpc("create_team_activity", {
     p_activity_type: activityType,
     p_points: points,
     p_metadata: metadata,
+    p_dedup_key: dedupKey,
   });
 
   if (error) {
@@ -165,4 +167,49 @@ export async function createTeamActivity(
   }
 
   return data;
+}
+
+export async function removeTeamActivity(
+  activityType = "entry_created",
+  dedupKey = null,
+) {
+  const { data, error } = await supabase.rpc("remove_team_activity", {
+    p_activity_type: activityType,
+    p_dedup_key: dedupKey,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function createAchievementTeamActivities(
+  newAchievements,
+  teamId,
+  userId,
+) {
+  if (
+    !teamId ||
+    userId == null ||
+    !Array.isArray(newAchievements) ||
+    newAchievements.length === 0
+  ) {
+    return [];
+  }
+
+  return Promise.allSettled(
+    newAchievements.map((achievement) =>
+      createTeamActivity(
+        "achievement_unlocked",
+        null,
+        {
+          achievementId: achievement.id,
+          achievementName: achievement.title,
+        },
+        `${userId}:achievement:${achievement.id}`,
+      ),
+    ),
+  );
 }

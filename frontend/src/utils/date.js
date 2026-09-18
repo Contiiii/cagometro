@@ -14,6 +14,50 @@ export function parseLocalDateKey(dateKey) {
   return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
+export function formatRelativeTime(value, now = new Date()) {
+  if (!value) {
+    return "";
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const diffMinutes = Math.floor((now.getTime() - date.getTime()) / 60000);
+
+  if (diffMinutes < 1) {
+    return "adesso";
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} min fa`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return `${diffHours} ${diffHours === 1 ? "ora" : "ore"} fa`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays === 1) {
+    return "ieri";
+  }
+
+  if (diffDays < 30) {
+    return `${diffDays} giorni fa`;
+  }
+
+  return date.toLocaleDateString("it-IT", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export function getWeekRangeLabel(referenceDate = new Date()) {
   const today = new Date(referenceDate);
   today.setHours(12, 0, 0, 0);

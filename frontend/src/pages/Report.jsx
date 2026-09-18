@@ -17,6 +17,7 @@ import ReportPeriodSelector from "../components/report/ReportPeriodSelector";
 import ReportMonthSelector from "../components/report/ReportMonthSelector";
 import ReportWeekSelector from "../components/report/ReportWeekSelector";
 import ReportShareModal from "../components/report/ReportShareModal";
+import SkeletonBlock from "../components/ui/SkeletonBlock";
 
 import { getLocalDateKey } from "../utils/date";
 
@@ -25,7 +26,7 @@ import { useReportData } from "../hooks/useReportData";
 export default function CagometroReport() {
   const prefersReducedMotion = useReducedMotion();
 
-  const { entries } = useEntries();
+  const { entries, loading: entriesLoading } = useEntries();
 
   const { resolvedTheme } = useTheme();
 
@@ -117,6 +118,7 @@ export default function CagometroReport() {
     return getLocalDateKey(monday) === getLocalDateKey(selectedWeek);
   }, [selectedWeek]);
 
+
   return (
     <div
       className={`min-h-screen overflow-x-hidden font-sans transition-colors duration-300 ${theme.app}`}
@@ -132,7 +134,7 @@ export default function CagometroReport() {
           >
             Il tuo ritmo,
             <br />
-            messo <span className="text-accent">nero su rosa.</span>
+            messo <span className="text-accent-ink">nero su rosa.</span>
           </h1>
 
           <ReportPeriodSelector
@@ -161,48 +163,65 @@ export default function CagometroReport() {
           )}
         </section>
 
-        <ReportHeroCard
-          report={report}
-          total={total}
-          average={average}
-          averageLabel={averageLabel}
-          change={change}
-          difference={difference}
-          isDark={isDark}
-          theme={theme}
-          prefersReducedMotion={prefersReducedMotion}
-          onShare={() => setShareOpen(true)}
-        />
+        {entriesLoading ? (
+          <SkeletonBlock className="h-40 w-full" />
+        ) : (
+          <ReportHeroCard
+            report={report}
+            total={total}
+            average={average}
+            averageLabel={averageLabel}
+            change={change}
+            difference={difference}
+            isDark={isDark}
+            theme={theme}
+            prefersReducedMotion={prefersReducedMotion}
+            onShare={() => setShareOpen(true)}
+          />
+        )}
 
-        <ReportChart
-          report={report}
-          selectedPoint={selectedPoint}
-          setSelectedPointId={setSelectedPointId}
-          setDetailsOpen={setDetailsOpen}
-          maxValue={maxValue}
-          prefersReducedMotion={prefersReducedMotion}
-          isDark={isDark}
-          theme={theme}
-        />
+        {entriesLoading ? (
+          <SkeletonBlock className="h-64 w-full" />
+        ) : (
+          <ReportChart
+            report={report}
+            selectedPoint={selectedPoint}
+            setSelectedPointId={setSelectedPointId}
+            setDetailsOpen={setDetailsOpen}
+            maxValue={maxValue}
+            prefersReducedMotion={prefersReducedMotion}
+            isDark={isDark}
+            theme={theme}
+          />
+        )}
 
         <section className="mx-auto mt-5 grid max-w-3xl gap-4 md:grid-cols-[0.9fr_1.1fr]">
-          <ReportStreakCard
-            streak={report.streak}
-            record={report.record}
-            daysToRecord={daysToRecord}
-            prefersReducedMotion={prefersReducedMotion}
-            theme={theme}
-            isDark={isDark}
-          />
+          {entriesLoading ? (
+            <>
+              <SkeletonBlock className="h-40 w-full" />
+              <SkeletonBlock className="h-40 w-full" />
+            </>
+          ) : (
+            <>
+              <ReportStreakCard
+                streak={report.streak}
+                record={report.record}
+                daysToRecord={daysToRecord}
+                prefersReducedMotion={prefersReducedMotion}
+                theme={theme}
+                isDark={isDark}
+              />
 
-          <ReportSummaryCard
-            period={period}
-            bestLabel={bestLabel}
-            bestPoint={bestPoint}
-            report={report}
-            average={average}
-            theme={theme}
-          />
+              <ReportSummaryCard
+                period={period}
+                bestLabel={bestLabel}
+                bestPoint={bestPoint}
+                report={report}
+                average={average}
+                theme={theme}
+              />
+            </>
+          )}
         </section>
       </main>
 

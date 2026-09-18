@@ -37,7 +37,7 @@ export default function TeamHeroCard({
                   </h1>
 
                   {team?.role === "owner" && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-1 text-[10px] font-extrabold text-accent dark:text-accent sm:text-[11px]">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-1 text-[10px] font-extrabold text-accent-ink dark:text-accent-ink sm:text-[11px]">
                       <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.4} />
                       ADMIN
                     </span>
@@ -91,7 +91,7 @@ export default function TeamHeroCard({
     onClick={onOpenInvite}
     aria-label="Invita un membro"
      disabled={!invitesEnabled}
-    className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-2xl bg-accent px-3 text-sm font-extrabold text-white shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_22%,transparent)] transition hover:bg-accent hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40 sm:px-4"
+    className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-2xl bg-accent px-3 text-sm font-extrabold text-accent-contrast shadow-[0_10px_24px_color-mix(in_oklab,var(--accent)_22%,transparent)] transition hover:bg-accent hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40 sm:px-4"
   >
     <UserPlus
       className="h-4 w-4 shrink-0"

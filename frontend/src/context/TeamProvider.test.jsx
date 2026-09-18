@@ -15,6 +15,8 @@ import {
 import { TeamProvider, TEAM_REALTIME_DEBOUNCE_MS } from "./TeamProvider";
 import { useTeam } from "../hooks/useTeam";
 
+import { saveTeamSnapshot } from "../utils/storage";
+
 vi.mock("../hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));
@@ -68,15 +70,30 @@ function deferred() {
 }
 
 function createChannelMock() {
-  const state = { channel: null, filter: null, onEvent: null, name: null };
+  const state = {
+    channel: null,
+    filter: null,
+    onEvent: null,
+    name: null,
+    handlers: {},
+  };
   let current = null;
 
   supabase.channel.mockImplementation((name) => {
     state.name = name;
     current = {
       on: vi.fn((event, filter, callback) => {
-        state.filter = filter;
-        state.onEvent = callback;
+        const kind = filter?.event ?? event;
+
+        if (!state.handlers[kind]) {
+          state.handlers[kind] = [];
+        }
+        state.handlers[kind].push({ filter, callback });
+
+        if (kind === "INSERT") {
+          state.filter = filter;
+          state.onEvent = callback;
+        }
         return current;
       }),
       subscribe: vi.fn((callback) => {
@@ -136,6 +153,8 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   latest = null;
+
+  window.localStorage.clear();
 
   useAuth.mockReturnValue({ user: null, loading: false });
 
@@ -211,15 +230,16 @@ describe("TeamProvider", () => {
     expect(latest.activity).toEqual([]);
   });
 
-  it("T3: errore parziale => sezioni fallite azzerate e hasErrors/failedSections", async () => {
+  it("T3: errore parziale => mantiene i dati precedenti per le sezioni fallite", async () => {
     useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
     getMyTeam.mockResolvedValue(TEAM_A);
-    getTeamLeaderboard.mockRejectedValue(new Error("classifica ko"));
-    getTeamActivity.mockRejectedValue(new Error("attività ko"));
 
     await loadTeam();
 
     console.error.mockClear();
+
+    getTeamLeaderboard.mockRejectedValue(new Error("classifica ko"));
+    getTeamActivity.mockRejectedValue(new Error("attività ko"));
 
     let result;
     await act(async () => {
@@ -234,10 +254,40 @@ describe("TeamProvider", () => {
     await waitFor(() => {
       expect(latest.members).toEqual(MEMBERS);
     });
-    expect(latest.leaderboard).toEqual([]);
-    expect(latest.activity).toEqual([]);
+    expect(latest.leaderboard).toEqual(LEADERBOARD);
+    expect(latest.activity).toEqual(ACTIVITY);
 
     expect(console.error).toHaveBeenCalledTimes(2);
+  });
+
+  it("T3b: cambio squadra con errore parziale azzera le sezioni fallite", async () => {
+    useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+    getMyTeam.mockResolvedValue(TEAM_A);
+
+    await loadTeam();
+
+    console.error.mockClear();
+
+    getMyTeam.mockResolvedValue(TEAM_B);
+    getTeamLeaderboard.mockRejectedValue(new Error("classifica ko"));
+    getTeamActivity.mockRejectedValue(new Error("attività ko"));
+
+    let result;
+    await act(async () => {
+      result = await latest.refreshDashboard();
+    });
+
+    expect(result).toEqual({
+      hasErrors: true,
+      failedSections: ["leaderboard", "activity"],
+    });
+
+    await waitFor(() => {
+      expect(latest.team?.team_id).toBe("team-b");
+    });
+    expect(latest.members).toEqual(MEMBERS);
+    expect(latest.leaderboard).toEqual([]);
+    expect(latest.activity).toEqual([]);
   });
 
   it("T4: getMyTeam fallisce => refreshDashboard lancia e azzera lo stato", async () => {
@@ -459,6 +509,46 @@ describe("TeamProvider", () => {
     expect(supabase.removeChannel).toHaveBeenCalledWith(realtime.channel);
   });
 
+  it("T8c: realtime reagisce alle DELETE (annullamento registrazione)", async () => {
+    useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+    getMyTeam.mockResolvedValue(TEAM_A);
+
+    const realtime = createChannelMock();
+
+    render(
+      <TeamProvider>
+        <Probe />
+      </TeamProvider>,
+    );
+
+    await waitFor(() => {
+      expect(realtime.handlers.DELETE?.length).toBe(1);
+    });
+
+    expect(realtime.handlers.DELETE[0].filter).toMatchObject({
+      event: "DELETE",
+      schema: "public",
+      table: "team_activity",
+      filter: "team_id=eq.team-a",
+    });
+
+    getTeamMembers.mockClear();
+    getTeamActivity.mockClear();
+    getTeamLeaderboard.mockClear();
+
+    await act(async () => {
+      await realtime.handlers.DELETE[0].callback({
+        old: { activity_type: "entry_created" },
+      });
+    });
+
+    await flushRealtimeDebounce();
+
+    expect(getTeamMembers).not.toHaveBeenCalled();
+    expect(getTeamActivity).toHaveBeenCalledTimes(1);
+    expect(getTeamLeaderboard).toHaveBeenCalledTimes(1);
+  });
+
   it("T8b: realtime gestisce gli errori senza rejection non gestite", async () => {
     useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
     getMyTeam.mockResolvedValue(TEAM_A);
@@ -603,5 +693,95 @@ describe("TeamProvider", () => {
 
     expect(result).toEqual({ hasErrors: false, failedSections: [] });
     expect(getMyTeam).not.toHaveBeenCalled();
+  });
+
+  describe("snapshot offline", () => {
+    it("S1: salva lo snapshot in localStorage dopo un refresh riuscito", async () => {
+      useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+      getMyTeam.mockResolvedValue(TEAM_A);
+
+      await loadTeam();
+
+      const stored = JSON.parse(
+        window.localStorage.getItem("team_snapshot_u-a"),
+      );
+
+      expect(stored.timestamp).toBeDefined();
+      expect(stored.data.team).toEqual(TEAM_A);
+      expect(stored.data.members).toEqual(MEMBERS);
+      expect(stored.data.leaderboard).toEqual(LEADERBOARD);
+      expect(stored.data.activity).toEqual(ACTIVITY);
+    });
+
+    it("S2: senza squadra non salva lo snapshot", async () => {
+      useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+      getMyTeam.mockResolvedValue(null);
+
+      render(
+        <TeamProvider>
+          <Probe />
+        </TeamProvider>,
+      );
+
+      await waitFor(() => {
+        expect(latest.loading).toBe(false);
+      });
+
+      expect(window.localStorage.getItem("team_snapshot_u-a")).toBeNull();
+    });
+
+    it("S3: con snapshot in cache la squadra viene esposta subito all'avvio", async () => {
+      saveTeamSnapshot("u-a", {
+        team: TEAM_A,
+        members: MEMBERS,
+        leaderboard: LEADERBOARD,
+        activity: ACTIVITY,
+      });
+
+      getMyTeam.mockResolvedValue({ ...TEAM_A, team_name: "Squadra Aggiornata" });
+
+      useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+
+      render(
+        <TeamProvider>
+          <Probe />
+        </TeamProvider>,
+      );
+
+      await waitFor(() => {
+        expect(latest.team?.team_id).toBe("team-a");
+      });
+
+      expect(latest.team).toEqual({ ...TEAM_A, team_name: "Squadra Aggiornata" });
+      expect(getMyTeam).toHaveBeenCalledTimes(1);
+    });
+
+    it("S4: se getMyTeam fallisce lo snapshot in cache viene mantenuto", async () => {
+      saveTeamSnapshot("u-a", {
+        team: TEAM_A,
+        members: MEMBERS,
+        leaderboard: LEADERBOARD,
+        activity: ACTIVITY,
+      });
+
+      getMyTeam.mockRejectedValue(new Error("offline"));
+
+      useAuth.mockReturnValue({ user: { id: "u-a" }, loading: false });
+
+      render(
+        <TeamProvider>
+          <Probe />
+        </TeamProvider>,
+      );
+
+      await waitFor(() => {
+        expect(latest.loading).toBe(false);
+      });
+
+      expect(latest.team).toEqual(TEAM_A);
+      expect(latest.members).toEqual(MEMBERS);
+      expect(latest.leaderboard).toEqual(LEADERBOARD);
+      expect(latest.activity).toEqual(ACTIVITY);
+    });
   });
 });

@@ -85,8 +85,6 @@ export default function useModalFocusTrap({
 
     dialog.focus();
 
-    lockBodyScroll();
-
     const getFocusable = () =>
       Array.from(dialog.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
         (element) =>
@@ -97,6 +95,8 @@ export default function useModalFocusTrap({
 
     const initialFocus =
       initialFocusRef?.current ?? getFocusable()[0] ?? dialog;
+
+    lockBodyScroll();
 
     const timeout = window.setTimeout(
       () => initialFocus.focus(),
