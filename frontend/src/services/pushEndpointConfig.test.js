@@ -7,8 +7,17 @@ const MIGRATIONS_DIR = fileURLToPath(
 );
 
 const CONFIG_MIGRATION = "20260917000010_push_endpoint_config.sql";
+const REMINDER_MIGRATION = "20260917000015_daily_reminder_message.sql";
 const PROJECT_REF = "ojxqrboyxzkkgiiycluk";
 const SECRET_NAME = "'supabase_functions_base_url'";
+
+// Versione effettiva per funzione: la migrazione piu' recente che la definisce.
+const WINNER_FILES = {
+  notify_my_push: CONFIG_MIGRATION,
+  notify_team_activity_push: CONFIG_MIGRATION,
+  send_daily_reminder_push: REMINDER_MIGRATION,
+  record_quota_snapshot: CONFIG_MIGRATION,
+};
 
 const MIGRATION_FILES = readdirSync(MIGRATIONS_DIR)
   .filter((name) => name.endsWith(".sql"))
@@ -104,8 +113,16 @@ describe("endpoint Edge Function configurabile (M4)", () => {
 
   it("la configurazione effettiva arriva dalla migration dedicata", () => {
     for (const { name } of FUNCTIONS) {
-      expect(effectiveDefinition(name).file).toBe(CONFIG_MIGRATION);
+      expect(effectiveDefinition(name).file).toBe(WINNER_FILES[name]);
     }
+  });
+
+  it("il promemoria giornaliero invita a inserire la registrazione", () => {
+    const { body } = effectiveDefinition("send_daily_reminder_push");
+
+    expect(body).toContain(
+      "'body', 'Ricordati di inserire la registrazione di oggi!'",
+    );
   });
 
   it("la migration di configurazione documenta il secret senza ref di produzione", () => {
