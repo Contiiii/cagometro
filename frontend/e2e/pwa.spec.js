@@ -79,10 +79,12 @@ test.describe("PWA", () => {
   }) => {
     await page.goto("/settings");
 
-    await page.getByRole("button", { name: /Dati e sincronizzazione/ }).click();
+    await page
+      .getByRole("button", { name: "Aggiungi alla Home" })
+      .click();
 
     await expect(
-      page.getByRole("button", { name: "Esporta JSON tecnico" }),
+      page.getByRole("heading", { name: "Aggiungi Cagometro alla Home" }),
     ).toBeVisible();
 
     await page.evaluate(() => {

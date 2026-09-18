@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Cloud, Download, Gauge, RefreshCw, Save, Smartphone, Vibrate } from "lucide-react";
+import { Cloud, Download, Gauge, RefreshCw, Save, Vibrate } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { APP_VERSION } from "../../config/releaseNotes";
-import { useInstallPrompt } from "../../hooks/useInstallPrompt";
 import IconTile from "../ui/IconTile";
 import StatCard from "../ui/StatCard";
 import PanelFrame from "./PanelFrame";
@@ -34,8 +33,6 @@ export default function SystemPanel({
   onShowReleaseNotes,
 }) {
   const [retrying, setRetrying] = useState(false);
-
-  const { canInstall, install } = useInstallPrompt();
 
   const canRetrySync =
     Boolean(onRetrySync) &&
@@ -206,25 +203,6 @@ export default function SystemPanel({
             </span>
 
             <TinySwitch value={vibrationEnabled} accentColor={accentColor} />
-          </button>
-        </div>
-      )}
-
-      {canInstall && (
-        <div className="mt-4">
-          <button
-            type="button"
-            onClick={install}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-extrabold transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2"
-            style={{
-              borderColor: `${accentColor}40`,
-              backgroundColor: `${accentColor}12`,
-              color: accentColor,
-              "--tw-ring-color": `${accentColor}55`,
-            }}
-          >
-            <Smartphone className="h-4 w-4" strokeWidth={2.2} />
-            Installa app
           </button>
         </div>
       )}

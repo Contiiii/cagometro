@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   BellRing,
   Cloud,
+  Download,
   LogIn,
   Palette,
   Pencil,
@@ -26,6 +27,7 @@ import { useSettings } from "../hooks/useSettings";
 import IconTile from "../components/ui/IconTile";
 import StatCard from "../components/ui/StatCard";
 import ReleaseNotesModal from "../components/ReleaseNotesModal";
+import PushOptInModal from "../components/PushOptInModal";
 import SkeletonBlock from "../components/ui/SkeletonBlock";
 
 import AppearancePanel from "../components/settings/AppearancePanel";
@@ -155,6 +157,7 @@ export default function CagometroSettings() {
   const [feedbackSending, setFeedbackSending] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
+  const [installPromptOpen, setInstallPromptOpen] = useState(false);
   const [typedAccountName, setTypedAccountName] = useState("");
 
   const openDangerAction = (action) => {
@@ -540,6 +543,21 @@ export default function CagometroSettings() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
+                onClick={() => setInstallPromptOpen(true)}
+                aria-haspopup="dialog"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-extrabold text-accent-contrast transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 sm:w-auto"
+                style={{
+                  backgroundColor: accentColor,
+                  boxShadow: `0 12px 28px ${accentColor}40`,
+                  "--tw-ring-color": `${accentColor}55`,
+                }}
+              >
+                <Download className="h-4 w-4" strokeWidth={2.3} />
+                Aggiungi alla Home
+              </button>
+
+              <button
+                type="button"
                 onClick={openProfileEditor}
                 className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-bold transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 sm:w-auto ${theme.softSurface}`}
                 style={{ "--tw-ring-color": accentColor }}
@@ -913,6 +931,14 @@ export default function CagometroSettings() {
         notes={RELEASE_NOTES}
         isDark={resolvedDark}
         prefersReducedMotion={prefersReducedMotion}
+      />
+
+      <PushOptInModal
+        open={installPromptOpen}
+        mode="install"
+        isDark={resolvedDark}
+        prefersReducedMotion={prefersReducedMotion}
+        onClose={() => setInstallPromptOpen(false)}
       />
 
       <AnimatePresence>

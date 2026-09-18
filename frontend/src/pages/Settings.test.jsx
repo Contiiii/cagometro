@@ -183,6 +183,20 @@ describe("CagometroSettings", () => {
     expect(await screen.findByText("Notifiche del dispositivo")).toBeTruthy();
   });
 
+  it("apre la guida per aggiungere l'app alla Home dal pulsante nell'header", async () => {
+    renderSettings({ user: USER });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Aggiungi alla Home" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Aggiungi Cagometro alla Home",
+      }),
+    ).toBeTruthy();
+  });
+
   it("mostra uno skeleton finché le impostazioni stanno caricando", () => {
     const { container } = renderSettings({ settings: { loading: true } });
 
