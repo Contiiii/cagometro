@@ -97,7 +97,7 @@ export default function SystemPanel({
           <div className="flex min-w-0 items-center gap-4">
             <IconTile
               size="xl"
-              className="shrink-0 text-white"
+              className="shrink-0 text-accent-contrast"
               style={{
                 backgroundColor: accentColor,
                 boxShadow: `0 12px 26px ${accentColor}59`,
@@ -293,7 +293,7 @@ export default function SystemPanel({
         <button
           type="button"
           onClick={onExportTech}
-          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-extrabold text-white transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2"
+          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-extrabold text-accent-contrast transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2"
           style={{
             backgroundColor: accentColor,
             boxShadow: `0 12px 28px ${accentColor}40`,

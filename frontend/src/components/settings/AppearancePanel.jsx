@@ -1,13 +1,13 @@
 import { Moon, Smartphone, Sun } from "lucide-react";
 
-import { accentOptions } from "../../config/appearance";
+import { accentOptions, getAccentContrast } from "../../config/appearance";
 import PanelFrame from "./PanelFrame";
 
-function CheckMark({ color }) {
+function CheckMark({ color, contrast }) {
   return (
     <span
       className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-black text-white"
-      style={{ backgroundColor: color }}
+      style={{ backgroundColor: color, color: contrast }}
     >
       ✓
     </span>
@@ -114,7 +114,7 @@ export default function AppearancePanel({
                   </span>
                 </span>
 
-                {active && <CheckMark color={option.color} />}
+                {active && <CheckMark color={option.color} contrast={getAccentContrast(option.id)} />}
               </button>
             );
           })}
@@ -143,7 +143,7 @@ export default function AppearancePanel({
                 onClick={() => setInitialTeamActivityLimit(option)}
                 aria-pressed={active}
                 className={`flex h-11 items-center justify-center text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 ${
-                  active ? "text-white" : `${theme.softSurface} ${theme.muted}`
+                  active ? "text-accent-contrast" : `${theme.softSurface} ${theme.muted}`
                 }`}
                 style={{
                   backgroundColor: active ? accentColor : undefined,

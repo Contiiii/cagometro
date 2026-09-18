@@ -68,7 +68,7 @@ export default function PushOptInModal({
             <div className="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-accent/[0.12] blur-3xl" />
 
             <div className="relative p-6 sm:p-7">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent/10 text-accent">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent/10 text-accent-ink">
                 {isInstall ? (
                   <Smartphone className="h-6 w-6" strokeWidth={2.3} />
                 ) : (
@@ -97,21 +97,21 @@ export default function PushOptInModal({
               {isInstall && (
                 <ol className="mt-5 grid gap-3">
                   <li className={`flex items-center gap-3 rounded-2xl border p-3 ${theme.softSurface}`}>
-                    <Share className="h-5 w-5 shrink-0 text-accent" strokeWidth={2.2} />
+                    <Share className="h-5 w-5 shrink-0 text-accent-ink" strokeWidth={2.2} />
                     <span className={`text-xs font-medium ${theme.muted}`}>
                       Tocca l'icona <span className={`font-bold ${theme.primaryText}`}>Condividi</span> in basso in Safari.
                     </span>
                   </li>
 
                   <li className={`flex items-center gap-3 rounded-2xl border p-3 ${theme.softSurface}`}>
-                    <SquarePlus className="h-5 w-5 shrink-0 text-accent" strokeWidth={2.2} />
+                    <SquarePlus className="h-5 w-5 shrink-0 text-accent-ink" strokeWidth={2.2} />
                     <span className={`text-xs font-medium ${theme.muted}`}>
                       Scegli <span className={`font-bold ${theme.primaryText}`}>Aggiungi a schermata Home</span>.
                     </span>
                   </li>
 
                   <li className={`flex items-center gap-3 rounded-2xl border p-3 ${theme.softSurface}`}>
-                    <BellRing className="h-5 w-5 shrink-0 text-accent" strokeWidth={2.2} />
+                    <BellRing className="h-5 w-5 shrink-0 text-accent-ink" strokeWidth={2.2} />
                     <span className={`text-xs font-medium ${theme.muted}`}>
                       Apri l'app dalla Home e attiva le notifiche.
                     </span>
@@ -134,7 +134,7 @@ export default function PushOptInModal({
                     <button
                       type="button"
                       onClick={() => install?.()}
-                      className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
+                      className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-accent-contrast shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
                     >
                       <Smartphone className="h-5 w-5" strokeWidth={2.3} />
                       Installa app
@@ -145,7 +145,7 @@ export default function PushOptInModal({
                     type="button"
                     onClick={() => onAccept?.()}
                     disabled={isBusy}
-                    className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
+                    className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-accent-contrast shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
                   >
                     <BellRing className="h-5 w-5" strokeWidth={2.3} />
                     {isBusy ? "Attivazione…" : "Attiva notifiche"}

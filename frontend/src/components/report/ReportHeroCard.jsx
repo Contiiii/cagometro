@@ -60,8 +60,8 @@ export default function ReportHeroCard({
           <span
   className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-extrabold ${
     isNegative
-      ? "bg-red-500/[0.10] text-red-500"
-      : "bg-emerald-500/[0.10] text-emerald-500"
+      ? "bg-red-500/[0.10] text-red-700 dark:text-red-400"
+      : "bg-emerald-500/[0.10] text-emerald-700 dark:text-emerald-400"
   }`}
 >
   {isNegative ? (
@@ -83,7 +83,7 @@ export default function ReportHeroCard({
           <button
             type="button"
             onClick={onShare}
-            className="rounded-xl bg-accent px-4 py-2 text-xs font-extrabold text-white shadow-[0_8px_20px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:bg-accent hover:brightness-110"
+            className="rounded-xl bg-accent px-4 py-2 text-xs font-extrabold text-accent-contrast shadow-[0_8px_20px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:bg-accent hover:brightness-110"
           >
             📤 Condividi
           </button>
@@ -102,8 +102,8 @@ export default function ReportHeroCard({
 <span
   className={
     isDecrease
-      ? "text-red-500"
-      : "text-accent"
+      ? "text-red-700 dark:text-red-400"
+      : "text-accent-ink"
   }
 >
   {Math.abs(difference)} attività{" "}

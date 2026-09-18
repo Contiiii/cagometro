@@ -28,7 +28,7 @@ export function getTheme(isDark) {
         softSurface: "bg-zinc-900/[0.035] border-zinc-900/[0.07]",
         primaryText: "text-zinc-950",
         muted: "text-zinc-600",
-        subtle: "text-zinc-500",
+        subtle: "text-zinc-600",
         secondary:
           "bg-zinc-900/[0.045] border-zinc-900/[0.08] text-zinc-700 hover:bg-zinc-900/[0.08]",
         header: "bg-[#f8f5f3]/80 border-zinc-900/[0.07]",
@@ -37,7 +37,7 @@ export function getTheme(isDark) {
         modal: "bg-[#fffaf6] border-zinc-900/[0.09]",
         elevated: "bg-[#fff8f4] border-zinc-900/[0.08]",
         overlay: "bg-zinc-950/55",
-        dangerSoft: "border-rose-500/20 bg-rose-500/10 text-rose-600",
+        dangerSoft: "border-rose-500/20 bg-rose-500/10 text-rose-700",
         focusOffset: "focus-visible:ring-offset-[#f8f5f3]",
         counterRing: "border-zinc-900/[0.07]",
         buttonShadow:
@@ -49,11 +49,11 @@ export function getTheme(isDark) {
 export function getAccentStyles(isDark) {
   return {
     pink: {
-      solid: "bg-pink-500 text-white",
+      solid: "bg-pink-500 text-zinc-950",
       soft: isDark
         ? "bg-pink-500/10 text-pink-500"
-        : "bg-pink-500/10 text-pink-600",
-      text: isDark ? "text-pink-500" : "text-pink-600",
+        : "bg-pink-500/10 text-pink-700",
+      text: isDark ? "text-pink-500" : "text-pink-700",
       line: "bg-pink-500",
       ring: "stroke-pink-500",
       border: isDark
@@ -65,7 +65,7 @@ export function getAccentStyles(isDark) {
       solid: "bg-amber-500 text-zinc-950",
       soft: isDark
         ? "bg-amber-400/15 text-amber-500"
-        : "bg-amber-400/15 text-amber-700",
+        : "bg-amber-400/15 text-amber-800",
       text: isDark ? "text-amber-500" : "text-amber-700",
       line: "bg-amber-500",
       ring: "stroke-amber-500",
@@ -75,7 +75,7 @@ export function getAccentStyles(isDark) {
     },
 
     emerald: {
-      solid: "bg-emerald-500 text-white",
+      solid: "bg-emerald-500 text-zinc-950",
       soft: isDark
         ? "bg-emerald-500/10 text-emerald-500"
         : "bg-emerald-500/10 text-emerald-700",
@@ -94,11 +94,11 @@ export function getAccentStyles(isDark) {
 
       soft: isDark
         ? "bg-zinc-800 text-zinc-400"
-        : "bg-zinc-900/10 text-zinc-500",
+        : "bg-zinc-900/10 text-zinc-600",
 
       text: isDark
         ? "text-zinc-400"
-        : "text-zinc-500",
+        : "text-zinc-600",
 
       line: "bg-zinc-500",
       ring: "stroke-zinc-500",

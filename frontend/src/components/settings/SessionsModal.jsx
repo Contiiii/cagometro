@@ -194,7 +194,7 @@ export default function SessionsModal({
           type="button"
           onClick={handleRevokeOthers}
           disabled={busySessionId !== null}
-          className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 text-sm font-extrabold text-rose-500 disabled:opacity-50"
+          className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 text-sm font-extrabold text-rose-700 dark:text-rose-400 disabled:opacity-50"
         >
           <Shield className="h-4 w-4" strokeWidth={2.3} />
           Revoca le altre sessioni

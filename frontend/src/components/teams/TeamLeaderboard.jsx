@@ -33,31 +33,31 @@ function getRankStyle(rank, isDark) {
 
   return isDark
     ? "border-white/[0.08] bg-white/[0.05] text-zinc-400"
-    : "border-zinc-900/[0.08] bg-zinc-900/[0.04] text-zinc-500";
+    : "border-zinc-900/[0.08] bg-zinc-900/[0.04] text-zinc-600";
 }
 
 function getPodiumTitle(position) {
   if (position === 1) {
     return {
-      title: "Re del WC",
+title: "Re del WC",
       emoji: "👑",
-      className: "text-amber-500",
+      className: "text-amber-700 dark:text-amber-400",
     };
   }
 
   if (position === 2) {
     return {
-      title: "Maestro dello Sciacquone",
+title: "Maestro dello Sciacquone",
       emoji: "🥈",
-      className: "text-zinc-400 dark:text-zinc-300",
+      className: "text-zinc-600 dark:text-zinc-300",
     };
   }
 
   if (position === 3) {
     return {
-      title: "Cavaliere della Tazza",
+title: "Cavaliere della Tazza",
       emoji: "🥉",
-      className: "text-orange-500 dark:text-orange-300",
+      className: "text-orange-700 dark:text-orange-300",
     };
   }
 
@@ -232,7 +232,7 @@ export default function TeamLeaderboard({
                     </span>
 
                     {isCurrentUser && (
-                      <span className="rounded-full bg-accent/12 px-2 py-0.5 text-[10px] font-extrabold text-accent dark:text-accent">
+                      <span className="rounded-full bg-accent/12 px-2 py-0.5 text-[10px] font-extrabold text-accent-ink dark:text-accent-ink">
                         TU
                       </span>
                     )}

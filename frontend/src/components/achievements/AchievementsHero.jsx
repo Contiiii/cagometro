@@ -81,7 +81,7 @@ export default function AchievementsHero({
 
           <div className="absolute inset-0 grid place-items-center">
             <Trophy
-              className="h-8 w-8 text-accent"
+              className="h-8 w-8 text-accent-ink"
               strokeWidth={2.2}
             />
           </div>

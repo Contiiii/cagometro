@@ -57,7 +57,7 @@ export default function ReleaseNotesModal({
         }}
         className={`flex items-start gap-3 rounded-[1.35rem] border p-4 ${theme.softSurface}`}
       >
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent-ink">
           <Icon className="h-[18px] w-[18px]" strokeWidth={2.3} />
         </span>
 
@@ -84,7 +84,7 @@ export default function ReleaseNotesModal({
     return (
       <div key={note.version} className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent">
+            <span className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent-ink">
               <Sparkles className="h-3.5 w-3.5" strokeWidth={2.4} />
               Ultima versione
             </span>
@@ -177,7 +177,7 @@ export default function ReleaseNotesModal({
             <div className="relative p-6 sm:p-7">
               <div className="flex items-start justify-between gap-5">
                 <div className="min-w-0">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent-ink">
                     <Sparkles className="h-3.5 w-3.5" strokeWidth={2.4} />
                     Nuova versione
                   </div>
@@ -232,7 +232,7 @@ export default function ReleaseNotesModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-6 flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:bg-accent hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
+                className="mt-6 flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-3.5 text-sm font-extrabold text-accent-contrast shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_25%,transparent)] transition hover:bg-accent hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
               >
                 <UsersRound className="h-5 w-5" strokeWidth={2.3} />
                 Scopri la nuova versione

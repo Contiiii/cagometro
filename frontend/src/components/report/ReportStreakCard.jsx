@@ -40,7 +40,7 @@ export default function ReportStreakCard({
       </div>
 
       <div className="relative mt-7 flex items-end gap-2">
-        <span className="text-6xl font-black leading-none tracking-[-0.09em] text-amber-500">
+        <span className="text-6xl font-black leading-none tracking-[-0.09em] text-amber-700 dark:text-amber-400">
           {streak}
         </span>
 

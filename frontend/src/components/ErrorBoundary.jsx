@@ -125,7 +125,7 @@ export default class ErrorBoundary extends Component {
                 px-5
                 py-3
                 font-semibold
-                text-white
+                text-accent-contrast
                 transition
                 hover:bg-accent hover:brightness-110
               "

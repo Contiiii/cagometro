@@ -86,7 +86,7 @@ export default function Login() {
 
               <div className="relative">
                 <div className="grid h-14 w-14 place-items-center rounded-[1.35rem] bg-accent shadow-[0_12px_30px_color-mix(in_oklab,var(--accent)_28%,transparent)]">
-                  <Cloud className="h-7 w-7 text-white" strokeWidth={2.3} />
+                  <Cloud className="h-7 w-7 text-accent-contrast" strokeWidth={2.3} />
                 </div>
 
                 <h1
@@ -105,7 +105,7 @@ export default function Login() {
                 <ul className={`mt-6 grid gap-3 text-sm ${theme.muted}`}>
                   {CLOUD_BENEFITS.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-3">
-                      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
+                      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent/10 text-accent-ink">
                         <Check className="h-3 w-3" strokeWidth={3} />
                       </span>
                       <span className="font-medium leading-snug">{benefit}</span>
@@ -117,7 +117,7 @@ export default function Login() {
                   type="button"
                   onClick={handleLogin}
                   disabled={loggingIn}
-                  className="mt-8 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_24%,transparent)] transition-colors hover:bg-accent hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
+                  className="mt-8 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-accent-contrast shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_24%,transparent)] transition-colors hover:bg-accent hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
                 >
                   {loggingIn ? "Accesso in corso..." : "Accedi con Google"}
                 </button>

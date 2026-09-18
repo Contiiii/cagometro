@@ -67,12 +67,12 @@ export default function ReportShareModal({
     : "border-zinc-900/[0.08] bg-zinc-900/[0.03]";
 
   const exportMutedClass = isDarkCard ? "text-zinc-400" : "text-zinc-600";
-  const exportSubtleClass = "text-zinc-500";
+  const exportSubtleClass = "text-zinc-600";
   const exportStrongClass = isDarkCard ? "text-zinc-50" : "text-zinc-950";
 
   const exportBadgeClass = isDarkCard
-    ? "bg-accent/16 text-accent"
-    : "bg-accent/10 text-accent";
+    ? "bg-accent/16 text-accent-ink"
+    : "bg-accent/10 text-accent-ink";
 
   const exportIconTileClass = isDarkCard
     ? "border-white/[0.08] bg-white/[0.06]"
@@ -346,7 +346,7 @@ async function handleShareCard() {
                   type="button"
                   onClick={handleShareCard}
                   disabled={isSharing}
-                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_28%,transparent)] transition-all hover:bg-accent hover:brightness-110 active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-accent-contrast shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_28%,transparent)] transition-all hover:bg-accent hover:brightness-110 active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
                 >
                   <Share2 className="h-5 w-5" strokeWidth={2.4} />
                   {isSharing ? "Condivisione…" : "Condividi immagine"}

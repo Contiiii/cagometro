@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsProvider } from "./SettingsProvider";
 import { useSettings } from "../hooks/useSettings";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../hooks/useTheme";
 import {
   getMySettings,
   ensureMySettings,
@@ -15,6 +16,10 @@ import { loadPendingOps } from "../utils/pendingQueue";
 
 vi.mock("../hooks/useAuth", () => ({
   useAuth: vi.fn(),
+}));
+
+vi.mock("../hooks/useTheme", () => ({
+  useTheme: vi.fn(),
 }));
 
 vi.mock("../services/settingsService", () => ({
@@ -67,6 +72,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   useAuth.mockReturnValue({ user: null, loading: false });
+  useTheme.mockReturnValue({ resolvedTheme: "light" });
   getMySettings.mockResolvedValue(null);
   ensureMySettings.mockResolvedValue(undefined);
   upsertMySettings.mockResolvedValue(undefined);
@@ -219,7 +225,10 @@ describe("SettingsProvider", () => {
     ).toBe("#ec4899");
     expect(
       document.documentElement.style.getPropertyValue("--accent-contrast"),
-    ).toBe("#ffffff");
+    ).toBe("#18181b");
+    expect(
+      document.documentElement.style.getPropertyValue("--accent-ink"),
+    ).toBe("#be185d");
 
     act(() => {
       getLatest().setAccent("amber");
@@ -231,6 +240,27 @@ describe("SettingsProvider", () => {
     expect(
       document.documentElement.style.getPropertyValue("--accent-contrast"),
     ).toBe("#18181b");
+    expect(
+      document.documentElement.style.getPropertyValue("--accent-ink"),
+    ).toBe("#92400e");
+  });
+
+  it("in tema scuro usa l'ink luminoso dell'accento", () => {
+    useTheme.mockReturnValue({ resolvedTheme: "dark" });
+
+    const { getLatest } = renderProvider();
+
+    expect(
+      document.documentElement.style.getPropertyValue("--accent-ink"),
+    ).toBe("#ec4899");
+
+    act(() => {
+      getLatest().setAccent("violet");
+    });
+
+    expect(
+      document.documentElement.style.getPropertyValue("--accent-ink"),
+    ).toBe("#a78bfa");
   });
 
   it("triggerHapticFeedback vibra quando la vibrazione e attiva", () => {

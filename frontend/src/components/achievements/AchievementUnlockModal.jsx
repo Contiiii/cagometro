@@ -92,7 +92,7 @@ export default function AchievementUnlockModal({
                 <Icon className="h-10 w-10" strokeWidth={2.3} />
               )}
 
-              <p className="mt-6 text-xs font-black uppercase tracking-[0.18em] text-accent">
+              <p className="mt-6 text-xs font-black uppercase tracking-[0.18em] text-accent-ink">
                 Achievement ottenuto
               </p>
 
@@ -110,7 +110,7 @@ export default function AchievementUnlockModal({
               </p>
 
               <div className="mt-6">
-                <span className="rounded-full bg-accent/10 px-4 py-2 text-sm font-black text-accent">
+                <span className="rounded-full bg-accent/10 px-4 py-2 text-sm font-black text-accent-ink">
                   +{achievement.xp} XP
                 </span>
               </div>
@@ -118,7 +118,7 @@ export default function AchievementUnlockModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-8 flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent text-sm font-extrabold text-white transition hover:bg-accent hover:brightness-110"
+                className="mt-8 flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent text-sm font-extrabold text-accent-contrast transition hover:bg-accent hover:brightness-110"
               >
                 Continua
               </button>

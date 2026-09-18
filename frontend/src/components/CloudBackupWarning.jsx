@@ -60,7 +60,7 @@ export default function CloudBackupWarning() {
           place-items-center
           rounded-xl
           bg-accent/10
-          text-accent
+          text-accent-ink
         "
       >
         <CloudOff
@@ -89,7 +89,7 @@ export default function CloudBackupWarning() {
             text-xs
             font-medium
             leading-relaxed
-            ${isDark ? "text-zinc-400" : "text-zinc-500"}
+            ${isDark ? "text-zinc-400" : "text-zinc-600"}
           `}
         >
           I dati restano su questo dispositivo. Accedi con Google per

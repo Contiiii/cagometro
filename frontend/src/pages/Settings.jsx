@@ -178,7 +178,7 @@ export default function CagometroSettings() {
   const resolvedDark = resolvedTheme === "dark";
 
   const accentColor = useMemo(
-    () => accentOptions.find((item) => item.id === accent)?.color ?? "#ec4899",
+    () => accentOptions.find((item) => item.id === accent)?.fill ?? "#ec4899",
     [accent],
   );
 
@@ -496,7 +496,7 @@ export default function CagometroSettings() {
             <div className="flex min-w-0 items-center gap-4">
               <IconTile
                 size="3xl"
-                className="relative overflow-hidden text-2xl font-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.16)]"
+                className="relative overflow-hidden text-2xl font-black text-accent-contrast shadow-[0_14px_30px_rgba(0,0,0,0.16)]"
                 style={{ backgroundColor: accentColor }}
               >
                 {profileAvatar ? (
@@ -520,7 +520,7 @@ export default function CagometroSettings() {
                     Il tuo spazio
                   </p>
 
-                  <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.06em] text-emerald-500">
+                  <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.06em] text-emerald-700 dark:text-emerald-400">
                     Beta
                   </span>
                 </div>
@@ -805,7 +805,7 @@ export default function CagometroSettings() {
                 type="button"
                 onClick={saveProfile}
                 disabled={saving}
-                className="mt-2 flex min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(0,0,0,0.16)] disabled:opacity-60"
+                className="mt-2 flex min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-accent-contrast shadow-[0_10px_24px_rgba(0,0,0,0.16)] disabled:opacity-60"
                 style={{
                   backgroundColor: accentColor,
                   "--tw-ring-color": `${accentColor}55`,
@@ -827,7 +827,7 @@ export default function CagometroSettings() {
             onClose={closeDangerAction}
             prefersReducedMotion={prefersReducedMotion}
           >
-            <div className="rounded-[1.4rem] border border-rose-500/20 bg-rose-500/10 p-4 text-rose-500">
+            <div className="rounded-[1.4rem] border border-rose-500/20 bg-rose-500/10 p-4 text-rose-700 dark:text-rose-400">
               <p className="text-sm font-black">
                 {dangerModal === "logout" && "Vuoi davvero disconnetterti?"}
                 {dangerModal === "delete-data" &&
@@ -847,7 +847,7 @@ export default function CagometroSettings() {
                 <label className="grid gap-2">
                   <span
                     className={`text-xs font-bold uppercase tracking-[0.12em] ${
-                      resolvedDark ? "text-zinc-400" : "text-zinc-500"
+                      resolvedDark ? "text-zinc-400" : "text-zinc-600"
                     }`}
                   >
                     Digita {profileName} per confermare
@@ -887,7 +887,7 @@ export default function CagometroSettings() {
                   dangerModal === "delete-account" &&
                   typedAccountName.trim() !== profileName
                 }
-                className="min-h-12 rounded-2xl bg-rose-500 px-4 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-12 rounded-2xl bg-rose-500 px-4 text-sm font-extrabold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Conferma
               </button>
@@ -951,7 +951,7 @@ export default function CagometroSettings() {
               <label className="grid gap-2">
                 <span
                   className={`text-xs font-bold uppercase tracking-[0.12em] ${
-                    resolvedDark ? "text-zinc-400" : "text-zinc-500"
+                    resolvedDark ? "text-zinc-400" : "text-zinc-600"
                   }`}
                 >
                   Messaggio
@@ -983,7 +983,7 @@ export default function CagometroSettings() {
                 type="button"
                 onClick={sendFeedback}
                 disabled={feedbackSending}
-                className="mt-1 flex min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(0,0,0,0.16)] disabled:opacity-60"
+                className="mt-1 flex min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-accent-contrast shadow-[0_10px_24px_rgba(0,0,0,0.16)] disabled:opacity-60"
                 style={{ backgroundColor: accentColor }}
               >
                 <Send className="h-4 w-4" strokeWidth={2.3} />
@@ -1011,7 +1011,7 @@ export default function CagometroSettings() {
             className="fixed inset-x-0 bottom-5 z-[70] flex justify-center px-4"
           >
             <div
-              className="rounded-full px-4 py-3 text-sm font-black text-white shadow-[0_12px_28px_rgba(0,0,0,0.22)]"
+              className="rounded-full px-4 py-3 text-sm font-black text-accent-contrast shadow-[0_12px_28px_rgba(0,0,0,0.22)]"
               style={{ backgroundColor: accentColor }}
             >
               {toast}
@@ -1035,7 +1035,7 @@ function Field({
     <label className="grid gap-2">
       <span
         className={`text-xs font-bold uppercase tracking-[0.12em] ${
-          dark ? "text-zinc-400" : "text-zinc-500"
+          dark ? "text-zinc-400" : "text-zinc-600"
         }`}
       >
         {label}

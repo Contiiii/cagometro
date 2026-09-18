@@ -35,7 +35,7 @@ export default function Changelog() {
   const isDark = resolvedTheme === "dark";
 
   const accentColor = useMemo(
-    () => accentOptions.find((item) => item.id === accent)?.color ?? "#ec4899",
+    () => accentOptions.find((item) => item.id === accent)?.fill ?? "#ec4899",
     [accent],
   );
 
@@ -165,7 +165,7 @@ export default function Changelog() {
                         className={`flex items-start gap-3 rounded-[1.35rem] border p-4 ${theme.softSurface}`}
                       >
                         {Icon && (
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent-ink">
                             <Icon className="h-[18px] w-[18px]" strokeWidth={2.3} />
                           </span>
                         )}

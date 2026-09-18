@@ -50,19 +50,19 @@ export default function TeamsLanding({ onCreate, onJoin }) {
 
             <div className={`mt-6 grid gap-3 text-sm ${theme.muted}`}>
               <div className="flex items-center gap-2">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/10 text-accent">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/10 text-accent-ink">
                   <span className="text-[10px] font-bold">✓</span>
                 </div>
                 <span>Confronta i progressi con gli amici</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/10 text-accent">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/10 text-accent-ink">
                   <span className="text-[10px] font-bold">✓</span>
                 </div>
                 <span>Sblocca traguardi e sali in classifica</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/10 text-accent">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/10 text-accent-ink">
                   <span className="text-[10px] font-bold">✓</span>
                 </div>
                 <span>Crea o unisciti in pochi secondi</span>
@@ -74,7 +74,7 @@ export default function TeamsLanding({ onCreate, onJoin }) {
                 <button
                   type="button"
                   onClick={() => setCreateOpen(true)}
-                  className="w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-white shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_24%,transparent)] transition-transform hover:bg-accent hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
+                  className="w-full flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-5 text-sm font-extrabold text-accent-contrast shadow-[0_12px_28px_color-mix(in_oklab,var(--accent)_24%,transparent)] transition-transform hover:bg-accent hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
                 >
                   <Plus className="h-5 w-5" strokeWidth={2.5} />
                   Crea una squadra

@@ -9,6 +9,7 @@ import {
 import { SettingsContext } from "./settings-context";
 
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../hooks/useTheme";
 
 import {
   getMySettings,
@@ -21,6 +22,7 @@ import {
   VALID_ACCENTS,
   getAccentColor,
   getAccentContrast,
+  getAccentInk,
 } from "../config/appearance";
 
 import {
@@ -170,6 +172,8 @@ function flushSettingsQueue(userId) {
 export function SettingsProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
   const authUserId = user?.id ?? null;
+
+  const { resolvedTheme } = useTheme();
 
   const [settings, setSettings] = useState(loadStoredSettings);
 
@@ -374,6 +378,7 @@ if (isOnlineRef.current) {
 
   useEffect(() => {
     const root = document.documentElement;
+    const isDark = resolvedTheme === "dark";
 
     root.style.setProperty("--accent", getAccentColor(settings.accent));
 
@@ -381,7 +386,12 @@ if (isOnlineRef.current) {
       "--accent-contrast",
       getAccentContrast(settings.accent),
     );
-  }, [settings.accent]);
+
+    root.style.setProperty(
+      "--accent-ink",
+      getAccentInk(settings.accent, isDark),
+    );
+  }, [settings.accent, resolvedTheme]);
 
   const updateSetting = useCallback(
     (settingName, value) => {

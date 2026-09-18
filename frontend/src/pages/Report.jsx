@@ -134,7 +134,7 @@ export default function CagometroReport() {
           >
             Il tuo ritmo,
             <br />
-            messo <span className="text-accent">nero su rosa.</span>
+            messo <span className="text-accent-ink">nero su rosa.</span>
           </h1>
 
           <ReportPeriodSelector

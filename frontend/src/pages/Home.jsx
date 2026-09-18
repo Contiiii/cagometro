@@ -361,7 +361,7 @@ export default function Home() {
           <h1
             className={`max-w-md text-[clamp(2rem,7vw,3.6rem)] font-black leading-[0.98] tracking-[-0.065em] ${theme.primaryText}`}
           >
-            Ogni <span className="text-accent">click</span>
+            Ogni <span className="text-accent-ink">click</span>
             <br />
             racconta una storia.
           </h1>
