@@ -8,13 +8,14 @@ const MIGRATIONS_DIR = fileURLToPath(
 
 const CONFIG_MIGRATION = "20260917000010_push_endpoint_config.sql";
 const REMINDER_MIGRATION = "20260917000015_daily_reminder_message.sql";
+const ENTRY_PUSH_MESSAGE_MIGRATION = "20260918020000_team_entry_push_message.sql";
 const PROJECT_REF = "ojxqrboyxzkkgiiycluk";
 const SECRET_NAME = "'supabase_functions_base_url'";
 
 // Versione effettiva per funzione: la migrazione piu' recente che la definisce.
 const WINNER_FILES = {
   notify_my_push: CONFIG_MIGRATION,
-  notify_team_activity_push: CONFIG_MIGRATION,
+  notify_team_activity_push: ENTRY_PUSH_MESSAGE_MIGRATION,
   send_daily_reminder_push: REMINDER_MIGRATION,
   record_quota_snapshot: CONFIG_MIGRATION,
 };

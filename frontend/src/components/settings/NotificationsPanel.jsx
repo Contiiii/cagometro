@@ -356,7 +356,7 @@ export default function NotificationsPanel({
           <SettingToggleCard
             icon={ListChecks}
             title="Registrazioni in squadra"
-            description="Quando un membro registra un nuovo traguardo."
+            description="Quando un membro effettua una nuova registrazione."
             value={teamEntryAlerts}
             onChange={(value) => updateSetting("teamEntryAlerts", value)}
             theme={theme}
